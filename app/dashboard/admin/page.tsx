@@ -51,36 +51,29 @@ export default async function AdminDashboard() {
     .from('profiles')
     .select('id, role')) as { data: ProfileData[] | null; error: any }
     
-  
   const { data: brokers } = (await supabase
     .from('brokers')
-    .select('id')
-    
+    .select('id')) as { data: { id: string }[] | null; error: any }
   
   const { data: offices } = (await supabase
     .from('offices')
-    .select('id')
-    
+    .select('id')) as { data: { id: string }[] | null; error: any }
   
   const { data: properties } = (await supabase
     .from('properties')
-    .select('id')
-    
+    .select('id')) as { data: { id: string }[] | null; error: any }
   
   const { data: transactions } = (await supabase
     .from('transactions')
-    .select('id, stage')
-    
+    .select('id, stage')) as { data: TransactionData[] | null; error: any }
   
   const { data: features } = (await supabase
     .from('features')
-    .select('id')
-    
+    .select('id')) as { data: { id: string }[] | null; error: any }
   
   const { data: platformToggles } = (await supabase
     .from('platform_feature_toggles')
-    .select('is_enabled')
-    
+    .select('is_enabled')) as { data: ToggleData[] | null; error: any }
 
   const metrics = [
     {
@@ -237,5 +230,3 @@ export default async function AdminDashboard() {
     </div>
   )
 }
-
- as any
