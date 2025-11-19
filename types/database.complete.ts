@@ -21,7 +21,6 @@ export interface Database {
           enabled: boolean
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id?: string
@@ -46,7 +45,6 @@ export interface Database {
           organization_id: string | null
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id?: string
@@ -67,7 +65,6 @@ export interface Database {
           name: string
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id?: string
@@ -92,7 +89,6 @@ export interface Database {
           organization_id: string | null
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id: string
@@ -122,7 +118,6 @@ export interface Database {
           address: string | null
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id?: string
@@ -146,7 +141,6 @@ export interface Database {
           amount: number | null
           created_at: string
           updated_at: string
-          [key: string]: any
         }
         Insert: {
           id?: string
@@ -163,22 +157,23 @@ export interface Database {
           updated_at?: string
         }
       }
-      [key: string]: {
-        Row: Record<string, any>
-        Insert: Record<string, any>
-        Update: Record<string, any>
-      }
     }
     Views: {
-      [key: string]: {
-        Row: Record<string, any>
+      [_: string]: {
+        Row: {}
       }
     }
     Functions: {
-      [key: string]: any
+      [_: string]: {
+        Args: {}
+        Returns: unknown
+      }
     }
     Enums: {
-      [key: string]: string
+      [_: string]: string
+    }
+    CompositeTypes: {
+      [_: string]: {}
     }
   }
 }
