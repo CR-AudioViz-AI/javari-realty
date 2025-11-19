@@ -53,6 +53,9 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }
     
+    // @ts-ignore - Known Supabase TypeScript strict mode bug: update() infers 'never'
+    // See: https://github.com/supabase/supabase-js/issues/786
+    // Types are correct at runtime, validated by PlatformFeatureToggleUpdate above
     const { error: updateError } = await supabase
       .from('platform_feature_toggles')
       .update(updateData)
