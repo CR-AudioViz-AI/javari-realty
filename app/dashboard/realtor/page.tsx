@@ -35,17 +35,17 @@ export default async function RealtorDashboard() {
   // Get dashboard metrics
   const { data: leads } = await supabase
     .from('leads')
-    .select('*').returns<{ id: string; status: string; [key: string]: any }[]>()
+    .select('*')
     .eq('realtor_id', user.id)
 
   const { data: properties } = await supabase
     .from('properties')
-    .select('*').returns<{ id: string; status: string; [key: string]: any }[]>()
+    .select('*')
     .eq('listing_agent_id', user.id)
 
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('*').returns<{ id: string; stage: string; [key: string]: any }[]>()
+    .select('*')
     .or(`buyer_agent_id.eq.${user.id},seller_agent_id.eq.${user.id}`)
 
   const activeLeads = leads?.filter((l) => l.status === 'new' || l.status === 'contacted').length || 0
