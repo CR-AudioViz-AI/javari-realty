@@ -14,13 +14,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'platform_admin') {
+    if (profileError || !profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    if (profile.role !== 'platform_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -45,7 +49,7 @@ export async function GET() {
     }
 
     // Transform data to flatten the toggle status
-    const transformedFeatures = features.map((feature: any) => ({
+    const transformedFeatures = (features || []).map((feature: any) => ({
       id: feature.id,
       name: feature.name,
       display_name: feature.display_name,
