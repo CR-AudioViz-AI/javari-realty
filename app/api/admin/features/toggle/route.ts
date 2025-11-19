@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    if (profile.role !== 'platform_admin') {
+    // TypeScript type assertion - we've confirmed profile exists above
+    const userRole = profile.role as string
+
+    if (userRole !== 'platform_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
