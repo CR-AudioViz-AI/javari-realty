@@ -11,11 +11,6 @@ import {
 } from 'lucide-react'
 import { Database } from '@/types/database.complete'
 
-type Profile = Database['public']['Tables']['profiles']['Row']
-type Transaction = Database['public']['Tables']['transactions']['Row']
-type Organization = Database['public']['Tables']['organizations']['Row']
-type Property = Database['public']['Tables']['properties']['Row']
-
 export default async function AdminDashboard() {
   const supabase = createClient()
 
@@ -29,11 +24,11 @@ export default async function AdminDashboard() {
   }
 
   // Verify admin role
-  const { data: profile, error: profileError } = (await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()) as { data: Pick<Profile, 'role'> | null; error: any }
+    .single()
 
   // Combined check: if error OR no profile data, redirect
   if (profileError || !profile) {
@@ -45,22 +40,22 @@ export default async function AdminDashboard() {
     redirect('/dashboard')
   }
 
-  // Get platform metrics with proper typing
-  const { data: allProfiles } = (await supabase
+  // Get platform metrics
+  const { data: allProfiles } = await supabase
     .from('profiles')
-    .select('id, role')) as { data: Pick<Profile, 'id' | 'role'>[] | null; error: any }
+    .select('id, role')
     
-  const { data: organizations } = (await supabase
+  const { data: organizations } = await supabase
     .from('organizations')
-    .select('id')) as { data: Pick<Organization, 'id'>[] | null; error: any }
+    .select('id')
   
-  const { data: properties } = (await supabase
+  const { data: properties } = await supabase
     .from('properties')
-    .select('id')) as { data: Pick<Property, 'id'>[] | null; error: any }
+    .select('id')
   
-  const { data: transactions } = (await supabase
+  const { data: transactions } = await supabase
     .from('transactions')
-    .select('id, status')) as { data: Pick<Transaction, 'id' | 'status'>[] | null; error: any }
+    .select('id, status')
 
   const metrics = [
     {
