@@ -45,13 +45,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Update platform feature toggle
+    type PlatformFeatureToggleUpdate = Database['public']['Tables']['platform_feature_toggles']['Update']
+    
+    const updateData: PlatformFeatureToggleUpdate = {
+      is_enabled: enabled,
+      updated_by: user.id,
+      updated_at: new Date().toISOString(),
+    }
+    
     const { error: updateError } = await supabase
       .from('platform_feature_toggles')
-      .update({
-        is_enabled: enabled,
-        updated_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('feature_id', featureId)
 
     if (updateError) {
