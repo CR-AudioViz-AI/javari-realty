@@ -3,7 +3,7 @@
  * Provides utilities to handle type assertions safely
  */
 
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.complete'
 import { SupabaseClient } from '@supabase/supabase-js'
 
 // Extract table types
