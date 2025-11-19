@@ -43,7 +43,7 @@ export default async function AdminDashboard() {
   }
 
   // Get platform metrics
-  const { data: allProfiles } = await supabase.from('profiles').select('id, role')
+  const { data: allProfiles } = await supabase.from('profiles').select('id, role').returns<Pick<Profile, 'id' | 'role'>[]>()
   const { data: brokers } = await supabase.from('brokers').select('id')
   const { data: offices } = await supabase.from('offices').select('id')
   const { data: properties } = await supabase.from('properties').select('id')
