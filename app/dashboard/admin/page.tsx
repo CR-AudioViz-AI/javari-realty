@@ -38,9 +38,9 @@ export default async function AdminDashboard() {
   }
 
   // TypeScript type assertion - we've confirmed profile exists above
-  const userRole = profile.role as string
+  
 
-  if (userRole !== 'platform_admin') {
+  if (profile!.role !== 'platform_admin') {
     redirect('/dashboard')
   }
 
@@ -210,5 +210,4 @@ export default async function AdminDashboard() {
     </div>
   )
 }
-
 
