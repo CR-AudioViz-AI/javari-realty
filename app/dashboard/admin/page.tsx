@@ -47,9 +47,9 @@ export default async function AdminDashboard() {
   type TransactionData = { id: string; stage: string }
   type ToggleData = { is_enabled: boolean }
 
-  const { data: allProfiles } = await supabase
+  const { data: allProfiles } = (await supabase
     .from('profiles')
-    .select('id, role')
+    .select('id, role')) as { data: ProfileData[] | null; error: any }
     
   
   const { data: brokers } = await supabase
