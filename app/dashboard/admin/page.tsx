@@ -9,6 +9,9 @@ import {
   Settings,
   ChevronRight,
 } from 'lucide-react'
+import { Database } from '@/types/database'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -27,20 +30,15 @@ export default async function AdminDashboard() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .single<Pick<Profile, 'role'>>()
 
-  if (profileError) {
+  // Combined check: if error OR no profile data, redirect
+  if (profileError || !profile) {
     redirect('/dashboard')
   }
 
-  if (!profile) {
-    redirect('/dashboard')
-  }
-
-  // TypeScript type assertion - we've confirmed profile exists above
-  
-
-  if (profile!.role !== 'platform_admin') {
+  // TypeScript now knows profile is non-null and has role property
+  if (profile.role !== 'platform_admin') {
     redirect('/dashboard')
   }
 
