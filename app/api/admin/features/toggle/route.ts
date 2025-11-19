@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { Database } from '@/types/database'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,20 +21,15 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single<Pick<Profile, 'role'>>()
 
-    if (profileError) {
-      return NextResponse.json({ error: 'Profile error' }, { status: 500 })
-    }
-
-    if (!profile) {
+    // Combined check: if error OR no profile data, reject
+    if (profileError || !profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // TypeScript type assertion - we've confirmed profile exists above
-    
-
-    if (profile!.role !== 'platform_admin') {
+    // TypeScript now knows profile is non-null and has role property
+    if (profile.role !== 'platform_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
