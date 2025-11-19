@@ -50,37 +50,37 @@ export default async function AdminDashboard() {
   const { data: allProfiles } = await supabase
     .from('profiles')
     .select('id, role')
-    .returns<ProfileData[]>()
+    
   
   const { data: brokers } = await supabase
     .from('brokers')
     .select('id')
-    .returns<{ id: string }[]>()
+    
   
   const { data: offices } = await supabase
     .from('offices')
     .select('id')
-    .returns<{ id: string }[]>()
+    
   
   const { data: properties } = await supabase
     .from('properties')
     .select('id')
-    .returns<{ id: string }[]>()
+    
   
   const { data: transactions } = await supabase
     .from('transactions')
     .select('id, stage')
-    .returns<TransactionData[]>()
+    
   
   const { data: features } = await supabase
     .from('features')
     .select('id')
-    .returns<{ id: string }[]>()
+    
   
   const { data: platformToggles } = await supabase
     .from('platform_feature_toggles')
     .select('is_enabled')
-    .returns<ToggleData[]>()
+    
 
   const metrics = [
     {
