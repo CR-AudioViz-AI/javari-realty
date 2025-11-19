@@ -12,6 +12,9 @@ import {
 import { Database } from '@/types/database.complete'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type Organization = Database['public']['Tables']['organizations']['Row']
+type Property = Database['public']['Tables']['properties']['Row']
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -26,11 +29,11 @@ export default async function AdminDashboard() {
   }
 
   // Verify admin role
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = (await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single<Pick<Profile, 'role'>>()
+    .single()) as { data: Pick<Profile, 'role'> | null; error: any }
 
   // Combined check: if error OR no profile data, redirect
   if (profileError || !profile) {
@@ -43,37 +46,21 @@ export default async function AdminDashboard() {
   }
 
   // Get platform metrics with proper typing
-  type ProfileData = Pick<Profile, 'id' | 'role'>
-  type TransactionData = { id: string; stage: string }
-  type ToggleData = { is_enabled: boolean }
-
   const { data: allProfiles } = (await supabase
     .from('profiles')
-    .select('id, role')) as { data: ProfileData[] | null; error: any }
+    .select('id, role')) as { data: Pick<Profile, 'id' | 'role'>[] | null; error: any }
     
-  const { data: brokers } = (await supabase
-    .from('brokers')
-    .select('id')) as { data: { id: string }[] | null; error: any }
-  
-  const { data: offices } = (await supabase
-    .from('offices')
-    .select('id')) as { data: { id: string }[] | null; error: any }
+  const { data: organizations } = (await supabase
+    .from('organizations')
+    .select('id')) as { data: Pick<Organization, 'id'>[] | null; error: any }
   
   const { data: properties } = (await supabase
     .from('properties')
-    .select('id')) as { data: { id: string }[] | null; error: any }
+    .select('id')) as { data: Pick<Property, 'id'>[] | null; error: any }
   
   const { data: transactions } = (await supabase
     .from('transactions')
-    .select('id, stage')) as { data: TransactionData[] | null; error: any }
-  
-  const { data: features } = (await supabase
-    .from('features')
-    .select('id')) as { data: { id: string }[] | null; error: any }
-  
-  const { data: platformToggles } = (await supabase
-    .from('platform_feature_toggles')
-    .select('is_enabled')) as { data: ToggleData[] | null; error: any }
+    .select('id, status')) as { data: Pick<Transaction, 'id' | 'status'>[] | null; error: any }
 
   const metrics = [
     {
@@ -84,23 +71,23 @@ export default async function AdminDashboard() {
       color: 'blue',
     },
     {
-      name: 'Brokers & Offices',
-      value: brokers?.length || 0,
-      breakdown: `${offices?.length || 0} Offices`,
+      name: 'Organizations',
+      value: organizations?.length || 0,
+      breakdown: `${allProfiles?.filter((p) => p.role === 'broker').length || 0} Brokers`,
       icon: Building2,
       color: 'purple',
     },
     {
       name: 'Active Transactions',
-      value: transactions?.filter((t) => t.stage !== 'completed' && t.stage !== 'cancelled').length || 0,
-      breakdown: `${transactions?.filter((t) => t.stage === 'completed').length || 0} Completed`,
+      value: transactions?.filter((t) => t.status === 'active' || t.status === 'pending').length || 0,
+      breakdown: `${transactions?.filter((t) => t.status === 'completed').length || 0} Completed`,
       icon: TrendingUp,
       color: 'green',
     },
     {
-      name: 'Features Enabled',
-      value: platformToggles?.filter((t) => t.is_enabled).length || 0,
-      breakdown: `${features?.length || 0} Total Features`,
+      name: 'Total Properties',
+      value: properties?.length || 0,
+      breakdown: `Platform-wide listings`,
       icon: Settings,
       color: 'orange',
     },
@@ -108,21 +95,21 @@ export default async function AdminDashboard() {
 
   const quickLinks = [
     {
-      name: 'Feature Toggles',
-      description: 'Manage platform-wide feature availability',
-      href: '/dashboard/admin/features',
-      icon: Settings,
-    },
-    {
       name: 'User Management',
       description: 'View and manage all platform users',
       href: '/dashboard/admin/users',
       icon: Users,
     },
     {
-      name: 'Brokers',
-      description: 'Manage broker organizations',
-      href: '/dashboard/admin/brokers',
+      name: 'Organizations',
+      description: 'Manage organizations and brokers',
+      href: '/dashboard/admin/organizations',
+      icon: Building2,
+    },
+    {
+      name: 'Properties',
+      description: 'View all platform properties',
+      href: '/dashboard/admin/properties',
       icon: Building2,
     },
     {
@@ -206,15 +193,15 @@ export default async function AdminDashboard() {
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">New Broker Registered</p>
-              <p className="text-sm text-gray-600">Acme Realty Group</p>
+              <p className="font-medium text-gray-900">New Organization Registered</p>
+              <p className="text-sm text-gray-600">Real Estate Group</p>
             </div>
             <p className="text-sm text-gray-500">2 hours ago</p>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">Feature Toggle Updated</p>
-              <p className="text-sm text-gray-600">Virtual Tours enabled</p>
+              <p className="font-medium text-gray-900">New Property Listed</p>
+              <p className="text-sm text-gray-600">123 Main Street</p>
             </div>
             <p className="text-sm text-gray-500">5 hours ago</p>
           </div>
