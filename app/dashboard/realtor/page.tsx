@@ -8,6 +8,12 @@ import {
   Calendar,
   CheckCircle,
 } from 'lucide-react'
+import { Database } from '@/types/database.complete'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
+type Lead = Database['public']['Tables']['leads']['Row']
+type Property = Database['public']['Tables']['properties']['Row']
+type Transaction = Database['public']['Tables']['transactions']['Row']
 
 export default async function RealtorDashboard() {
   const supabase = createClient()
@@ -22,31 +28,31 @@ export default async function RealtorDashboard() {
   }
 
   // Get user profile
-  const { data: profile } = await supabase
+  const { data: profile } = (await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .single()) as { data: Profile | null; error: any }
 
   if (!profile) {
     redirect('/auth/login')
   }
 
   // Get dashboard metrics
-  const { data: leads } = await supabase
+  const { data: leads } = (await supabase
     .from('leads')
     .select('*')
-    .eq('realtor_id', user.id)
+    .eq('realtor_id', user.id)) as { data: Lead[] | null; error: any }
 
-  const { data: properties } = await supabase
+  const { data: properties } = (await supabase
     .from('properties')
     .select('*')
-    .eq('listing_agent_id', user.id)
+    .eq('listing_agent_id', user.id)) as { data: Property[] | null; error: any }
 
-  const { data: transactions } = await supabase
+  const { data: transactions } = (await supabase
     .from('transactions')
     .select('*')
-    .or(`buyer_agent_id.eq.${user.id},seller_agent_id.eq.${user.id}`)
+    .or(`buyer_agent_id.eq.${user.id},seller_agent_id.eq.${user.id}`)) as { data: Transaction[] | null; error: any }
 
   const activeLeads = leads?.filter((l) => l.status === 'new' || l.status === 'contacted').length || 0
   const activeListings = properties?.filter((p) => p.status === 'active').length || 0
