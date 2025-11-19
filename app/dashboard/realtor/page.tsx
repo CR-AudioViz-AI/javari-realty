@@ -13,9 +13,7 @@ import { Database } from '@/types/database.complete'
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Lead = Database['public']['Tables']['leads']['Row']
 type Property = Database['public']['Tables']['properties']['Row']
-type Transaction = Database['public']['Tables']['transactions']['Row'] & {
-  final_price?: number
-}
+type Transaction = Database['public']['Tables']['transactions']['Row']
 
 export default async function RealtorDashboard() {
   const supabase = createClient()
@@ -178,9 +176,9 @@ export default async function RealtorDashboard() {
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {lead.first_name} {lead.last_name}
+                    {lead.full_name}
                   </p>
-                  <p className="text-sm text-gray-600">{lead.source || 'Direct'}</p>
+                  <p className="text-sm text-gray-600">{lead.lead_source || 'Direct'}</p>
                 </div>
                 <span
                   className={`px-3 py-1 text-xs font-medium rounded-full ${
