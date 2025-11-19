@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.complete'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+type PlatformToggleUpdate = Database['public']['Tables']['platform_feature_toggles']['Update']
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,24 +46,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Update platform feature toggle
-    type PlatformFeatureToggleUpdate = Database['public']['Tables']['platform_feature_toggles']['Update']
-    
-    const updateData: PlatformFeatureToggleUpdate = {
+    const updateData: PlatformToggleUpdate = {
       is_enabled: enabled,
       updated_by: user.id,
       updated_at: new Date().toISOString(),
     }
     
-    // Known Supabase TypeScript strict mode bug: update() method infers parameter as 'never'
-    // See: https://github.com/supabase/supabase-js/issues/786
-    // Types are validated above by PlatformFeatureToggleUpdate, safe at runtime
-    const updateQuery = supabase
+    const { error: updateError } = await supabase
       .from('platform_feature_toggles')
-      // @ts-ignore - Supabase strict mode bug
       .update(updateData)
       .eq('feature_id', featureId)
-    
-    const { error: updateError } = await updateQuery
 
     if (updateError) {
       return NextResponse.json(
