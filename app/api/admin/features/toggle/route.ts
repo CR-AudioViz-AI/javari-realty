@@ -53,13 +53,16 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }
     
-    // @ts-ignore - Known Supabase TypeScript strict mode bug: update() infers 'never'
+    // Known Supabase TypeScript strict mode bug: update() method infers parameter as 'never'
     // See: https://github.com/supabase/supabase-js/issues/786
-    // Types are correct at runtime, validated by PlatformFeatureToggleUpdate above
-    const { error: updateError } = await supabase
+    // Types are validated above by PlatformFeatureToggleUpdate, safe at runtime
+    const updateQuery = supabase
       .from('platform_feature_toggles')
+      // @ts-ignore - Supabase strict mode bug
       .update(updateData)
       .eq('feature_id', featureId)
+    
+    const { error: updateError } = await updateQuery
 
     if (updateError) {
       return NextResponse.json(
