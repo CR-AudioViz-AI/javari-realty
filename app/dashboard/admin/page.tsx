@@ -23,13 +23,13 @@ export default async function AdminDashboard() {
   }
 
   // Verify admin role
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'platform_admin') {
+  if (profileError || !profile || profile.role !== 'platform_admin') {
     redirect('/dashboard')
   }
 
@@ -199,3 +199,4 @@ export default async function AdminDashboard() {
     </div>
   )
 }
+
