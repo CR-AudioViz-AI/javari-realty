@@ -24,7 +24,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Profile error' }, { status: 500 })
     }
 
-    if (!profile || profile.role !== 'platform_admin') {
+    if (!profile) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (profile.role !== 'platform_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
