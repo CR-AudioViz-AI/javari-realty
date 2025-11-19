@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/types/database.complete'
+import { typed, Update } from '@/lib/supabase/typed-client'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
-type PlatformToggleUpdate = Database['public']['Tables']['platform_feature_toggles']['Update']
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,15 +45,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update platform feature toggle
-    const updateData: PlatformToggleUpdate = {
+    // Update platform feature toggle using typed client
+    const updateData: Update<'platform_feature_toggles'> = {
       is_enabled: enabled,
       updated_by: user.id,
       updated_at: new Date().toISOString(),
     }
     
-    const { error: updateError } = await supabase
-      .from('platform_feature_toggles')
+    const { error: updateError } = await typed(supabase, 'platform_feature_toggles')
       .update(updateData)
       .eq('feature_id', featureId)
 
