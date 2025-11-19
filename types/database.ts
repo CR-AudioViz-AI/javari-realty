@@ -107,6 +107,22 @@ export type Database = {
           updated_by: string | null
           updated_at: string
         }
+        Insert: {
+          id?: string
+          feature_id: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
       }
       broker_feature_toggles: {
         Row: {
