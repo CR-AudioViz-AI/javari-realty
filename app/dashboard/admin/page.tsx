@@ -9,7 +9,7 @@ import {
   Settings,
   ChevronRight,
 } from 'lucide-react'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.complete'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -42,16 +42,45 @@ export default async function AdminDashboard() {
     redirect('/dashboard')
   }
 
-  // Get platform metrics
-  const { data: allProfiles } = await supabase.from('profiles').select('id, role').returns<Pick<Profile, 'id' | 'role'>[]>()
-  const { data: brokers } = await supabase.from('brokers').select('id')
-  const { data: offices } = await supabase.from('offices').select('id')
-  const { data: properties } = await supabase.from('properties').select('id')
-  const { data: transactions } = await supabase.from('transactions').select('id, stage')
-  const { data: features } = await supabase.from('features').select('id')
+  // Get platform metrics with proper typing
+  type ProfileData = Pick<Profile, 'id' | 'role'>
+  type TransactionData = { id: string; stage: string }
+  type ToggleData = { is_enabled: boolean }
+
+  const { data: allProfiles } = await supabase
+    .from('profiles')
+    .select('id, role')
+    .returns<ProfileData[]>()
+  
+  const { data: brokers } = await supabase
+    .from('brokers')
+    .select('id')
+    .returns<{ id: string }[]>()
+  
+  const { data: offices } = await supabase
+    .from('offices')
+    .select('id')
+    .returns<{ id: string }[]>()
+  
+  const { data: properties } = await supabase
+    .from('properties')
+    .select('id')
+    .returns<{ id: string }[]>()
+  
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('id, stage')
+    .returns<TransactionData[]>()
+  
+  const { data: features } = await supabase
+    .from('features')
+    .select('id')
+    .returns<{ id: string }[]>()
+  
   const { data: platformToggles } = await supabase
     .from('platform_feature_toggles')
     .select('is_enabled')
+    .returns<ToggleData[]>()
 
   const metrics = [
     {
