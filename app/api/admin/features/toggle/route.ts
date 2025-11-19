@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update platform feature toggle
-    // Type assertion needed due to TypeScript strict mode with Supabase
+    // @ts-expect-error - Supabase types incomplete, using runtime type safety instead
     const { error: updateError } = await supabase
       .from('platform_feature_toggles')
       .update({
