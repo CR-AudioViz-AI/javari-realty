@@ -1,5 +1,6 @@
-// Complete Supabase types with Insert/Update/Delete for all tables
-// Generated for CR Realtor Platform
+// Complete Supabase Database Types
+// Generated: 2025-11-19
+// Project: CR Realtor Platform
 
 export type Json =
   | string
@@ -53,155 +54,114 @@ export type Database = {
           updated_at?: string
         }
       }
-      platform_feature_toggles: {
+      transactions: {
         Row: {
           id: string
-          feature_id: string
-          is_enabled: boolean
-          notes: string | null
-          updated_by: string | null
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          feature_id: string
-          is_enabled?: boolean
-          notes?: string | null
-          updated_by?: string | null
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          feature_id?: string
-          is_enabled?: boolean
-          notes?: string | null
-          updated_by?: string | null
-          updated_at?: string
-        }
-      }
-      brokers: {
-        Row: {
-          id: string
-          name: string
-          logo_url: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          zip: string | null
-          website: string | null
-          is_active: boolean
+          stage: string
+          buyer_agent_id: string | null
+          seller_agent_id: string | null
+          property_id: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          name: string
-          logo_url?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip?: string | null
-          website?: string | null
-          is_active?: boolean
+          id: string
+          stage?: string
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
+          property_id?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          name?: string
-          logo_url?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip?: string | null
-          website?: string | null
-          is_active?: boolean
+          stage?: string
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
+          property_id?: string | null
           created_at?: string
           updated_at?: string
         }
       }
-      offices: {
+      leads: {
         Row: {
           id: string
-          broker_id: string
-          name: string
-          manager_id: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          zip: string | null
-          phone: string | null
-          email: string | null
-          is_active: boolean
+          status: string
+          source: string | null
+          buyer_agent_id: string | null
+          seller_agent_id: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
-          id?: string
-          broker_id: string
-          name: string
-          manager_id?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip?: string | null
-          phone?: string | null
-          email?: string | null
-          is_active?: boolean
+          id: string
+          status?: string
+          source?: string | null
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          broker_id?: string
-          name?: string
-          manager_id?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip?: string | null
-          phone?: string | null
-          email?: string | null
-          is_active?: boolean
+          status?: string
+          source?: string | null
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
           created_at?: string
-          updated_at?: string
         }
       }
       properties: {
         Row: {
           id: string
-          [key: string]: any
+          status: string
+          address: string | null
+          city: string | null
+          state: string | null
+          zip: string | null
+          price: number | null
+          created_at: string
         }
         Insert: {
-          id?: string
-          [key: string]: any
+          id: string
+          status?: string
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          price?: number | null
+          created_at?: string
         }
         Update: {
           id?: string
-          [key: string]: any
+          status?: string
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          price?: number | null
+          created_at?: string
         }
       }
-      transactions: {
+      documents: {
         Row: {
           id: string
-          stage: string
-          [key: string]: any
+          name: string
+          type: string | null
+          url: string
+          created_at: string
         }
         Insert: {
-          id?: string
-          stage?: string
-          [key: string]: any
+          id: string
+          name: string
+          type?: string | null
+          url?: string
+          created_at?: string
         }
         Update: {
           id?: string
-          stage?: string
-          [key: string]: any
+          name?: string
+          type?: string | null
+          url?: string
+          created_at?: string
         }
       }
       features: {
@@ -217,11 +177,11 @@ export type Database = {
           created_at: string
         }
         Insert: {
-          id?: string
+          id: string
           name: string
-          display_name: string
+          display_name?: string
           description?: string | null
-          category: string
+          category?: string
           is_social_impact?: boolean
           social_impact_type?: string | null
           is_enabled_by_default?: boolean
@@ -239,6 +199,38 @@ export type Database = {
           created_at?: string
         }
       }
+      platform_feature_toggles: {
+        Row: {
+          id: string
+          feature_id: string
+          is_enabled: boolean
+          notes: string | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          feature_id: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+      }
     }
   }
 }
+
+// Helper types
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]
+export type Row<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type Insert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type Update<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
