@@ -45,14 +45,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Update platform feature toggle
-    // @ts-expect-error - Supabase types incomplete, using runtime type safety instead
     const { error: updateError } = await supabase
       .from('platform_feature_toggles')
       .update({
         is_enabled: enabled,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
-      } as any)
+      })
       .eq('feature_id', featureId)
 
     if (updateError) {
