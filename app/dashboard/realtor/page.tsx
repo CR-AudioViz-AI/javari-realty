@@ -13,7 +13,9 @@ import { Database } from '@/types/database.complete'
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Lead = Database['public']['Tables']['leads']['Row']
 type Property = Database['public']['Tables']['properties']['Row']
-type Transaction = Database['public']['Tables']['transactions']['Row']
+type Transaction = Database['public']['Tables']['transactions']['Row'] & {
+  final_price?: number
+}
 
 export default async function RealtorDashboard() {
   const supabase = createClient()
