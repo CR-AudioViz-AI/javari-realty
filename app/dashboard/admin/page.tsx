@@ -52,32 +52,32 @@ export default async function AdminDashboard() {
     .select('id, role')) as { data: ProfileData[] | null; error: any }
     
   
-  const { data: brokers } = await supabase
+  const { data: brokers } = (await supabase
     .from('brokers')
     .select('id')
     
   
-  const { data: offices } = await supabase
+  const { data: offices } = (await supabase
     .from('offices')
     .select('id')
     
   
-  const { data: properties } = await supabase
+  const { data: properties } = (await supabase
     .from('properties')
     .select('id')
     
   
-  const { data: transactions } = await supabase
+  const { data: transactions } = (await supabase
     .from('transactions')
     .select('id, stage')
     
   
-  const { data: features } = await supabase
+  const { data: features } = (await supabase
     .from('features')
     .select('id')
     
   
-  const { data: platformToggles } = await supabase
+  const { data: platformToggles } = (await supabase
     .from('platform_feature_toggles')
     .select('is_enabled')
     
@@ -238,3 +238,4 @@ export default async function AdminDashboard() {
   )
 }
 
+ as any
