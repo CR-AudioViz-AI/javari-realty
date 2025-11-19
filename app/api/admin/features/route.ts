@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.complete'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
