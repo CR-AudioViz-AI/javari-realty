@@ -44,22 +44,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update platform feature toggle with explicit type
-    type UpdatePayload = {
-      is_enabled: boolean
-      updated_by: string
-      updated_at: string
-    }
-
-    const updateData: UpdatePayload = {
-      is_enabled: enabled,
-      updated_by: user.id,
-      updated_at: new Date().toISOString(),
-    }
-
+    // Update platform feature toggle
+    // Type assertion needed due to TypeScript strict mode with Supabase
     const { error: updateError } = await supabase
       .from('platform_feature_toggles')
-      .update(updateData)
+      .update({
+        is_enabled: enabled,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      } as any)
       .eq('feature_id', featureId)
 
     if (updateError) {
