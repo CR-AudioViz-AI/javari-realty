@@ -29,7 +29,15 @@ export default async function AdminDashboard() {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile || profile.role !== 'platform_admin') {
+  if (profileError) {
+    redirect('/dashboard')
+  }
+
+  if (!profile) {
+    redirect('/dashboard')
+  }
+
+  if (profile.role !== 'platform_admin') {
     redirect('/dashboard')
   }
 
@@ -199,4 +207,5 @@ export default async function AdminDashboard() {
     </div>
   )
 }
+
 
