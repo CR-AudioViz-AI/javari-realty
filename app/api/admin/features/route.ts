@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError }: { data: any; error: any } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
