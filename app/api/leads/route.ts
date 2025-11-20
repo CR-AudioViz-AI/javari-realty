@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { Database } from '@/types/database'
+// Removed typed-supabase import - using type assertions instead
 
 export const dynamic = 'force-dynamic'
 
@@ -14,29 +14,33 @@ export async function POST(request: Request) {
     // Get property details to assign lead to property's listing agent
     let assigned_to: string | null = null
     if (property_id) {
-      const { data: property } = (await supabase
+      const result = await supabase
         .from('properties')
         .select('listing_agent_id')
         .eq('id', property_id)
-        .single()) as { data: { listing_agent_id: string | null } | null; error: any }
+        .single()
+      
+      const property = result.data as { listing_agent_id: string | null } | null
       
       if (property && property.listing_agent_id) {
         assigned_to = property.listing_agent_id
       }
     }
 
+    const leadData = {
+      name,
+      email,
+      phone,
+      message,
+      property_id,
+      realtor_id: assigned_to,
+      status: 'new',
+      source: 'website'
+    }
+
     const { data, error } = await supabase
       .from('leads')
-      .insert({
-        name,
-        email,
-        phone,
-        message,
-        property_id,
-        realtor_id: assigned_to,
-        status: 'new',
-        source: 'website'
-      })
+      .insert(leadData as any)  // Type assertion to bypass inference issues
       .select()
       .single()
 
