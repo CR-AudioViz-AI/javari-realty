@@ -1,5 +1,5 @@
-// CACHE BUST: 2025-11-19 23:21:27
-// Database types generated from Supabase schema
+// CACHE BUST: 2025-11-20 04:25:00
+// Complete database types with Insert/Update for ALL tables
 export type Json =
   | string
   | number
@@ -68,6 +68,36 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          name: string
+          logo_url?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          website?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          logo_url?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          website?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
       }
       offices: {
         Row: {
@@ -85,6 +115,36 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          broker_id: string
+          name: string
+          manager_id?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          phone?: string | null
+          email?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          broker_id?: string
+          name?: string
+          manager_id?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          phone?: string | null
+          email?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
       }
       features: {
         Row: {
@@ -97,6 +157,28 @@ export type Database = {
           social_impact_type: string | null
           is_enabled_by_default: boolean
           created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          description?: string | null
+          category: string
+          is_social_impact?: boolean
+          social_impact_type?: string | null
+          is_enabled_by_default?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          description?: string | null
+          category?: string
+          is_social_impact?: boolean
+          social_impact_type?: string | null
+          is_enabled_by_default?: boolean
+          created_at?: string
         }
       }
       platform_feature_toggles: {
@@ -135,6 +217,24 @@ export type Database = {
           updated_by: string | null
           updated_at: string
         }
+        Insert: {
+          id?: string
+          broker_id: string
+          feature_id: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          broker_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
       }
       office_feature_toggles: {
         Row: {
@@ -146,6 +246,24 @@ export type Database = {
           updated_by: string | null
           updated_at: string
         }
+        Insert: {
+          id?: string
+          office_id: string
+          feature_id: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          office_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
       }
       realtor_feature_toggles: {
         Row: {
@@ -155,6 +273,48 @@ export type Database = {
           is_enabled: boolean
           notes: string | null
           updated_at: string
+        }
+        Insert: {
+          id?: string
+          realtor_id: string
+          feature_id: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          realtor_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+      }
+      feature_usage_tracking: {
+        Row: {
+          id: string
+          feature_id: string
+          user_id: string
+          usage_count: number
+          last_used_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          feature_id: string
+          user_id: string
+          usage_count?: number
+          last_used_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          user_id?: string
+          usage_count?: number
+          last_used_at?: string
+          created_at?: string
         }
       }
       properties: {
@@ -188,6 +348,66 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          mls_id?: string | null
+          address: string
+          city: string
+          state: string
+          zip: string
+          county?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          property_type: string
+          status: string
+          price: number
+          bedrooms?: number | null
+          bathrooms?: number | null
+          square_feet?: number | null
+          lot_size?: number | null
+          year_built?: number | null
+          description?: string | null
+          listing_agent_id?: string | null
+          broker_id?: string | null
+          office_id?: string | null
+          listed_date?: string | null
+          updated_date?: string | null
+          images?: Json
+          virtual_tour_url?: string | null
+          is_featured?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          mls_id?: string | null
+          address?: string
+          city?: string
+          state?: string
+          zip?: string
+          county?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          property_type?: string
+          status?: string
+          price?: number
+          bedrooms?: number | null
+          bathrooms?: number | null
+          square_feet?: number | null
+          lot_size?: number | null
+          year_built?: number | null
+          description?: string | null
+          listing_agent_id?: string | null
+          broker_id?: string | null
+          office_id?: string | null
+          listed_date?: string | null
+          updated_date?: string | null
+          images?: Json
+          virtual_tour_url?: string | null
+          is_featured?: boolean
+          created_at?: string
+          updated_at?: string
+        }
       }
       leads: {
         Row: {
@@ -209,6 +429,44 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          realtor_id: string
+          first_name?: string | null
+          last_name?: string | null
+          email?: string | null
+          phone?: string | null
+          status?: string
+          source?: string | null
+          budget_min?: number | null
+          budget_max?: number | null
+          preferred_locations?: string[] | null
+          property_type?: string | null
+          notes?: string | null
+          last_contact_date?: string | null
+          next_followup_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          realtor_id?: string
+          first_name?: string | null
+          last_name?: string | null
+          email?: string | null
+          phone?: string | null
+          status?: string
+          source?: string | null
+          budget_min?: number | null
+          budget_max?: number | null
+          preferred_locations?: string[] | null
+          property_type?: string | null
+          notes?: string | null
+          last_contact_date?: string | null
+          next_followup_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
       }
       transactions: {
         Row: {
@@ -228,13 +486,53 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          property_id?: string | null
+          buyer_id?: string | null
+          buyer_agent_id?: string | null
+          seller_id?: string | null
+          seller_agent_id?: string | null
+          stage?: string
+          offer_price?: number | null
+          final_price?: number | null
+          closing_date?: string | null
+          earnest_money?: number | null
+          contingencies?: string[] | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string | null
+          buyer_id?: string | null
+          buyer_agent_id?: string | null
+          seller_id?: string | null
+          seller_agent_id?: string | null
+          stage?: string
+          offer_price?: number | null
+          final_price?: number | null
+          closing_date?: string | null
+          earnest_money?: number | null
+          contingencies?: string[] | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_feature_usage: {
+        Args: {
+          p_feature_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
