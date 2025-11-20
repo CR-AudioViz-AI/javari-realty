@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
     // Update platform feature toggle using typed client
     const updateData: Update<'platform_feature_toggles'> = {
       is_enabled: enabled,
-      updated_by: user.id,
       updated_at: new Date().toISOString(),
     }
     
