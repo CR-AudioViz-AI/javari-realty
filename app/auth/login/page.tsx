@@ -31,7 +31,7 @@ export default function LoginPage() {
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single()
+        .single<{ role: string }>()
 
       // Redirect based on role
       if (profile?.role === 'platform_admin') {
