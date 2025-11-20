@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { Database } from '@/types/database.complete'
 
+type ProfileRole = Database['public']['Tables']['profiles']['Row']['role']
+
 export default async function AdminDashboard() {
   const supabase = createClient()
 
@@ -23,19 +25,22 @@ export default async function AdminDashboard() {
     redirect('/auth/login')
   }
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await supabase
+  // Verify admin role - explicitly type the result
+  const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single<{ role: Database['public']['Tables']['profiles']['Row']['role'] }>()
+    .single()
 
   // Combined check: if error OR no profile data, redirect
-  if (profileError || !profile) {
+  if (profileError || !profileData) {
     redirect('/dashboard')
   }
 
-  // TypeScript now knows profile is non-null and has role property
+  // Explicitly cast to the correct type after null check
+  const profile = profileData as { role: ProfileRole }
+
+  // TypeScript now knows profile has role property
   if (profile.role !== 'platform_admin') {
     redirect('/dashboard')
   }
@@ -44,7 +49,6 @@ export default async function AdminDashboard() {
   const { data: allProfiles } = await supabase
     .from('profiles')
     .select('id, role')
-    .returns<Array<{ id: string; role: Database['public']['Tables']['profiles']['Row']['role'] }>>()
     
   const { data: brokers } = await supabase
     .from('brokers')
@@ -57,13 +61,12 @@ export default async function AdminDashboard() {
   const { data: transactions } = await supabase
     .from('transactions')
     .select('id, stage')
-    .returns<Array<{ id: string; stage: Database['public']['Tables']['transactions']['Row']['stage'] }>>()
 
   const metrics = [
     {
       name: 'Total Users',
       value: allProfiles?.length || 0,
-      breakdown: `${allProfiles?.filter((p) => p.role === 'realtor').length || 0} Realtors`,
+      breakdown: `${allProfiles?.filter((p: any) => p.role === 'realtor').length || 0} Realtors`,
       icon: Users,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
@@ -71,20 +74,20 @@ export default async function AdminDashboard() {
     {
       name: 'Brokers',
       value: brokers?.length || 0,
-      breakdown: `${allProfiles?.filter((p) => p.role === 'broker_admin').length || 0} Admins`,
+      breakdown: `${allProfiles?.filter((p: any) => p.role === 'broker_admin').length || 0} Admins`,
       icon: Building2,
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
     {
       name: 'Active Transactions',
-      value: transactions?.filter((t) => 
+      value: transactions?.filter((t: any) => 
         t.stage === 'under_contract' || 
         t.stage === 'inspection' || 
         t.stage === 'appraisal' || 
         t.stage === 'financing'
       ).length || 0,
-      breakdown: `${transactions?.filter((t) => t.stage === 'completed').length || 0} Completed`,
+      breakdown: `${transactions?.filter((t: any) => t.stage === 'completed').length || 0} Completed`,
       icon: TrendingUp,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
