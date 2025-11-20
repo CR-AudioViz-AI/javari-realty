@@ -1,5 +1,7 @@
-// CACHE BUST: 2025-11-19 23:21:27
-// Database types generated from Supabase schema
+// AUTO-GENERATED - DO NOT EDIT
+// Generated from actual Supabase database schema
+// Last updated: 2025-11-20 10:06 PM EST
+
 export type Json =
   | string
   | number
@@ -11,92 +13,287 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      properties: {
         Row: {
           id: string
-          email: string
-          full_name: string | null
-          phone: string | null
-          role: 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
-          avatar_url: string | null
-          broker_id: string | null
-          office_id: string | null
-          is_active: boolean
+          category: string | null
+          transaction_type: string | null
+          property_type: string | null
+          title: string | null
+          description: string | null
+          price: number | null
+          address: string
+          city: string
+          state: string
+          zip_code: string
+          county: string | null
+          latitude: number | null
+          longitude: number | null
+          location: unknown | null
+          bedrooms: number | null
+          bathrooms: number | null
+          square_feet: number | null
+          lot_size: number | null
+          year_built: number | null
+          zoning: string | null
+          building_class: string | null
+          office_space: number | null
+          warehouse_space: number | null
+          retail_space: number | null
+          loading_docks: number | null
+          ceiling_height: number | null
+          power_capacity: number | null
+          features: string[] | null
+          amenities: string[] | null
+          parking_spaces: number | null
+          garage_spaces: number | null
+          photos: string[] | null
+          video_url: string | null
+          virtual_tour_url: string | null
+          mls_number: string | null
+          mls_status: string | null
+          status: string | null
+          featured: boolean | null
+          listing_agent_id: string | null
+          listed_date: string | null
+          slug: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          phone?: string | null
-          role?: 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
-          avatar_url?: string | null
-          broker_id?: string | null
-          office_id?: string | null
-          is_active?: boolean
+          id?: string
+          category?: string | null
+          transaction_type?: string | null
+          property_type?: string | null
+          title?: string | null
+          description?: string | null
+          price?: number | null
+          address: string
+          city: string
+          state: string
+          zip_code: string
+          county?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          location?: unknown | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          square_feet?: number | null
+          lot_size?: number | null
+          year_built?: number | null
+          zoning?: string | null
+          building_class?: string | null
+          office_space?: number | null
+          warehouse_space?: number | null
+          retail_space?: number | null
+          loading_docks?: number | null
+          ceiling_height?: number | null
+          power_capacity?: number | null
+          features?: string[] | null
+          amenities?: string[] | null
+          parking_spaces?: number | null
+          garage_spaces?: number | null
+          photos?: string[] | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+          mls_number?: string | null
+          mls_status?: string | null
+          status?: string | null
+          featured?: boolean | null
+          listing_agent_id?: string | null
+          listed_date?: string | null
+          slug?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          email?: string
-          full_name?: string | null
-          phone?: string | null
-          role?: 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
-          avatar_url?: string | null
-          broker_id?: string | null
-          office_id?: string | null
-          is_active?: boolean
+          category?: string | null
+          transaction_type?: string | null
+          property_type?: string | null
+          title?: string | null
+          description?: string | null
+          price?: number | null
+          address?: string
+          city?: string
+          state?: string
+          zip_code?: string
+          county?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          location?: unknown | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          square_feet?: number | null
+          lot_size?: number | null
+          year_built?: number | null
+          zoning?: string | null
+          building_class?: string | null
+          office_space?: number | null
+          warehouse_space?: number | null
+          retail_space?: number | null
+          loading_docks?: number | null
+          ceiling_height?: number | null
+          power_capacity?: number | null
+          features?: string[] | null
+          amenities?: string[] | null
+          parking_spaces?: number | null
+          garage_spaces?: number | null
+          photos?: string[] | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+          mls_number?: string | null
+          mls_status?: string | null
+          status?: string | null
+          featured?: boolean | null
+          listing_agent_id?: string | null
+          listed_date?: string | null
+          slug?: string | null
           created_at?: string
           updated_at?: string
         }
       }
-      brokers: {
+      leads: {
         Row: {
           id: string
-          name: string
-          logo_url: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          zip: string | null
-          website: string | null
-          is_active: boolean
+          realtor_id: string | null
+          name: string | null
+          email: string | null
+          phone: string | null
+          message: string | null
+          property_id: string | null
+          status: string | null
+          source: string | null
           created_at: string
           updated_at: string
         }
+        Insert: {
+          id?: string
+          realtor_id?: string | null
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          message?: string | null
+          property_id?: string | null
+          status?: string | null
+          source?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          realtor_id?: string | null
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          message?: string | null
+          property_id?: string | null
+          status?: string | null
+          source?: string | null
+          created_at?: string
+          updated_at?: string
+        }
       }
-      offices: {
+      profiles: {
         Row: {
           id: string
-          broker_id: string
-          name: string
-          manager_id: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          zip: string | null
-          phone: string | null
           email: string | null
-          is_active: boolean
+          full_name: string | null
+          phone: string | null
+          role: string | null
+          avatar_url: string | null
+          broker_id: string | null
+          office_id: string | null
+          is_active: boolean | null
           created_at: string
           updated_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          role?: string | null
+          avatar_url?: string | null
+          broker_id?: string | null
+          office_id?: string | null
+          is_active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          role?: string | null
+          avatar_url?: string | null
+          broker_id?: string | null
+          office_id?: string | null
+          is_active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      transactions: {
+        Row: {
+          id: string
+          property_id: string | null
+          buyer_agent_id: string | null
+          seller_agent_id: string | null
+          stage: string | null
+          status: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id?: string | null
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
+          stage?: string | null
+          status?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string | null
+          buyer_agent_id?: string | null
+          seller_agent_id?: string | null
+          stage?: string | null
+          status?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
       features: {
         Row: {
           id: string
           name: string
-          display_name: string
           description: string | null
-          category: string
-          is_social_impact: boolean
-          social_impact_type: string | null
-          is_enabled_by_default: boolean
+          category: string | null
+          is_active: boolean
           created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
       platform_feature_toggles: {
@@ -104,24 +301,21 @@ export type Database = {
           id: string
           feature_id: string
           is_enabled: boolean
-          notes: string | null
-          updated_by: string | null
+          created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           feature_id: string
           is_enabled?: boolean
-          notes?: string | null
-          updated_by?: string | null
+          created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           feature_id?: string
           is_enabled?: boolean
-          notes?: string | null
-          updated_by?: string | null
+          created_at?: string
           updated_at?: string
         }
       }
@@ -131,9 +325,24 @@ export type Database = {
           broker_id: string
           feature_id: string
           is_enabled: boolean
-          notes: string | null
-          updated_by: string | null
+          created_at: string
           updated_at: string
+        }
+        Insert: {
+          id?: string
+          broker_id: string
+          feature_id: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          broker_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
       office_feature_toggles: {
@@ -142,9 +351,24 @@ export type Database = {
           office_id: string
           feature_id: string
           is_enabled: boolean
-          notes: string | null
-          updated_by: string | null
+          created_at: string
           updated_at: string
+        }
+        Insert: {
+          id?: string
+          office_id: string
+          feature_id: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          office_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
       realtor_feature_toggles: {
@@ -153,95 +377,52 @@ export type Database = {
           realtor_id: string
           feature_id: string
           is_enabled: boolean
-          notes: string | null
-          updated_at: string
-        }
-      }
-      properties: {
-        Row: {
-          id: string
-          mls_id: string | null
-          address: string
-          city: string
-          state: string
-          zip: string
-          county: string | null
-          latitude: number | null
-          longitude: number | null
-          property_type: string
-          status: string
-          price: number
-          bedrooms: number | null
-          bathrooms: number | null
-          square_feet: number | null
-          lot_size: number | null
-          year_built: number | null
-          description: string | null
-          listing_agent_id: string | null
-          broker_id: string | null
-          office_id: string | null
-          listed_date: string | null
-          updated_date: string | null
-          images: Json
-          virtual_tour_url: string | null
-          is_featured: boolean
           created_at: string
           updated_at: string
         }
-      }
-      leads: {
-        Row: {
-          id: string
+        Insert: {
+          id?: string
           realtor_id: string
-          first_name: string | null
-          last_name: string | null
-          email: string | null
-          phone: string | null
-          status: string
-          source: string | null
-          budget_min: number | null
-          budget_max: number | null
-          preferred_locations: string[] | null
-          property_type: string | null
-          notes: string | null
-          last_contact_date: string | null
-          next_followup_date: string | null
-          created_at: string
-          updated_at: string
+          feature_id: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          realtor_id?: string
+          feature_id?: string
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
-      transactions: {
+      feature_usage_tracking: {
         Row: {
           id: string
-          property_id: string | null
-          buyer_id: string | null
-          buyer_agent_id: string | null
-          seller_id: string | null
-          seller_agent_id: string | null
-          stage: string
-          offer_price: number | null
-          final_price: number | null
-          closing_date: string | null
-          earnest_money: number | null
-          contingencies: string[] | null
-          notes: string | null
+          user_id: string
+          feature_id: string
+          usage_count: number
+          last_used_at: string
           created_at: string
-          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feature_id: string
+          usage_count?: number
+          last_used_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feature_id?: string
+          usage_count?: number
+          last_used_at?: string
+          created_at?: string
         }
       }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      user_role: 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
-      property_status: 'active' | 'pending' | 'sold' | 'off_market' | 'coming_soon'
-      property_type: 'single_family' | 'condo' | 'townhouse' | 'multi_family' | 'land' | 'commercial' | 'mobile_home' | 'farm_ranch'
-      lead_status: 'new' | 'contacted' | 'qualified' | 'nurturing' | 'converted' | 'lost'
-      transaction_stage: 'pre_approval' | 'property_search' | 'offer_submitted' | 'under_contract' | 'inspection' | 'appraisal' | 'financing' | 'final_walkthrough' | 'closing' | 'completed' | 'cancelled'
     }
   }
 }
