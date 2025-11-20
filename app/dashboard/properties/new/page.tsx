@@ -38,7 +38,7 @@ export default async function NewPropertyPage() {
 
     const { data, error } = await supabase
       .from('properties')
-      .insert(propertyData)
+      .insert(propertyData as any)
       .select()
       .single()
 
