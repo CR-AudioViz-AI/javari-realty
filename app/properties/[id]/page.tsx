@@ -30,7 +30,7 @@ interface PropertyWithRealtor {
   lot_size: number | null
   parking_spaces: number | null
   hoa_fee: number | null
-  realtor_id: string
+  listing_agent_id: string | null
   profiles: RealtorProfile | null
 }
 
@@ -41,7 +41,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     .from('properties')
     .select(`
       *,
-      profiles:realtor_id (
+      profiles:listing_agent_id (
         full_name,
         email,
         phone,
