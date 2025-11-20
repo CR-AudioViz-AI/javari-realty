@@ -13,7 +13,7 @@ export default async function RealtorDashboard() {
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .single() as { data: any; error: any }
   
   if (!profile || (profile.role !== 'realtor' && profile.role !== 'broker_admin' && profile.role !== 'platform_admin')) {
     redirect('/dashboard/client')
