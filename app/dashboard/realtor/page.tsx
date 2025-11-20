@@ -176,9 +176,9 @@ export default async function RealtorDashboard() {
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {lead.full_name}
+                    {lead.first_name} {lead.last_name}
                   </p>
-                  <p className="text-sm text-gray-600">{lead.lead_source || 'Direct'}</p>
+                  <p className="text-sm text-gray-600"> {lead.source || 'Direct'}</p>
                 </div>
                 <span
                   className={`px-3 py-1 text-xs font-medium rounded-full ${
