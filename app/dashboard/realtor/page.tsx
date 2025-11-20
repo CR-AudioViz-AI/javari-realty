@@ -58,9 +58,7 @@ export default async function RealtorDashboard() {
   const activeListings = properties?.filter((p) => p.status === 'active').length || 0
   const activeTransactions = transactions?.filter((t) => t.stage !== 'completed' && t.stage !== 'cancelled').length || 0
   
-  const totalVolume = transactions
-    ?.filter((t) => t.stage === 'completed')
-    .reduce((sum, t) => sum + (t.final_price || 0), 0) || 0
+  const totalVolume = 0 // TODO: Calculate from property prices when transactions are linked
 
   const metrics = [
     {
@@ -176,7 +174,7 @@ export default async function RealtorDashboard() {
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {lead.first_name} {lead.last_name}
+                    {lead.name || 'Anonymous'}
                   </p>
                   <p className="text-sm text-gray-600"> {lead.source || 'Direct'}</p>
                 </div>
