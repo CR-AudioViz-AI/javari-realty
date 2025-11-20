@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .single<{ role: Database['public']['Tables']['profiles']['Row']['role'] }>()
 
   // Combined check: if error OR no profile data, redirect
   if (profileError || !profile) {
@@ -44,6 +44,7 @@ export default async function AdminDashboard() {
   const { data: allProfiles } = await supabase
     .from('profiles')
     .select('id, role')
+    .returns<Array<{ id: string; role: Database['public']['Tables']['profiles']['Row']['role'] }>>()
     
   const { data: brokers } = await supabase
     .from('brokers')
@@ -56,6 +57,7 @@ export default async function AdminDashboard() {
   const { data: transactions } = await supabase
     .from('transactions')
     .select('id, stage')
+    .returns<Array<{ id: string; stage: Database['public']['Tables']['transactions']['Row']['stage'] }>>()
 
   const metrics = [
     {
