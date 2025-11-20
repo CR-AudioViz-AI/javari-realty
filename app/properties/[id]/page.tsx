@@ -3,10 +3,41 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Bed, Bath, Square, Calendar, DollarSign, Home, Phone, Mail, Share2, Heart, ChevronLeft } from 'lucide-react'
 
+// Define types for the property with joined profile data
+interface RealtorProfile {
+  full_name: string | null
+  email: string | null
+  phone: string | null
+  avatar_url: string | null
+}
+
+interface PropertyWithRealtor {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip_code: string
+  price: number | null
+  listing_type: string
+  status: string
+  bedrooms: number | null
+  bathrooms: number | null
+  square_feet: number | null
+  property_type: string | null
+  description: string | null
+  photos: string[] | null
+  year_built: number | null
+  lot_size: number | null
+  parking_spaces: number | null
+  hoa_fee: number | null
+  realtor_id: string
+  profiles: RealtorProfile | null
+}
+
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   
-  const { data: property, error } = await supabase
+  const { data, error } = await supabase
     .from('properties')
     .select(`
       *,
@@ -20,9 +51,12 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     .eq('id', params.id)
     .single()
   
-  if (error || !property) {
+  if (error || !data) {
     notFound()
   }
+
+  // Type assertion after validation
+  const property = data as PropertyWithRealtor
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,7 +115,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                 <div>
                   <div className="text-4xl font-bold text-blue-600 mb-2">
                     ${property.price?.toLocaleString()}
-                    {property.listing_type === 'rent' && <span className="text-2xl text-gray-500">/mo</span>}
+                     {property.listing_type === 'rent' && <span className="text-2xl text-gray-500">/mo</span>}
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">{property.address}</h1>
                   <p className="text-gray-600">{property.city}, {property.state} {property.zip_code}</p>
@@ -172,7 +206,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                 <div className="mb-6 pb-6 border-b">
                   <div className="flex items-center space-x-3 mb-4">
                     {property.profiles.avatar_url ? (
-                      <img src={property.profiles.avatar_url} alt={property.profiles.full_name} className="w-16 h-16 rounded-full" />
+                      <img src={property.profiles.avatar_url} alt={property.profiles.full_name || 'Agent'} className="w-16 h-16 rounded-full" />
                     ) : (
                       <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
                         <span className="text-2xl font-bold text-blue-600">
