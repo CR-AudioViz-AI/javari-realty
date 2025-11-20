@@ -4,6 +4,9 @@ import { Database } from '@/types/database.complete'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
+// Force dynamic rendering for routes using cookies/auth
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const supabase = createClient()
