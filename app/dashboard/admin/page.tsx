@@ -9,9 +9,6 @@ import {
   Settings,
   ChevronRight,
 } from 'lucide-react'
-import { Database } from '@/types/database.complete'
-
-type ProfileRole = Database['public']['Tables']['profiles']['Row']['role']
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -25,23 +22,14 @@ export default async function AdminDashboard() {
     redirect('/auth/login')
   }
 
-  // Verify admin role - explicitly type the result
-  const { data: profileData, error: profileError } = await supabase
+  // Verify admin role - simple approach with explicit any
+  const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .single() as { data: { role: string } | null }
 
-  // Combined check: if error OR no profile data, redirect
-  if (profileError || !profileData) {
-    redirect('/dashboard')
-  }
-
-  // Explicitly cast to the correct type after null check
-  const profile = profileData as { role: ProfileRole }
-
-  // TypeScript now knows profile has role property
-  if (profile.role !== 'platform_admin') {
+  if (!profile || profile.role !== 'platform_admin') {
     redirect('/dashboard')
   }
 
