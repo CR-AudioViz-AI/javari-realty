@@ -22,17 +22,18 @@ export default async function RealtorDashboard() {
   const { count: myProperties } = await supabase
     .from('properties')
     .select('*', { count: 'exact', head: true })
-    .eq('realtor_id', user.id)
+    .eq('listing_agent_id', user.id)
   
   const { count: myLeads } = await supabase
     .from('leads')
     .select('*', { count: 'exact', head: true })
-    .eq('assigned_to', user.id)
+    .eq('realtor_id', user.id)
   
+  // Transactions query - need to check both buyer_agent_id and seller_agent_id
   const { count: activeTransactions } = await supabase
     .from('transactions')
     .select('*', { count: 'exact', head: true })
-    .eq('realtor_id', user.id)
+    .or(`buyer_agent_id.eq.${user.id},seller_agent_id.eq.${user.id}`)
     .in('stage', ['under_contract', 'inspection', 'appraisal', 'financing'])
 
   return (
