@@ -1,4 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { Database } from '@/types/database.complete'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
+type Feature = Database['public']['Tables']['features']['Row']
+type PlatformToggle = Database['public']['Tables']['platform_feature_toggles']['Row']
+type BrokerToggle = Database['public']['Tables']['broker_feature_toggles']['Row']
+type OfficeToggle = Database['public']['Tables']['office_feature_toggles']['Row']
+type RealtorToggle = Database['public']['Tables']['realtor_feature_toggles']['Row']
+type FeatureUsage = Database['public']['Tables']['feature_usage_tracking']['Row']
+type FeatureUsageInsert = Database['public']['Tables']['feature_usage_tracking']['Insert']
 
 /**
  * Check if a feature is enabled for a specific user.
@@ -19,7 +29,7 @@ export async function isFeatureEnabled(
     .from('profiles')
     .select('role, broker_id, office_id')
     .eq('id', userId)
-    .single()
+    .single() as { data: Pick<Profile, 'role' | 'broker_id' | 'office_id'> | null; error: any }
 
   if (!profile) return false
 
@@ -28,7 +38,7 @@ export async function isFeatureEnabled(
     .from('features')
     .select('id')
     .eq('name', featureName)
-    .single()
+    .single() as { data: Pick<Feature, 'id'> | null; error: any }
 
   if (!feature) return false
 
@@ -37,7 +47,7 @@ export async function isFeatureEnabled(
     .from('platform_feature_toggles')
     .select('is_enabled')
     .eq('feature_id', feature.id)
-    .single()
+    .single() as { data: Pick<PlatformToggle, 'is_enabled'> | null; error: any }
 
   if (!platformToggle?.is_enabled) return false
 
@@ -48,7 +58,7 @@ export async function isFeatureEnabled(
       .select('is_enabled')
       .eq('broker_id', profile.broker_id)
       .eq('feature_id', feature.id)
-      .single()
+      .single() as { data: Pick<BrokerToggle, 'is_enabled'> | null; error: any }
 
     if (brokerToggle && !brokerToggle.is_enabled) return false
   }
@@ -60,7 +70,7 @@ export async function isFeatureEnabled(
       .select('is_enabled')
       .eq('office_id', profile.office_id)
       .eq('feature_id', feature.id)
-      .single()
+      .single() as { data: Pick<OfficeToggle, 'is_enabled'> | null; error: any }
 
     if (officeToggle && !officeToggle.is_enabled) return false
   }
@@ -72,7 +82,7 @@ export async function isFeatureEnabled(
       .select('is_enabled')
       .eq('realtor_id', userId)
       .eq('feature_id', feature.id)
-      .single()
+      .single() as { data: Pick<RealtorToggle, 'is_enabled'> | null; error: any }
 
     if (realtorToggle && !realtorToggle.is_enabled) return false
   }
@@ -82,251 +92,184 @@ export async function isFeatureEnabled(
 }
 
 /**
- * Get all enabled features for a user
- * 
- * @param userId - The user's ID
- * @returns Array of enabled feature names
+ * Get all available features for display
  */
-export async function getUserEnabledFeatures(
-  userId: string
-): Promise<string[]> {
+export async function getAllFeatures() {
   const supabase = createClient()
 
-  // Get all features
-  const { data: features } = await supabase
+  const { data: features, error } = await supabase
     .from('features')
-    .select('name')
-    .order('name')
+    .select('*')
+    .order('category', { ascending: true })
+    .order('name', { ascending: true }) as { data: Feature[] | null; error: any }
 
-  if (!features) return []
+  if (error || !features) return []
 
-  // Check each feature
-  const enabledFeatures: string[] = []
-  for (const feature of features) {
-    const enabled = await isFeatureEnabled(userId, feature.name)
-    if (enabled) {
-      enabledFeatures.push(feature.name)
+  return features
+}
+
+/**
+ * Get features grouped by category
+ */
+export async function getFeaturesByCategory() {
+  const features = await getAllFeatures()
+  
+  return features.reduce((acc, feature) => {
+    if (!acc[feature.name]) {
+      acc[feature.name] = []
     }
-  }
-
-  return enabledFeatures
+    acc[feature.name].push(feature)
+    return acc
+  }, {} as Record<string, Feature[]>)
 }
 
 /**
  * Track feature usage
- * 
- * @param userId - The user's ID
- * @param featureName - The feature being used
  */
 export async function trackFeatureUsage(
   userId: string,
-  featureName: string
+  featureId: string
 ): Promise<void> {
   const supabase = createClient()
 
-  // Get feature ID
-  const { data: feature } = await supabase
-    .from('features')
+  // Try to increment existing usage record
+  const { data: existing } = await supabase
+    .from('feature_usage_tracking')
     .select('id')
-    .eq('name', featureName)
-    .single()
+    .eq('feature_id', featureId)
+    .eq('user_id', userId)
+    .single() as { data: Pick<FeatureUsage, 'id'> | null; error: any }
 
-  if (!feature) return
-
-  // Upsert usage record
-  await supabase
-    .from('feature_usage')
-    .upsert(
-      {
-        feature_id: feature.id,
+  if (existing) {
+    // Use database function to increment
+    await supabase.rpc('increment_feature_usage', {
+      p_feature_id: featureId,
+      p_user_id: userId,
+    } as any)
+  } else {
+    // Create new usage record
+    await supabase
+      .from('feature_usage_tracking')
+      .insert({
+        feature_id: featureId,
         user_id: userId,
         usage_count: 1,
         last_used_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'feature_id,user_id',
-      }
-    )
-
-  // Increment usage count
-  await supabase.rpc('increment_feature_usage', {
-    p_feature_id: feature.id,
-    p_user_id: userId,
-  })
+      } as any)
+  }
 }
 
 /**
- * Get feature usage analytics
- * 
- * @param scope - 'platform' | 'broker' | 'office'
- * @param scopeId - ID of the scope (broker_id or office_id)
- * @returns Feature usage statistics
+ * Get feature usage statistics
  */
-export async function getFeatureAnalytics(
-  scope: 'platform' | 'broker' | 'office',
-  scopeId?: string
-) {
+export async function getFeatureUsageStats(featureId: string) {
   const supabase = createClient()
 
-  let query = supabase
-    .from('feature_usage')
-    .select(`
-      feature_id,
-      features!inner(name, display_name, category),
-      usage_count,
-      last_used_at
-    `)
+  const { data, error } = await supabase
+    .from('feature_usage_tracking')
+    .select('*')
+    .eq('feature_id', featureId) as { data: FeatureUsage[] | null; error: any }
 
-  // Filter by scope if needed
-  if (scope === 'broker' && scopeId) {
-    query = query.eq('profiles.broker_id', scopeId)
-  } else if (scope === 'office' && scopeId) {
-    query = query.eq('profiles.office_id', scopeId)
+  if (error || !data) return { totalUsage: 0, uniqueUsers: 0 }
+
+  return {
+    totalUsage: data.reduce((sum, record) => sum + record.usage_count, 0),
+    uniqueUsers: data.length,
   }
-
-  const { data } = await query
-
-  return data || []
 }
 
 /**
- * Admin function to toggle feature at platform level
- * 
- * @param featureName - The feature to toggle
- * @param enabled - Whether to enable or disable
- * @param adminId - ID of the admin making the change
+ * Enable/disable a platform-wide feature
  */
 export async function setPlatformFeatureToggle(
-  featureName: string,
+  featureId: string,
   enabled: boolean,
-  adminId: string
-): Promise<void> {
+  userId: string
+): Promise<boolean> {
   const supabase = createClient()
 
-  // Get feature ID
-  const { data: feature } = await supabase
-    .from('features')
-    .select('id')
-    .eq('name', featureName)
-    .single()
-
-  if (!feature) return
-
-  // Update platform toggle
-  await supabase
+  const { error } = await supabase
     .from('platform_feature_toggles')
-    .upsert({
-      feature_id: feature.id,
+    .insert({
+      feature_id: featureId,
       is_enabled: enabled,
-      updated_by: adminId,
+      updated_by: userId,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
+    .select()
+
+  return !error
 }
 
 /**
- * Broker admin function to toggle feature for broker
- * 
- * @param brokerId - The broker ID
- * @param featureName - The feature to toggle
- * @param enabled - Whether to enable or disable
- * @param adminId - ID of the admin making the change
+ * Enable/disable a feature for a specific broker
  */
 export async function setBrokerFeatureToggle(
   brokerId: string,
-  featureName: string,
+  featureId: string,
   enabled: boolean,
-  adminId: string
-): Promise<void> {
+  userId: string
+): Promise<boolean> {
   const supabase = createClient()
 
-  // Get feature ID
-  const { data: feature } = await supabase
-    .from('features')
-    .select('id')
-    .eq('name', featureName)
-    .single()
-
-  if (!feature) return
-
-  // Update broker toggle
-  await supabase
+  const { error } = await supabase
     .from('broker_feature_toggles')
-    .upsert({
+    .insert({
       broker_id: brokerId,
-      feature_id: feature.id,
+      feature_id: featureId,
       is_enabled: enabled,
-      updated_by: adminId,
+      updated_by: userId,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
+    .select()
+
+  return !error
 }
 
 /**
- * Office manager function to toggle feature for office
- * 
- * @param officeId - The office ID
- * @param featureName - The feature to toggle
- * @param enabled - Whether to enable or disable
- * @param adminId - ID of the admin making the change
+ * Enable/disable a feature for a specific office
  */
 export async function setOfficeFeatureToggle(
   officeId: string,
-  featureName: string,
+  featureId: string,
   enabled: boolean,
-  adminId: string
-): Promise<void> {
+  userId: string
+): Promise<boolean> {
   const supabase = createClient()
 
-  // Get feature ID
-  const { data: feature } = await supabase
-    .from('features')
-    .select('id')
-    .eq('name', featureName)
-    .single()
-
-  if (!feature) return
-
-  // Update office toggle
-  await supabase
+  const { error } = await supabase
     .from('office_feature_toggles')
-    .upsert({
+    .insert({
       office_id: officeId,
-      feature_id: feature.id,
+      feature_id: featureId,
       is_enabled: enabled,
-      updated_by: adminId,
+      updated_by: userId,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
+    .select()
+
+  return !error
 }
 
 /**
- * Realtor function to toggle feature for themselves
- * 
- * @param realtorId - The realtor ID
- * @param featureName - The feature to toggle
- * @param enabled - Whether to enable or disable
+ * Enable/disable a feature for a specific realtor
  */
 export async function setRealtorFeatureToggle(
   realtorId: string,
-  featureName: string,
+  featureId: string,
   enabled: boolean
-): Promise<void> {
+): Promise<boolean> {
   const supabase = createClient()
 
-  // Get feature ID
-  const { data: feature } = await supabase
-    .from('features')
-    .select('id')
-    .eq('name', featureName)
-    .single()
-
-  if (!feature) return
-
-  // Update realtor toggle
-  await supabase
+  const { error } = await supabase
     .from('realtor_feature_toggles')
-    .upsert({
+    .insert({
       realtor_id: realtorId,
-      feature_id: feature.id,
+      feature_id: featureId,
       is_enabled: enabled,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
+    .select()
+
+  return !error
 }
