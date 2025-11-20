@@ -3,6 +3,17 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Edit, Trash2, Eye } from 'lucide-react'
 
+// Define property type
+interface Property {
+  id: string
+  address: string
+  city: string
+  state: string
+  price: number | null
+  realtor_id: string
+  created_at: string
+}
+
 export default async function PropertiesPage() {
   const supabase = createClient()
   
@@ -35,7 +46,7 @@ export default async function PropertiesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property: any) => (
+          {(properties as Property[]).map((property) => (
             <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="h-48 bg-gray-200"></div>
               <div className="p-6">
