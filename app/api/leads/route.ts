@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,15 +12,15 @@ export async function POST(request: Request) {
     const supabase = createClient()
 
     // Get property details to assign lead to property's listing agent
-    let assigned_to = null
+    let assigned_to: string | null = null
     if (property_id) {
-      const { data: property } = await supabase
+      const { data: property } = (await supabase
         .from('properties')
         .select('listing_agent_id')
         .eq('id', property_id)
-        .single()
+        .single()) as { data: { listing_agent_id: string | null } | null; error: any }
       
-      if (property) {
+      if (property && property.listing_agent_id) {
         assigned_to = property.listing_agent_id
       }
     }
