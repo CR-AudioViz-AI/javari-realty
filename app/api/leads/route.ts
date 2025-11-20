@@ -10,17 +10,17 @@ export async function POST(request: Request) {
 
     const supabase = createClient()
 
-    // Get property details to assign lead to property's realtor
+    // Get property details to assign lead to property's listing agent
     let assigned_to = null
     if (property_id) {
       const { data: property } = await supabase
         .from('properties')
-        .select('realtor_id')
+        .select('listing_agent_id')
         .eq('id', property_id)
         .single()
       
       if (property) {
-        assigned_to = property.realtor_id
+        assigned_to = property.listing_agent_id
       }
     }
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         phone,
         message,
         property_id,
-        assigned_to,
+        realtor_id: assigned_to,
         status: 'new',
         source: 'website'
       })
