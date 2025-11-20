@@ -17,7 +17,7 @@ export default async function NewPropertyPage() {
     if (!user) return
     
     const propertyData = {
-      realtor_id: user.id,
+      listing_agent_id: user.id,
       address: formData.get('address') as string,
       city: formData.get('city') as string,
       state: formData.get('state') as string,
