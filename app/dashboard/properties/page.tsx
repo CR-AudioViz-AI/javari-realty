@@ -10,7 +10,7 @@ interface Property {
   city: string
   state: string
   price: number | null
-  realtor_id: string
+  listing_agent_id: string | null
   created_at: string
 }
 
@@ -23,7 +23,7 @@ export default async function PropertiesPage() {
   const { data: properties } = await supabase
     .from('properties')
     .select('*')
-    .eq('realtor_id', user.id)
+    .eq('listing_agent_id', user.id)
     .order('created_at', { ascending: false })
 
   return (
