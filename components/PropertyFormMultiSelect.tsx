@@ -1,7 +1,8 @@
+'use client'
+
 // components/PropertyFormMultiSelect.tsx
 // Improved Property Form with Multi-Select Property Types
 
-'use client'
 
 import { useState } from 'react'
 import { CheckSquare, Square } from 'lucide-react'
