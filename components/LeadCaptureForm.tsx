@@ -1,7 +1,8 @@
+'use client'
+
 // components/LeadCaptureForm.tsx
 // Lead Capture Form - Routes to Agent Based on Specialty
 
-'use client'
 
 import { useState } from 'react'
 import { Mail, Phone, User, MessageSquare, CheckCircle } from 'lucide-react'
