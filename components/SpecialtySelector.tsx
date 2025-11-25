@@ -1,7 +1,8 @@
+'use client'
+
 // components/SpecialtySelector.tsx
 // Client Component for Selecting Agent Specialties
 
-'use client'
 
 import { useState } from 'react'
 import { CheckCircle, Circle, TrendingUp } from 'lucide-react'
