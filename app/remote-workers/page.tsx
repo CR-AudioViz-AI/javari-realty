@@ -12,7 +12,13 @@ export const metadata = {
 
 export default async function RemoteWorkersPage() {
   const supabase = createClient()
-  const { data: properties } = await supabase.from('properties').select('*').eq('status', 'active').limit(6)
+  
+  // Get remote-worker friendly properties
+  const { data: properties } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('status', 'active')
+    .limit(6)
 
   return (
     <div className="min-h-screen bg-white">
