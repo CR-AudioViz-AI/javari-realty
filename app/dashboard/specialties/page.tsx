@@ -45,7 +45,9 @@ export default async function SpecialtiesPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'realtor') {
+  // Check if user is a realtor
+  const userRole = profile?.role as string | undefined
+  if (!profile || userRole !== 'realtor') {
     redirect('/dashboard')
   }
 
