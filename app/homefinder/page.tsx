@@ -45,7 +45,7 @@ export default async function HomeFinderPage() {
     .limit(6)
     .order('created_at', { ascending: false })
   
-  const featured = featuredData as Property[] | null
+  const featured = featuredData as any[]
 
   return (
     <div className="min-h-screen bg-white">
