@@ -82,9 +82,9 @@ function generateProperty(cityData: typeof floridaCities[0]) {
     bathrooms = Math.floor(Math.random() * 3) + 3 // 3-5 bath
     squareFeet = 2500 + Math.floor(Math.random() * 2000)
   } else if (propertyType === 'land') {
-    bedrooms = null
-    bathrooms = null
-    squareFeet = null
+    bedrooms = 0
+    bathrooms = 0
+    squareFeet = 0
   }
   
   // Lot size for houses and land
