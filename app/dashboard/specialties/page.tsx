@@ -45,9 +45,14 @@ export default async function SpecialtiesPage() {
     .eq('id', user.id)
     .single()
 
-  // Check if user is a realtor
-  const userRole = profile?.role as string | undefined
-  if (!profile || userRole !== 'realtor') {
+  // Redirect if no profile found
+  if (!profile) {
+    redirect('/dashboard')
+  }
+  
+  // Type assertion for profile with role
+  const profileData = profile as { role?: string; specialties?: string[] }
+  if (profileData.role !== 'realtor') {
     redirect('/dashboard')
   }
 
