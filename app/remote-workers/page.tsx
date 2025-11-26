@@ -10,7 +10,7 @@ export const metadata = {
   description: 'Homes optimized for remote work. Find your dream home with exclusive VA benefits, $0 down loans, and dedicated veteran realtors.'
 }
 
-export default async function RemoteWorkersPage() {
+export default async function RemoteWorkersPage() {{
   const supabase = createClient()
   
   // Get veteran-friendly properties
