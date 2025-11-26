@@ -4,16 +4,33 @@
 import Link from 'next/link'
 import { Home, MapPin, Bed, Bath, Square, Heart, Share2, Calendar, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+
+interface Property {
+  id: string
+  title: string
+  address: string
+  city: string
+  state: string
+  price: number
+  bedrooms: number
+  bathrooms: number
+  square_feet: number
+  primary_photo?: string
+  description?: string
+  status: string
+}
 import LeadCaptureForm from '@/components/LeadCaptureForm'
 
 export default async function HomeFinderPropertyPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   
-  const { data: property } = await supabase
+  const { data: propertyData } = await supabase
     .from('properties')
     .select('*')
     .eq('id', params.id)
     .single()
+  
+  const property = propertyData as Property | null
 
   if (!property) {
     return <div>Property not found</div>
