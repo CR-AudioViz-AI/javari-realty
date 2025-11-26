@@ -43,7 +43,8 @@ async function checkModule(path: string, name: string) {
       console.log(`❌ ${name.padEnd(35)} - FAILED (${response.status})`)
       return { success: false, module: name, status: response.status }
     }
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error
     console.log(`❌ ${name.padEnd(35)} - ERROR (${error.message})`)
     return { success: false, module: name, error: error.message }
   }
