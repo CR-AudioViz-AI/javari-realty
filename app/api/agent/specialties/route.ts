@@ -1,69 +1,67 @@
 // app/api/agent/specialties/route.ts
-// Save Agent Specialties for Lead Routing
+// Agent Specialty Management API
 
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
+// POST - Save agent specialties
+export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
-    const { user_id, specialties } = await request.json()
-
-    // Validate user is authenticated
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.id !== user_id) {
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Update agent profile with specialties
+    const { specialties } = await request.json()
+
+    // Use type assertion to handle the specialties column
     const { data, error } = await supabase
       .from('profiles')
       .update({ 
         specialties,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', user_id)
+      } as any)
+      .eq('id', user.id)
       .select()
       .single()
 
     if (error) {
-      console.error('Specialties update error:', error)
-      return NextResponse.json({ error: 'Failed to update specialties' }, { status: 500 })
+      console.error('Error saving specialties:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      specialties: data.specialties,
-      message: 'Specialties updated successfully'
-    })
-
+    return NextResponse.json({ success: true, data })
   } catch (error) {
-    console.error('Specialties API error:', error)
+    console.error('Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function GET(request: Request) {
+// GET - Get agent specialties
+export async function GET() {
   try {
     const supabase = createClient()
     
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('specialties')
       .eq('id', user.id)
       .single()
 
-    return NextResponse.json({
-      specialties: profile?.specialties || []
-    })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
+    return NextResponse.json({ specialties: (data as any)?.specialties || [] })
   } catch (error) {
-    console.error('Get specialties error:', error)
+    console.error('Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
