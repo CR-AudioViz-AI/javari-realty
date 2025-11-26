@@ -2,12 +2,38 @@
 // Agent Specialty Management API
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+function getSupabase() {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {}
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {}
+        },
+      },
+    }
+  )
+}
 
 // POST - Save agent specialties
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = getSupabase()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -16,7 +42,6 @@ export async function POST(request: NextRequest) {
 
     const { specialties } = await request.json()
 
-    // @ts-ignore - specialties column exists in database but not in generated types
     const { data, error } = await supabase
       .from('profiles')
       .update({ 
@@ -42,14 +67,13 @@ export async function POST(request: NextRequest) {
 // GET - Get agent specialties
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = getSupabase()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // @ts-ignore - specialties column exists in database but not in generated types
     const { data, error } = await supabase
       .from('profiles')
       .select('specialties')
@@ -60,7 +84,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ specialties: data?.specialties || [] })
+    return NextResponse.json({ specialties: (data as any)?.specialties || [] })
   } catch (error) {
     console.error('Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
