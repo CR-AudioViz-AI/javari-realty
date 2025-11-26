@@ -25,7 +25,7 @@ interface DemoGenerationResponse {
 }
 
 // Simulated demo data storage (would be Supabase in production)
-const demoStorage = new Map<string, any>()
+const demoStorage = new Map<string, unknown>()
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique demo ID
-    const slug = brokerage.name
+    const slug = (brokerage.name as string)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const adminEmail = `admin@${slug}.demo.cr-realtor.com`
     const adminPassword = `Demo${new Date().getFullYear()}!Admin`
     
-    const agentCredentials = (agents || []).map((agent: any) => ({
+    const agentCredentials = ((agents || []) as Array<{name: string}>).map((agent) => ({
       name: agent.name,
       email: `${agent.name.toLowerCase().replace(/\s+/g, '.')}@${slug}.demo.cr-realtor.com`,
       password: `Demo${new Date().getFullYear()}!Agent`
@@ -102,9 +102,18 @@ export async function POST(request: NextRequest) {
     // Store in memory (would be Supabase in production)
     demoStorage.set(demoId, demoConfig)
 
-    // Extract unique markets and property types
-    const markets = [...new Set((properties || []).map((p: any) => p.city).filter(Boolean))]
-    const propertyTypes = [...new Set((properties || []).map((p: any) => p.type).filter(Boolean))]
+    // Extract unique markets and property types with proper typing
+    const propertiesArray = (properties || []) as Array<{city?: string; type?: string}>
+    const markets: string[] = [...new Set(
+      propertiesArray
+        .map((p) => p.city)
+        .filter((city): city is string => typeof city === 'string')
+    )]
+    const propertyTypes: string[] = [...new Set(
+      propertiesArray
+        .map((p) => p.type)
+        .filter((type): type is string => typeof type === 'string')
+    )]
 
     const response: DemoGenerationResponse = {
       success: true,
@@ -116,9 +125,9 @@ export async function POST(request: NextRequest) {
         agents: agentCredentials
       },
       summary: {
-        brokerage: brokerage.name,
-        agentCount: (agents || []).length,
-        propertyCount: (properties || []).length,
+        brokerage: brokerage.name as string,
+        agentCount: ((agents || []) as Array<unknown>).length,
+        propertyCount: propertiesArray.length,
         markets,
         propertyTypes
       },
