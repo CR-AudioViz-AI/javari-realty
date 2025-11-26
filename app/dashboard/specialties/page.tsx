@@ -124,7 +124,7 @@ export default async function SpecialtiesPage() {
           {/* Specialty Grid */}
           <SpecialtySelector 
             specialties={AVAILABLE_SPECIALTIES} 
-            currentSpecialties={profile.specialties || []}
+            currentSpecialties={profileData.specialties || []}
             userId={user.id}
           />
 
