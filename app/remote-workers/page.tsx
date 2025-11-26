@@ -2,12 +2,12 @@
 // Remote Workers Housing Module
 
 import Link from 'next/link'
-import { Wifi, Home, Coffee, Monitor, CheckCircle, MapPin, ArrowRight } from 'lucide-react'
+import { Wifi, Home, Monitor, Coffee, CheckCircle, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata = {
   title: 'Remote Worker Housing | CR Realtor Platform',
-  description: 'Homes optimized for remote work. Gigabit internet, dedicated office space, and digital nomad friendly communities.'
+  description: 'Homes optimized for remote work with dedicated office space and high-speed internet.'
 }
 
 export default async function RemoteWorkersPage() {
@@ -16,6 +16,7 @@ export default async function RemoteWorkersPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Navigation */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -30,124 +31,103 @@ export default async function RemoteWorkersPage() {
         </div>
       </nav>
 
-      <section className="relative bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white py-24">
-        <div className="absolute inset-0 bg-black/30"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm"><Wifi className="w-16 h-16" /></div>
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">Find Your Safe Space</h1>
-            <p className="text-xl md:text-2xl text-purple-100 mb-8">
-              Remote Workers friendly neighborhoods, anti-discrimination protections, inclusive communities, and realtors who understand your needs.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="#neighborhoods" className="px-8 py-4 bg-white text-purple-900 rounded-lg font-bold text-lg hover:shadow-2xl transition-all flex items-center justify-center">
-                Find Communities <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-3xl font-bold mb-2">100%</div>
-                <div className="text-purple-100 text-sm">Inclusive Realtors</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-3xl font-bold mb-2">SAFE</div>
-                <div className="text-purple-100 text-sm">Verified Communities</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-3xl font-bold mb-2">LEGAL</div>
-                <div className="text-purple-100 text-sm">Discrimination Protection</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-3xl font-bold mb-2">{properties?.length || 756}</div>
-                <div className="text-purple-100 text-sm">Rainbow Homes</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="neighborhoods" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Remote Worker Features</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">What we look for in inclusive communities</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Legal Protections</h3>
-              <p className="text-gray-600 mb-4">Fair housing laws enforced. Anti-discrimination ordinances. Legal recourse if needed.</p>
-              <div className="text-sm text-blue-600 font-semibold">Protected Rights</div>
-            </div>
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Community Presence</h3>
-              <p className="text-gray-600 mb-4">Active Remote Workers population. Work-Life Balance events. Remote Workers owned businesses nearby.</p>
-              <div className="text-sm text-indigo-600 font-semibold">You're Not Alone</div>
-            </div>
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Inclusive Amenities</h3>
-              <p className="text-gray-600 mb-4">Remote Workers healthcare providers. Gender-neutral facilities. Supportive schools.</p>
-              <div className="text-sm text-blue-600 font-semibold">Full Support</div>
-            </div>
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <Wifi className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Welcoming Neighbors</h3>
-              <p className="text-gray-600 mb-4">Acceptance scores. Low hate crime rates. Rainbow flags visible.</p>
-              <div className="text-sm text-green-600 font-semibold">Be Yourself</div>
-            </div>
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                <Home className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Rainbow Realtors</h3>
-              <p className="text-gray-600 mb-4">Remote Workers agents or strong allies. No judgment. Complete understanding.</p>
-              <div className="text-sm text-indigo-600 font-semibold">Represented</div>
-            </div>
-            <div className="bg-white rounded-xl p-8 shadow-lg">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                <CheckCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Family Recognition</h3>
-              <p className="text-gray-600 mb-4">All families respected. Marriage equality honored. Adoption-friendly.</p>
-              <div className="text-sm text-red-600 font-semibold">All Love Valid</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-6">Love Lives Here</h2>
-          <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
-            Find a home where you can be yourself, love who you love, and live authentically.
+          <div className="inline-flex items-center bg-blue-500/30 px-4 py-2 rounded-full mb-6">
+            <Wifi className="w-5 h-5 mr-2" />
+            <span>Work From Anywhere</span>
+          </div>
+          <h1 className="text-5xl font-bold mb-6">Remote Worker Housing</h1>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-8">
+            Find homes designed for productivity. Dedicated office space, gigabit internet, and communities that understand work-life balance.
           </p>
-          <Link href="/auth/signup" className="px-8 py-4 bg-white text-blue-600 rounded-lg font-bold text-lg hover:shadow-2xl transition-all inline-block">
-            Get Started Free
+          <div className="flex justify-center gap-4">
+            <Link href="/properties?type=remote" className="px-8 py-4 bg-white text-blue-600 rounded-lg font-bold hover:bg-gray-100">
+              Browse Remote-Friendly Homes
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">What Makes a Home Remote-Work Ready</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="bg-white p-6 rounded-xl shadow-lg">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Wifi className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">High-Speed Internet</h3>
+              <p className="text-gray-600">Gigabit fiber available. Perfect for video calls and large file transfers.</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-lg">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Monitor className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Dedicated Office Space</h3>
+              <p className="text-gray-600">Separate room or area designed for focused work and professional video backgrounds.</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-lg">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Coffee className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Nearby Amenities</h3>
+              <p className="text-gray-600">Coffee shops, co-working spaces, and restaurants within walking distance.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose Remote-Friendly Housing</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {[
+              "Verified high-speed internet availability",
+              "Homes with dedicated office or flex spaces",
+              "Quiet neighborhoods for focused work",
+              "Natural lighting for video calls",
+              "Proximity to co-working spaces",
+              "Tax-friendly locations for remote workers"
+            ].map((benefit, i) => (
+              <div key={i} className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">{benefit}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Find Your Perfect Home Office?</h2>
+          <p className="text-xl text-blue-100 mb-8">Our remote-work specialists understand what digital professionals need.</p>
+          <Link href="/auth/signup" className="inline-flex items-center px-8 py-4 bg-white text-blue-600 rounded-lg font-bold hover:bg-gray-100">
+            Connect with a Specialist
+            <ArrowRight className="ml-2 w-5 h-5" />
           </Link>
         </div>
       </section>
 
-      <footer className="bg-gray-900 text-gray-300 py-12">
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="container mx-auto px-4 text-center">
-          <div className="mb-4">
-            <div className="inline-flex items-center space-x-2">
-              <Wifi className="w-6 h-6 text-purple-400" />
-              <span className="text-white font-bold text-lg">Remote Worker Program</span>
-            </div>
+          <div className="inline-flex items-center space-x-2 mb-4">
+            <Wifi className="w-6 h-6 text-blue-400" />
+            <span className="text-white font-bold text-lg">Remote Workers Program</span>
           </div>
-          <p className="text-sm">Part of CR AudioViz AI, LLC | Fort Myers, Florida</p>
+          <p className="text-sm mb-4">Part of CR AudioViz AI, LLC | Fort Myers, Florida</p>
+          <div className="flex justify-center space-x-6 text-sm">
+            <Link href="/" className="hover:text-white">Home</Link>
+            <Link href="/veterans" className="hover:text-white">Veterans</Link>
+            <Link href="/seniors" className="hover:text-white">Seniors</Link>
+            <Link href="/help" className="hover:text-white">Help</Link>
+          </div>
         </div>
       </footer>
     </div>
