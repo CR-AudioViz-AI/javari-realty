@@ -16,13 +16,13 @@ export async function POST(request: NextRequest) {
 
     const { specialties } = await request.json()
 
-    // Use type assertion to handle the specialties column
+    // @ts-ignore - specialties column exists in database but not in generated types
     const { data, error } = await supabase
       .from('profiles')
       .update({ 
-        specialties,
+        specialties: specialties,
         updated_at: new Date().toISOString()
-      } as any)
+      })
       .eq('id', user.id)
       .select()
       .single()
@@ -49,6 +49,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // @ts-ignore - specialties column exists in database but not in generated types
     const { data, error } = await supabase
       .from('profiles')
       .select('specialties')
@@ -59,7 +60,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ specialties: (data as any)?.specialties || [] })
+    return NextResponse.json({ specialties: data?.specialties || [] })
   } catch (error) {
     console.error('Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
