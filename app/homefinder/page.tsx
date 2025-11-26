@@ -6,6 +6,22 @@ import Link from 'next/link'
 import { Search, MapPin, Home, Building, TrendingUp, Heart, Filter } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+// Property type for TypeScript
+interface Property {
+  id: string
+  title: string
+  address: string
+  city: string
+  state: string
+  price: number
+  bedrooms: number
+  bathrooms: number
+  square_feet: number
+  primary_photo?: string
+  status: string
+  created_at: string
+}
+
 export const metadata = {
   title: 'HomeFinder AI - Find Your Perfect Home',
   description: 'Search millions of homes for sale. Find your dream home with advanced AI-powered search and instant property alerts.'
@@ -15,12 +31,14 @@ export default async function HomeFinderPage() {
   const supabase = createClient()
   
   // Get featured properties
-  const { data: featured } = await supabase
+  const { data: featuredData } = await supabase
     .from('properties')
     .select('*')
     .eq('status', 'active')
     .limit(6)
     .order('created_at', { ascending: false })
+  
+  const featured = featuredData as Property[] | null
 
   return (
     <div className="min-h-screen bg-white">
