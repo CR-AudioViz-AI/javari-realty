@@ -1,5 +1,12 @@
 'use client'
 
+// Type declaration for Google Analytics
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void
+  }
+}
+
 // components/LeadCaptureForm.tsx
 // Lead Capture Form - Routes to Agent Based on Specialty
 
@@ -45,7 +52,7 @@ export default function LeadCaptureForm({ propertyId, propertyAddress }: LeadCap
         setIsSubmitted(true)
         // Track conversion
         if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'lead_captured', {
+          window.gtag?.('event', 'lead_captured', {
             property_id: propertyId,
             source: 'homefinder'
           })
