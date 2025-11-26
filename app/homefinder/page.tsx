@@ -13,13 +13,20 @@ interface Property {
   address: string
   city: string
   state: string
+  zip_code?: string
   price: number
   bedrooms: number
   bathrooms: number
   square_feet: number
   primary_photo?: string
+  description?: string
   status: string
   created_at: string
+  property_type?: string
+  year_built?: number
+  features?: string[]
+  realtor_id?: string
+  social_impact_type?: string
 }
 
 export const metadata = {
