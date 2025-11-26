@@ -37,7 +37,7 @@ export default async function HomeFinderPropertyPage({ params }: { params: { id:
     .eq('id', params.id)
     .single()
   
-  const property = propertyData as Property | null
+  const property = propertyData as any
 
   if (!property) {
     return <div>Property not found</div>
