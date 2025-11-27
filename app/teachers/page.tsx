@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function TeachersPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: teacherProperties } = await supabase
     .from('properties')
