@@ -23,8 +23,8 @@ export default async function HomePage() {
   const { count: totalRealtors } = await supabase
     .from('profiles')
     .select('*', { count: 'exact', head: true })
-    .eq('role', 'realtor')
-    .eq('is_active', true)
+    .eq('role', 'agent')
+    .eq('active', true)
 
   async function handleSearch(formData: FormData) {
     'use server'
@@ -378,3 +378,4 @@ export default async function HomePage() {
     </div>
   )
 }
+
