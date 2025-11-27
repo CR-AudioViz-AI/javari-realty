@@ -35,7 +35,7 @@ interface PropertyWithRealtor {
 }
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data, error } = await supabase
     .from('properties')
