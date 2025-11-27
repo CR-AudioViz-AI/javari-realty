@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function DisabilitiesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get accessible properties
   const { data: accessibleProperties } = await supabase
