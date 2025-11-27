@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function FirstRespondersPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get first responder-friendly properties
   const { data: responderProperties } = await supabase
