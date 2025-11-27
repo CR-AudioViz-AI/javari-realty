@@ -1,175 +1,303 @@
 import Link from 'next/link'
-import { Search, Bed, Bath, Square, MapPin } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { Search, Bed, Bath, Square, MapPin, Home, Building2, Factory, TreePine } from 'lucide-react'
 
-export default function PropertiesPage() {
-  // Mock data - will connect to real data later
-  const properties = [
-    {
-      id: 1,
-      address: '123 Main Street',
-      city: 'Fort Myers',
-      state: 'FL',
-      price: 450000,
-      beds: 3,
-      baths: 2,
-      sqft: 2100,
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600',
-      status: 'For Sale'
-    },
-    {
-      id: 2,
-      address: '456 Ocean Drive',
-      city: 'Cape Coral',
-      state: 'FL',
-      price: 675000,
-      beds: 4,
-      baths: 3,
-      sqft: 2800,
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600',
-      status: 'For Sale'
-    },
-    {
-      id: 3,
-      address: '789 Palm Avenue',
-      city: 'Naples',
-      state: 'FL',
-      price: 325000,
-      beds: 2,
-      baths: 2,
-      sqft: 1600,
-      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600',
-      status: 'For Sale'
-    },
-  ]
+export const revalidate = 60 // Revalidate every 60 seconds
+
+export default async function PropertiesPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const supabase = await createClient()
+
+  // Build query based on filters
+  let query = supabase
+    .from('properties')
+    .select(`
+      *,
+      agent:profiles!listing_agent_id(id, first_name, last_name, email, phone)
+    `)
+    .eq('status', 'active')
+    .order('featured', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  // Apply filters from search params
+  const category = searchParams.category as string
+  const transaction = searchParams.transaction as string
+  const city = searchParams.city as string
+  const minPrice = searchParams.minPrice as string
+  const maxPrice = searchParams.maxPrice as string
+  const beds = searchParams.beds as string
+
+  if (category) {
+    query = query.eq('category', category)
+  }
+  if (transaction) {
+    query = query.eq('transaction_type', transaction)
+  }
+  if (city) {
+    query = query.ilike('city', `%${city}%`)
+  }
+  if (minPrice) {
+    query = query.gte('price', parseInt(minPrice))
+  }
+  if (maxPrice) {
+    query = query.lte('price', parseInt(maxPrice))
+  }
+  if (beds) {
+    query = query.gte('bedrooms', parseInt(beds))
+  }
+
+  const { data: properties, error } = await query.limit(50)
+
+  if (error) {
+    console.error('Error fetching properties:', error)
+  }
+
+  const getCategoryIcon = (cat: string) => {
+    switch (cat) {
+      case 'residential': return Home
+      case 'commercial': return Building2
+      case 'industrial': return Factory
+      case 'land': return TreePine
+      default: return Home
+    }
+  }
+
+  const formatPrice = (price: number, transactionType: string) => {
+    if (transactionType === 'rent') {
+      return `$${price.toLocaleString()}/mo`
+    }
+    if (price >= 1000000) {
+      return `$${(price / 1000000).toFixed(2)}M`
+    }
+    return `$${price.toLocaleString()}`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg" />
-            <span className="text-xl font-bold">CR Realtor Platform</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Home className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900">CR Realtor Platform</span>
           </Link>
-          <div className="space-x-4">
-            <Link href="/auth/login" className="px-4 py-2 text-sm font-medium text-primary hover:underline">
+          <div className="flex items-center space-x-4">
+            <Link href="/auth/login" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition">
               Sign In
             </Link>
-            <Link href="/dashboard/realtor" className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90">
-              For Realtors
+            <Link href="/auth/signup" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              Get Started
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Search Bar */}
+      {/* Search Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-2">Find Your Dream Home</h1>
-          <p className="text-blue-100 mb-6">Search thousands of properties across Florida</p>
+          <h1 className="text-4xl font-bold mb-2">Find Your Dream Property</h1>
+          <p className="text-blue-100 mb-6">Browse {properties?.length || 0} active listings in Southwest Florida</p>
           
-          <div className="bg-white rounded-lg p-4 shadow-xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form className="bg-white rounded-xl p-4 shadow-xl">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <input
                 type="text"
-                placeholder="City, neighborhood, or ZIP"
-                className="px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500"
+                name="city"
+                defaultValue={city || ''}
+                placeholder="City or ZIP code"
+                className="px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <select className="px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500">
-                <option>Any Price</option>
-                <option>$0 - $250k</option>
-                <option>$250k - $500k</option>
-                <option>$500k - $1M</option>
-                <option>$1M+</option>
+              <select 
+                name="category"
+                defaultValue={category || ''}
+                className="px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Types</option>
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+                <option value="industrial">Industrial</option>
+                <option value="land">Land</option>
               </select>
-              <select className="px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500">
-                <option>Any Beds</option>
-                <option>1+</option>
-                <option>2+</option>
-                <option>3+</option>
-                <option>4+</option>
+              <select 
+                name="transaction"
+                defaultValue={transaction || ''}
+                className="px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Buy or Rent</option>
+                <option value="sale">For Sale</option>
+                <option value="rent">For Rent</option>
               </select>
-              <button className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center justify-center">
-                <Search className="w-5 h-5 mr-2" />
+              <select 
+                name="maxPrice"
+                defaultValue={maxPrice || ''}
+                className="px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any Price</option>
+                <option value="250000">Up to $250K</option>
+                <option value="500000">Up to $500K</option>
+                <option value="1000000">Up to $1M</option>
+                <option value="2500000">Up to $2.5M</option>
+                <option value="5000000">Up to $5M</option>
+              </select>
+              <button 
+                type="submit"
+                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition"
+              >
+                <Search className="w-5 h-5" />
                 Search
               </button>
             </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Property Grid */}
+      <div className="container mx-auto px-4 py-12">
+        {properties && properties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {properties.map((property) => {
+              const CategoryIcon = getCategoryIcon(property.category)
+              const photos = property.photos as string[] | null
+              const features = property.features as string[] | null
+              const agent = property.agent as { first_name: string; last_name: string } | null
+              
+              return (
+                <Link
+                  key={property.id}
+                  href={`/properties/${property.id}`}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-gray-100 group"
+                >
+                  {/* Image */}
+                  <div className="relative h-56 bg-gray-200">
+                    {photos && photos[0] ? (
+                      <img
+                        src={photos[0]}
+                        alt={property.title || property.address}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                        <CategoryIcon className="w-16 h-16 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      {property.featured && (
+                        <span className="px-3 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
+                          Featured
+                        </span>
+                      )}
+                      <span className={`px-3 py-1 text-white text-xs font-bold rounded-full ${
+                        property.transaction_type === 'rent' ? 'bg-purple-600' : 'bg-green-600'
+                      }`}>
+                        {property.transaction_type === 'rent' ? 'For Rent' : 'For Sale'}
+                      </span>
+                    </div>
+                    
+                    {/* Price */}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="px-4 py-2 bg-black/70 text-white text-lg font-bold rounded-lg">
+                        {formatPrice(property.price, property.transaction_type)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition">
+                      {property.title || property.address}
+                    </h3>
+                    
+                    <div className="flex items-center text-gray-600 text-sm mb-4">
+                      <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                      <span className="truncate">{property.city}, {property.state} {property.zip_code}</span>
+                    </div>
+
+                    {/* Stats */}
+                    {property.category === 'residential' && (
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                        {property.bedrooms && (
+                          <div className="flex items-center gap-1">
+                            <Bed className="w-4 h-4" />
+                            <span>{property.bedrooms} beds</span>
+                          </div>
+                        )}
+                        {property.bathrooms && (
+                          <div className="flex items-center gap-1">
+                            <Bath className="w-4 h-4" />
+                            <span>{property.bathrooms} baths</span>
+                          </div>
+                        )}
+                        {property.square_feet && (
+                          <div className="flex items-center gap-1">
+                            <Square className="w-4 h-4" />
+                            <span>{property.square_feet.toLocaleString()} sqft</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Features */}
+                    {features && features.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {features.slice(0, 3).map((feature, i) => (
+                          <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Agent */}
+                    {agent && (
+                      <div className="pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-500">
+                          Listed by <span className="font-medium text-gray-700">{agent.first_name} {agent.last_name}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Properties Found</h2>
+            <p className="text-gray-600 mb-6">Try adjusting your search filters or check back later for new listings.</p>
+            <Link
+              href="/properties"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+            >
+              Clear Filters
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <Home className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold">CR Realtor Platform</span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} CR AudioViz AI, LLC. All rights reserved.
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Results */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Featured Properties <span className="text-gray-500 font-normal">({properties.length} results)</span>
-          </h2>
-          <select className="px-4 py-2 border rounded-lg text-sm">
-            <option>Newest First</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
-            <div key={property.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
-              <div className="relative h-48 bg-gray-200">
-                <img
-                  src={property.image}
-                  alt={property.address}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 right-3 px-3 py-1 bg-green-600 text-white text-sm font-semibold rounded-full">
-                  {property.status}
-                </div>
-              </div>
-              <div className="p-5">
-                <h3 className="text-2xl font-bold text-blue-600 mb-1">
-                  ${property.price.toLocaleString()}
-                </h3>
-                <div className="flex items-center text-gray-600 text-sm mb-3">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {property.address}, {property.city}, {property.state}
-                </div>
-                <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center">
-                    <Bed className="w-4 h-4 mr-1" />
-                    {property.beds} bd
-                  </div>
-                  <div className="flex items-center">
-                    <Bath className="w-4 h-4 mr-1" />
-                    {property.baths} ba
-                  </div>
-                  <div className="flex items-center">
-                    <Square className="w-4 h-4 mr-1" />
-                    {property.sqft.toLocaleString()} sqft
-                  </div>
-                </div>
-                <button className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-                  View Details
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="bg-blue-600 text-white py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Not finding what you're looking for?</h2>
-          <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            Work with one of our expert realtors to find the perfect home for your needs.
-          </p>
-          <Link
-            href="/auth/signup"
-            className="inline-block px-8 py-4 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition"
-          >
-            Get Started Today
-          </Link>
-        </div>
-      </div>
+      </footer>
     </div>
   )
 }
