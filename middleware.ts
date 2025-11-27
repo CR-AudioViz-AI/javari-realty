@@ -58,14 +58,14 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes
+  // Protected routes - require authentication
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
   }
 
-  // Admin-only routes
+  // Admin-only routes - check for admin role
   if (request.nextUrl.pathname.startsWith('/dashboard/admin')) {
     if (!user) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -73,18 +73,29 @@ export async function middleware(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'platform_admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    // Check for admin role OR is_admin flag (matching database schema)
+    if (profile?.role !== 'admin' && !profile?.is_admin) {
+      return NextResponse.redirect(new URL('/dashboard/realtor', request.url))
     }
   }
 
   // Redirect authenticated users away from auth pages
   if (request.nextUrl.pathname.startsWith('/auth') && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'admin' || profile?.is_admin) {
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/dashboard/realtor', request.url))
+    }
   }
 
   return response
@@ -92,13 +103,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
