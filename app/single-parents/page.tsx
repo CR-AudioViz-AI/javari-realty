@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function SingleParentsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: familyProperties } = await supabase
     .from('properties')
