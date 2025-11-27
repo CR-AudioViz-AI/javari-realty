@@ -18,7 +18,7 @@ export default async function SearchPage({
 }: {
   searchParams: SearchParams
 }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Parse filters
   const location = searchParams.location || ''
