@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Get property details to route lead correctly
-    const { data: property } = await supabase
+    const { data: property } = await (supabase as any)
       .from('properties')
       .select('*')
       .eq('id', propertyId)
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     
     // If no listing agent, try to match by specialty
     if (!assignedRealtorId && property?.category) {
-      const { data: matchingAgent } = await supabase
+      const { data: matchingAgent } = await (supabase as any)
         .from('profiles')
         .select('id')
         .eq('role', 'agent')
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lead record
-    const { data: lead, error } = await supabase
+    const { data: lead, error } = await (supabase as any)
       .from('leads')
       .insert({
         name,
