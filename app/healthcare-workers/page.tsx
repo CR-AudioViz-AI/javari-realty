@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function HealthcareWorkersPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get healthcare-friendly properties
   const { data: healthcareProperties } = await supabase
