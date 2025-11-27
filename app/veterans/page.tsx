@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function VeteransPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get veteran-friendly properties
   const { data: veteranProperties } = await supabase
