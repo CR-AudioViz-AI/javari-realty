@@ -1,46 +1,49 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-// Removed typed-supabase import - using type assertions instead
+import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_admin')
+      .eq('id', user.id)
+      .single()
+
+    let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
+
+    if (profile?.role !== 'admin' && !profile?.is_admin) {
+      query = query.eq('realtor_id', user.id)
+    }
+
+    const { data: leads, error } = await query
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ leads: leads || [] })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
     const body = await request.json()
-    const { name, email, phone, message, property_id } = body
-
-    const supabase = createClient()
-
-    // Get property details to assign lead to property's listing agent
-    let assigned_to: string | null = null
-    if (property_id) {
-      const result = await supabase
-        .from('properties')
-        .select('listing_agent_id')
-        .eq('id', property_id)
-        .single()
-      
-      const property = result.data as { listing_agent_id: string | null } | null
-      
-      if (property && property.listing_agent_id) {
-        assigned_to = property.listing_agent_id
-      }
-    }
-
-    const leadData = {
-      name,
-      email,
-      phone,
-      message,
-      property_id,
-      realtor_id: assigned_to,
-      status: 'new',
-      source: 'website'
-    }
 
     const { data, error } = await supabase
       .from('leads')
-      .insert(leadData as any)  // Type assertion to bypass inference issues
+      .insert(body)
       .select()
       .single()
 
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ lead: data })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
