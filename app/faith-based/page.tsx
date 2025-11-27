@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function FaithBasedPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get faith-friendly properties
   const { data: faithProperties } = await supabase
