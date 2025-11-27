@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Users, DollarSign, TrendingUp, Plus, MessageSquare } from 'lucide-react'
+import { Home, Users, DollarSign, TrendingUp, Plus, MessageSquare, Building2 } from 'lucide-react'
 
-export default async function RealtorDashboard() {
-  const supabase = createClient()
+export default async function DashboardPage() {
+  const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -13,11 +13,28 @@ export default async function RealtorDashboard() {
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single() as { data: any; error: any }
+    .single()
   
-  if (!profile || (profile.role !== 'realtor' && profile.role !== 'broker_admin' && profile.role !== 'platform_admin')) {
-    redirect('/dashboard/client')
+  if (!profile) {
+    redirect('/auth/login')
   }
+
+  // Check role and redirect appropriately
+  const isAdmin = profile.role === 'admin' || profile.is_admin
+  const isAgent = profile.role === 'agent'
+
+  // Redirect admin to admin dashboard
+  if (isAdmin) {
+    redirect('/dashboard/admin')
+  }
+
+  // Redirect agents to realtor dashboard
+  if (isAgent) {
+    redirect('/dashboard/realtor')
+  }
+
+  // For any other role, show basic dashboard
+  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'User'
 
   const { count: myProperties } = await supabase
     .from('properties')
@@ -28,82 +45,59 @@ export default async function RealtorDashboard() {
     .from('leads')
     .select('*', { count: 'exact', head: true })
     .eq('realtor_id', user.id)
-  
-  // Transactions query - need to check both buyer_agent_id and seller_agent_id
-  const { count: activeTransactions } = await supabase
-    .from('transactions')
-    .select('*', { count: 'exact', head: true })
-    .or(`buyer_agent_id.eq.${user.id},seller_agent_id.eq.${user.id}`)
-    .in('stage', ['under_contract', 'inspection', 'appraisal', 'financing'])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {profile.full_name || 'Realtor'}!</h1>
-          <p className="text-gray-600">Here's what's happening with your business today.</p>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+        <h1 className="text-2xl font-bold mb-2">Welcome, {displayName}!</h1>
+        <p className="text-blue-100">Here&apos;s what&apos;s happening with your account today.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <Building2 className="w-8 h-8 text-blue-600" />
+            <span className="text-2xl font-bold">{myProperties || 0}</span>
+          </div>
+          <div className="text-sm text-gray-600">Properties</div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <Home className="w-8 h-8 text-blue-600" />
-              <span className="text-2xl font-bold">{myProperties || 0}</span>
-            </div>
-            <div className="text-sm text-gray-600">My Properties</div>
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <Users className="w-8 h-8 text-purple-600" />
+            <span className="text-2xl font-bold">{myLeads || 0}</span>
           </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <Users className="w-8 h-8 text-purple-600" />
-              <span className="text-2xl font-bold">{myLeads || 0}</span>
-            </div>
-            <div className="text-sm text-gray-600">Active Leads</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <TrendingUp className="w-8 h-8 text-green-600" />
-              <span className="text-2xl font-bold">{activeTransactions || 0}</span>
-            </div>
-            <div className="text-sm text-gray-600">Active Deals</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <DollarSign className="w-8 h-8 text-yellow-600" />
-              <span className="text-2xl font-bold">$0</span>
-            </div>
-            <div className="text-sm text-gray-600">Pipeline Value</div>
-          </div>
+          <div className="text-sm text-gray-600">Leads</div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <Link href="/dashboard/properties/new" className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
-                  <Plus className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <div className="font-semibold">Add Property</div>
-                </Link>
-                <Link href="/dashboard/leads" className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
-                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <div className="font-semibold">View Leads</div>
-                </Link>
-              </div>
-            </div>
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <TrendingUp className="w-8 h-8 text-green-600" />
+            <span className="text-2xl font-bold">0</span>
           </div>
+          <div className="text-sm text-gray-600">Active Transactions</div>
+        </div>
+      </div>
 
-          <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-              <h3 className="text-xl font-bold mb-2">Javari AI Assistant</h3>
-              <p className="text-blue-100 text-sm mb-4">Your AI-powered real estate assistant is ready to help!</p>
-              <button className="w-full px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:shadow-lg transition">
-                Open Javari
-              </button>
-            </div>
-          </div>
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link href="/dashboard/properties" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
+            <Building2 className="w-8 h-8 mx-auto mb-2" />
+            <div className="font-medium text-sm">View Properties</div>
+          </Link>
+          <Link href="/dashboard/leads" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
+            <Users className="w-8 h-8 mx-auto mb-2" />
+            <div className="font-medium text-sm">View Leads</div>
+          </Link>
+          <Link href="/search" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
+            <Home className="w-8 h-8 mx-auto mb-2" />
+            <div className="font-medium text-sm">Browse Listings</div>
+          </Link>
+          <Link href="/dashboard/properties/new" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
+            <Plus className="w-8 h-8 mx-auto mb-2" />
+            <div className="font-medium text-sm">Add Property</div>
+          </Link>
         </div>
       </div>
     </div>
