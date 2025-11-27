@@ -22,9 +22,12 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ specialties: profile?.specialties || [] })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    // Type assertion to handle the profile data
+    const profileData = profile as { specialties: string[] | null } | null
+    return NextResponse.json({ specialties: profileData?.specialties || [] })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { specialties } = body
+    const { specialties } = body as { specialties: string[] }
 
     const { error } = await supabase
       .from('profiles')
@@ -50,7 +53,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, specialties })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
