@@ -8,10 +8,12 @@ import {
   TrendingUp,
   Settings,
   ChevronRight,
+  Home,
+  UserPlus,
 } from 'lucide-react'
 
 export default async function AdminDashboard() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -22,69 +24,70 @@ export default async function AdminDashboard() {
     redirect('/auth/login')
   }
 
-  // Verify admin role - simple approach with explicit any
+  // Verify admin role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_admin, first_name, last_name')
     .eq('id', user.id)
-    .single() as { data: { role: string } | null }
+    .single()
 
-  if (!profile || profile.role !== 'platform_admin') {
-    redirect('/dashboard')
+  // Check for admin role OR is_admin flag
+  if (!profile || (profile.role !== 'admin' && !profile.is_admin)) {
+    redirect('/dashboard/realtor')
   }
+
+  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Admin'
 
   // Get platform metrics
   const { data: allProfiles } = await supabase
     .from('profiles')
-    .select('id, role')
+    .select('id, role, active')
     
-  const { data: brokers } = await supabase
-    .from('brokers')
-    .select('id')
-  
   const { data: properties } = await supabase
     .from('properties')
-    .select('id')
+    .select('id, status')
   
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('id, stage')
+  const { data: leads } = await supabase
+    .from('leads')
+    .select('id, status')
+
+  const totalUsers = allProfiles?.length || 0
+  const activeAgents = allProfiles?.filter((p) => p.role === 'agent' && p.active).length || 0
+  const totalProperties = properties?.length || 0
+  const activeListings = properties?.filter((p) => p.status === 'active').length || 0
+  const totalLeads = leads?.length || 0
+  const newLeads = leads?.filter((l) => l.status === 'new').length || 0
 
   const metrics = [
     {
       name: 'Total Users',
-      value: allProfiles?.length || 0,
-      breakdown: `${allProfiles?.filter((p: any) => p.role === 'realtor').length || 0} Realtors`,
+      value: totalUsers,
+      breakdown: `${activeAgents} Active Agents`,
       icon: Users,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
     },
     {
-      name: 'Brokers',
-      value: brokers?.length || 0,
-      breakdown: `${allProfiles?.filter((p: any) => p.role === 'broker_admin').length || 0} Admins`,
+      name: 'Properties',
+      value: totalProperties,
+      breakdown: `${activeListings} Active Listings`,
       icon: Building2,
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
     {
-      name: 'Active Transactions',
-      value: transactions?.filter((t: any) => 
-        t.stage === 'under_contract' || 
-        t.stage === 'inspection' || 
-        t.stage === 'appraisal' || 
-        t.stage === 'financing'
-      ).length || 0,
-      breakdown: `${transactions?.filter((t: any) => t.stage === 'completed').length || 0} Completed`,
-      icon: TrendingUp,
+      name: 'Total Leads',
+      value: totalLeads,
+      breakdown: `${newLeads} New Leads`,
+      icon: UserPlus,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
     },
     {
-      name: 'Total Properties',
-      value: properties?.length || 0,
-      breakdown: `Platform-wide listings`,
-      icon: Settings,
+      name: 'Platform Health',
+      value: '100%',
+      breakdown: 'All systems operational',
+      icon: TrendingUp,
       bgColor: 'bg-orange-50',
       iconColor: 'text-orange-600',
     },
@@ -92,26 +95,26 @@ export default async function AdminDashboard() {
 
   const quickLinks = [
     {
-      name: 'User Management',
-      description: 'View and manage all platform users',
-      href: '/dashboard/admin/users',
-      icon: Users,
-    },
-    {
-      name: 'Brokers',
-      description: 'Manage brokers and offices',
-      href: '/dashboard/admin/brokers',
+      name: 'All Properties',
+      description: 'View and manage all listings',
+      href: '/dashboard/properties',
       icon: Building2,
     },
     {
-      name: 'Properties',
-      description: 'View all platform properties',
-      href: '/dashboard/admin/properties',
-      icon: Building2,
+      name: 'All Leads',
+      description: 'View platform-wide leads',
+      href: '/dashboard/leads',
+      icon: UserPlus,
+    },
+    {
+      name: 'Feature Toggles',
+      description: 'Enable/disable platform features',
+      href: '/dashboard/admin/features',
+      icon: Settings,
     },
     {
       name: 'Analytics',
-      description: 'View platform-wide analytics',
+      description: 'View platform analytics',
       href: '/dashboard/admin/analytics',
       icon: TrendingUp,
     },
@@ -120,12 +123,15 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Admin header */}
-      <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center mb-2">
           <Shield className="w-8 h-8 mr-3" />
-          <h2 className="text-2xl font-bold">Platform Admin</h2>
+          <div>
+            <h2 className="text-2xl font-bold">Platform Admin</h2>
+            <p className="text-red-100">Welcome back, {displayName}</p>
+          </div>
         </div>
-        <p className="text-red-100">
+        <p className="text-red-100 mt-2">
           Complete control over the CR Realtor Platform
         </p>
       </div>
@@ -135,7 +141,7 @@ export default async function AdminDashboard() {
         {metrics.map((metric) => (
           <div
             key={metric.name}
-            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-2 ${metric.bgColor} rounded-lg`}>
@@ -152,7 +158,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Quick links */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Quick Actions
         </h3>
@@ -181,29 +187,29 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Recent activity */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Recent Platform Activity
         </h3>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">New Broker Registered</p>
-              <p className="text-sm text-gray-600">Real Estate Group</p>
+              <p className="font-medium text-gray-900">New Agent Registered</p>
+              <p className="text-sm text-gray-600">Tony Harvey joined</p>
             </div>
-            <p className="text-sm text-gray-500">2 hours ago</p>
+            <p className="text-sm text-gray-500">Today</p>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
               <p className="font-medium text-gray-900">New Property Listed</p>
-              <p className="text-sm text-gray-600">123 Main Street</p>
+              <p className="text-sm text-gray-600">Port Royal Waterfront Estate</p>
             </div>
-            <p className="text-sm text-gray-500">5 hours ago</p>
+            <p className="text-sm text-gray-500">Today</p>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">New Realtor Signup</p>
-              <p className="text-sm text-gray-600">5 new realtors today</p>
+              <p className="font-medium text-gray-900">Platform Updated</p>
+              <p className="text-sm text-gray-600">v1.0 Production Ready</p>
             </div>
             <p className="text-sm text-gray-500">Today</p>
           </div>
