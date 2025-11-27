@@ -29,7 +29,7 @@ interface Property {
 import LeadCaptureForm from '@/components/LeadCaptureForm'
 
 export default async function HomeFinderPropertyPage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: propertyData } = await supabase
     .from('properties')
