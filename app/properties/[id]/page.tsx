@@ -1,62 +1,59 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, Bed, Bath, Square, Calendar, DollarSign, Home, Phone, Mail, Share2, Heart, ChevronLeft } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, Calendar, DollarSign, Home, Phone, Mail, Share2, Heart, ChevronLeft, Building2, Factory, Check } from 'lucide-react'
 
-// Define types for the property with joined profile data
-interface RealtorProfile {
-  full_name: string | null
-  email: string | null
-  phone: string | null
-  avatar_url: string | null
-}
-
-interface PropertyWithRealtor {
-  id: string
-  address: string
-  city: string
-  state: string
-  zip_code: string
-  price: number | null
-  listing_type: string
-  status: string
-  bedrooms: number | null
-  bathrooms: number | null
-  square_feet: number | null
-  property_type: string | null
-  description: string | null
-  photos: string[] | null
-  year_built: number | null
-  lot_size: number | null
-  parking_spaces: number | null
-  hoa_fee: number | null
-  listing_agent_id: string | null
-  profiles: RealtorProfile | null
-}
+export const revalidate = 60
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
   
-  const { data, error } = await supabase
+  const { data: property, error } = await supabase
     .from('properties')
     .select(`
       *,
-      profiles:listing_agent_id (
-        full_name,
+      agent:profiles!listing_agent_id (
+        id,
+        first_name,
+        last_name,
         email,
         phone,
-        avatar_url
+        avatar_url,
+        bio,
+        license_number,
+        specialties
       )
     `)
     .eq('id', params.id)
     .single()
   
-  if (error || !data) {
+  if (error || !property) {
     notFound()
   }
 
-  // Type assertion after validation
-  const property = data as PropertyWithRealtor
+  const agent = property.agent as {
+    id: string
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+    avatar_url: string | null
+    bio: string | null
+    license_number: string | null
+    specialties: string[] | null
+  } | null
+
+  const agentName = agent ? `${agent.first_name} ${agent.last_name}` : 'Unknown Agent'
+  const photos = property.photos as string[] | null
+  const features = property.features as string[] | null
+  const amenities = property.amenities as string[] | null
+
+  const formatPrice = (price: number, transactionType: string) => {
+    if (transactionType === 'rent') {
+      return `$${price.toLocaleString()}/month`
+    }
+    return `$${price.toLocaleString()}`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,16 +61,16 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
       <header className="bg-white border-b sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/search" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+            <Link href="/properties" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition">
               <ChevronLeft className="w-5 h-5" />
-              <span>Back to Search</span>
+              <span>Back to Listings</span>
             </Link>
             
             <div className="flex items-center space-x-3">
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <Heart className="w-5 h-5" />
               </button>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <Share2 className="w-5 h-5" />
               </button>
             </div>
@@ -84,174 +81,251 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
       {/* Photo Gallery */}
       <div className="bg-black">
         <div className="container mx-auto">
-          <div className="grid grid-cols-4 gap-2 h-[600px]">
-            {property.photos && property.photos.length > 0 ? (
-              <>
-                <div className="col-span-2 row-span-2">
-                  <img src={property.photos[0]} alt="Main" className="w-full h-full object-cover" />
-                </div>
-                {property.photos.slice(1, 5).map((photo: string, i: number) => (
-                  <div key={i} className={i < 2 ? "col-span-1" : "col-span-1"}>
-                    <img src={photo} alt={`Photo ${i+2}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </>
-            ) : (
-              <div className="col-span-4 flex items-center justify-center bg-gray-200">
-                <MapPin className="w-24 h-24 text-gray-400" />
+          {photos && photos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 max-h-[500px] overflow-hidden">
+              <div className="md:row-span-2">
+                <img
+                  src={photos[0]}
+                  alt={property.title || property.address}
+                  className="w-full h-full object-cover"
+                />
               </div>
-            )}
-          </div>
+              {photos.slice(1, 3).map((photo, i) => (
+                <div key={i} className="hidden md:block">
+                  <img
+                    src={photo}
+                    alt={`${property.title || property.address} - ${i + 2}`}
+                    className="w-full h-[249px] object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
+              <Home className="w-24 h-24 text-gray-600" />
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Price & Address */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="text-4xl font-bold text-blue-600 mb-2">
-                    ${property.price?.toLocaleString()}
-                     {property.listing_type === 'rent' && <span className="text-2xl text-gray-500">/mo</span>}
-                  </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">{property.address}</h1>
-                  <p className="text-gray-600">{property.city}, {property.state} {property.zip_code}</p>
-                </div>
-                <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                  {property.status === 'active' ? 'For Sale' : property.status}
-                </div>
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                  property.transaction_type === 'rent' 
+                    ? 'bg-purple-100 text-purple-800' 
+                    : 'bg-green-100 text-green-800'
+                }`}>
+                  {property.transaction_type === 'rent' ? 'For Rent' : 'For Sale'}
+                </span>
+                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                  {property.category}
+                </span>
+                {property.featured && (
+                  <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    Featured
+                  </span>
+                )}
               </div>
-
-              <div className="grid grid-cols-4 gap-4 pt-4 border-t">
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 text-gray-600 mb-1">
-                    <Bed className="w-5 h-5" />
-                  </div>
-                  <div className="text-2xl font-bold">{property.bedrooms || 0}</div>
-                  <div className="text-sm text-gray-600">Bedrooms</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 text-gray-600 mb-1">
-                    <Bath className="w-5 h-5" />
-                  </div>
-                  <div className="text-2xl font-bold">{property.bathrooms || 0}</div>
-                  <div className="text-sm text-gray-600">Bathrooms</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 text-gray-600 mb-1">
-                    <Square className="w-5 h-5" />
-                  </div>
-                  <div className="text-2xl font-bold">{property.square_feet?.toLocaleString() || 'N/A'}</div>
-                  <div className="text-sm text-gray-600">Sq Ft</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 text-gray-600 mb-1">
-                    <Home className="w-5 h-5" />
-                  </div>
-                  <div className="text-2xl font-bold">{property.property_type?.replace('_', ' ') || 'N/A'}</div>
-                  <div className="text-sm text-gray-600">Type</div>
-                </div>
+              
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {property.title || property.address}
+              </h1>
+              
+              <div className="flex items-center text-gray-600 mb-4">
+                <MapPin className="w-5 h-5 mr-2" />
+                <span>{property.address}, {property.city}, {property.state} {property.zip_code}</span>
+              </div>
+              
+              <div className="text-4xl font-bold text-blue-600">
+                {formatPrice(property.price, property.transaction_type)}
               </div>
             </div>
 
+            {/* Quick Stats */}
+            {property.category === 'residential' && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-white rounded-xl border border-gray-200">
+                {property.bedrooms && (
+                  <div className="text-center">
+                    <Bed className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-2xl font-bold text-gray-900">{property.bedrooms}</p>
+                    <p className="text-sm text-gray-500">Bedrooms</p>
+                  </div>
+                )}
+                {property.bathrooms && (
+                  <div className="text-center">
+                    <Bath className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-2xl font-bold text-gray-900">{property.bathrooms}</p>
+                    <p className="text-sm text-gray-500">Bathrooms</p>
+                  </div>
+                )}
+                {property.square_feet && (
+                  <div className="text-center">
+                    <Square className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-2xl font-bold text-gray-900">{property.square_feet.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500">Sq Ft</p>
+                  </div>
+                )}
+                {property.year_built && (
+                  <div className="text-center">
+                    <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-2xl font-bold text-gray-900">{property.year_built}</p>
+                    <p className="text-sm text-gray-500">Year Built</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Description */}
-            {property.description && (
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold mb-4">About This Property</h2>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">{property.description}</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                {property.description || 'No description available.'}
+              </p>
+            </div>
+
+            {/* Features */}
+            {features && features.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Features</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {features.map((feature, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Amenities */}
+            {amenities && amenities.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Amenities</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {amenities.map((amenity, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <span className="text-gray-700">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Property Details */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4">Property Details</h2>
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Property Details</h2>
               <div className="grid grid-cols-2 gap-4">
-                {property.year_built && (
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Year Built</span>
-                    <span className="font-semibold">{property.year_built}</span>
+                {property.property_type && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">Property Type</span>
+                    <span className="font-medium text-gray-900 capitalize">{property.property_type.replace('_', ' ')}</span>
+                  </div>
+                )}
+                {property.mls_number && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">MLS #</span>
+                    <span className="font-medium text-gray-900">{property.mls_number}</span>
                   </div>
                 )}
                 {property.lot_size && (
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Lot Size</span>
-                    <span className="font-semibold">{property.lot_size} sqft</span>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">Lot Size</span>
+                    <span className="font-medium text-gray-900">{property.lot_size} acres</span>
                   </div>
                 )}
-                {property.parking_spaces && (
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Parking</span>
-                    <span className="font-semibold">{property.parking_spaces} spaces</span>
-                  </div>
-                )}
-                {property.hoa_fee && (
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">HOA Fee</span>
-                    <span className="font-semibold">${property.hoa_fee}/mo</span>
+                {property.county && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">County</span>
+                    <span className="font-medium text-gray-900">{property.county}</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Agent Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
-              <h3 className="text-xl font-bold mb-4">Contact Agent</h3>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Listed By</h2>
               
-              {property.profiles && (
-                <div className="mb-6 pb-6 border-b">
-                  <div className="flex items-center space-x-3 mb-4">
-                    {property.profiles.avatar_url ? (
-                      <img src={property.profiles.avatar_url} alt={property.profiles.full_name || 'Agent'} className="w-16 h-16 rounded-full" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-blue-600">
-                          {property.profiles.full_name?.charAt(0) || 'A'}
-                        </span>
-                      </div>
-                    )}
+              {agent ? (
+                <div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                      {agent.first_name?.[0]}{agent.last_name?.[0]}
+                    </div>
                     <div>
-                      <div className="font-semibold">{property.profiles.full_name || 'Real Estate Agent'}</div>
-                      <div className="text-sm text-gray-600">Licensed Realtor</div>
+                      <p className="font-semibold text-gray-900">{agentName}</p>
+                      {agent.license_number && (
+                        <p className="text-sm text-gray-500">License: {agent.license_number}</p>
+                      )}
                     </div>
                   </div>
-                  
-                  {property.profiles.phone && (
-                    <a href={`tel:${property.profiles.phone}`} className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 mb-2">
-                      <Phone className="w-4 h-4" />
-                      <span>{property.profiles.phone}</span>
-                    </a>
-                  )}
-                  
-                  {property.profiles.email && (
-                    <a href={`mailto:${property.profiles.email}`} className="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
-                      <Mail className="w-4 h-4" />
-                      <span>{property.profiles.email}</span>
-                    </a>
-                  )}
-                </div>
-              )}
 
-              <form className="space-y-4">
-                <input type="text" placeholder="Your Name" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                <input type="email" placeholder="Your Email" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                <input type="tel" placeholder="Your Phone" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                <textarea placeholder="Message (optional)" rows={4} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-                <button type="submit" className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">
-                  Request Information
-                </button>
-                <button type="button" className="w-full px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50">
-                  Schedule Tour
-                </button>
-              </form>
+                  {agent.bio && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">{agent.bio}</p>
+                  )}
+
+                  <div className="space-y-3 mb-6">
+                    {agent.phone && (
+                      <a
+                        href={`tel:${agent.phone}`}
+                        className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition"
+                      >
+                        <Phone className="w-5 h-5" />
+                        <span>{agent.phone}</span>
+                      </a>
+                    )}
+                    {agent.email && (
+                      <a
+                        href={`mailto:${agent.email}`}
+                        className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition"
+                      >
+                        <Mail className="w-5 h-5" />
+                        <span className="truncate">{agent.email}</span>
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <a
+                      href={`tel:${agent.phone || ''}`}
+                      className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                    >
+                      <Phone className="w-5 h-5" />
+                      Call Now
+                    </a>
+                    <a
+                      href={`mailto:${agent.email || ''}?subject=Inquiry about ${property.title || property.address}`}
+                      className="w-full py-3 px-4 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2"
+                    >
+                      <Mail className="w-5 h-5" />
+                      Send Email
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500">Agent information not available</p>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-8 mt-12">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-400">© {new Date().getFullYear()} CR AudioViz AI, LLC. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   )
 }
