@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function MilitaryFamiliesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: militaryProperties } = await supabase
     .from('properties')
