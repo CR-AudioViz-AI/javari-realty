@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function FirstTimeBuyersPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get first-time buyer friendly properties
   const { data: buyerProperties } = await supabase
