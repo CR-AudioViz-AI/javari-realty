@@ -35,7 +35,7 @@ export const metadata = {
 }
 
 export default async function HomeFinderPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get featured properties
   const { data: featuredData } = await supabase
