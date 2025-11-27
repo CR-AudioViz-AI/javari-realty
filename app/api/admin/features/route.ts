@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+interface ProfileData {
+  role: string
+  is_admin: boolean
+}
+
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -16,7 +21,7 @@ export async function GET() {
       .from('profiles')
       .select('role, is_admin')
       .eq('id', user.id)
-      .single()
+      .single() as { data: ProfileData | null; error: any }
 
     if (!profile || (profile.role !== 'admin' && !profile.is_admin)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
       .from('profiles')
       .select('role, is_admin')
       .eq('id', user.id)
-      .single()
+      .single() as { data: ProfileData | null; error: any }
 
     if (!profile || (profile.role !== 'admin' && !profile.is_admin)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
