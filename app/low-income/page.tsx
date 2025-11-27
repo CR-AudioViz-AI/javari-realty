@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function LowIncomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: affordableProperties } = await supabase
     .from('properties')
