@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 export default async function SeniorsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get senior-friendly properties
   const { data: seniorProperties } = await supabase
