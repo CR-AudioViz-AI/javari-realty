@@ -4,7 +4,7 @@ import { Search, MapPin, Bed, Bath, Square, TrendingUp, Shield, Zap, Users } fro
 import { redirect } from 'next/navigation'
 
 export default async function HomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get featured properties
   const { data: featuredProperties } = await supabase
