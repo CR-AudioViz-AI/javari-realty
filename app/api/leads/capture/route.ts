@@ -1,38 +1,11 @@
-// app/api/leads/capture/route.ts
-// Lead Capture API - Routes leads to agents based on specialty
-
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
-function getSupabase() {
-  const cookieStore = cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {}
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {}
-        },
-      },
-    }
-  )
-}
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase()
+    const supabase = await createClient()
     const body = await request.json()
     
     const { 
@@ -53,19 +26,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Determine which agent to route to
-    let assignedRealtorId = null
+    let assignedRealtorId = property?.listing_agent_id || null
     
-    // 1. If property has assigned realtor, route there
-    if (property?.realtor_id) {
-      assignedRealtorId = property.realtor_id
-    } 
-    // 2. Otherwise match by social impact specialty
-    else if (property?.social_impact_type) {
+    // If no listing agent, try to match by specialty
+    if (!assignedRealtorId && property?.category) {
       const { data: matchingAgent } = await supabase
         .from('profiles')
         .select('id')
-        .contains('specialties', [property.social_impact_type])
-        .eq('role', 'realtor')
+        .eq('role', 'agent')
         .limit(1)
         .single()
       
@@ -85,10 +53,9 @@ export async function POST(request: NextRequest) {
         property_id: propertyId,
         realtor_id: assignedRealtorId,
         status: 'new',
-        source: 'homefinder',
+        source: 'website',
         preferred_contact: preferredContact || 'email',
         interest_type: interestType || 'viewing',
-        created_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -97,12 +64,6 @@ export async function POST(request: NextRequest) {
       console.error('Lead creation error:', error)
       return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 })
     }
-
-    // TODO: Send email notification to assigned agent
-    // await sendAgentNotification(assignedRealtorId, lead, property)
-    
-    // TODO: Send confirmation email to lead
-    // await sendLeadConfirmation(email, name, property)
 
     return NextResponse.json({ 
       success: true, 
