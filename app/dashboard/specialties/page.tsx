@@ -34,7 +34,7 @@ const AVAILABLE_SPECIALTIES = [
 ]
 
 export default async function SpecialtiesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
