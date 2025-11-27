@@ -1,13 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/types/database.complete'
-import { typed, Update } from '@/lib/supabase/typed-client'
-
-type Profile = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify admin user
     const {
@@ -20,17 +16,17 @@ export async function POST(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_admin')
       .eq('id', user.id)
-      .single<Pick<Profile, 'role'>>()
+      .single()
 
     // Combined check: if error OR no profile data, reject
     if (profileError || !profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // TypeScript now knows profile is non-null and has role property
-    if (profile.role !== 'platform_admin') {
+    // Check for admin role OR is_admin flag
+    if (profile.role !== 'admin' && !profile.is_admin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -45,14 +41,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update platform feature toggle using typed client
-    const updateData: Update<'platform_feature_toggles'> = {
-      is_enabled: enabled,
-      updated_at: new Date().toISOString(),
-    }
-    
-    const { error: updateError } = await typed(supabase, 'platform_feature_toggles')
-      .update(updateData)
+    // Update platform feature toggle
+    const { error: updateError } = await supabase
+      .from('platform_feature_toggles')
+      .update({
+        is_enabled: enabled,
+        updated_at: new Date().toISOString(),
+      })
       .eq('feature_id', featureId)
 
     if (updateError) {
@@ -79,4 +74,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
