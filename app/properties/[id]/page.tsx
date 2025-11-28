@@ -1,331 +1,282 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, Bed, Bath, Square, Calendar, DollarSign, Home, Phone, Mail, Share2, Heart, ChevronLeft, Building2, Factory, Check } from 'lucide-react'
+import {
+  ArrowLeft,
+  MapPin,
+  Bed,
+  Bath,
+  Square,
+  Calendar,
+  Home,
+  Phone,
+  Mail,
+  Share2,
+  Heart,
+  Edit,
+  DollarSign,
+} from 'lucide-react'
 
-export const revalidate = 60
-
-export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
+export default async function PropertyDetailPage({
+  params,
+}: {
+  params: { id: string }
+}) {
   const supabase = await createClient()
-  
+
   const { data: property, error } = await supabase
     .from('properties')
-    .select(`
-      *,
-      agent:profiles!listing_agent_id (
-        id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        avatar_url,
-        bio,
-        license_number,
-        specialties
-      )
-    `)
+    .select('*, profiles!listing_agent_id(first_name, last_name, phone, email, avatar_url, bio)')
     .eq('id', params.id)
     .single()
-  
+
   if (error || !property) {
     notFound()
   }
 
-  const agent = property.agent as {
-    id: string
-    first_name: string
-    last_name: string
-    email: string
-    phone: string
-    avatar_url: string | null
-    bio: string | null
-    license_number: string | null
-    specialties: string[] | null
-  } | null
+  const agent = property.profiles
 
-  const agentName = agent ? `${agent.first_name} ${agent.last_name}` : 'Unknown Agent'
-  const photos = property.photos as string[] | null
-  const features = property.features as string[] | null
-  const amenities = property.amenities as string[] | null
-
-  const formatPrice = (price: number, transactionType: string) => {
-    if (transactionType === 'rent') {
-      return `$${price.toLocaleString()}/month`
-    }
-    return `$${price.toLocaleString()}`
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(price)
   }
+
+  const pricePerSqFt = property.square_feet 
+    ? Math.round(property.price / property.square_feet)
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/properties" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition">
-              <ChevronLeft className="w-5 h-5" />
-              <span>Back to Listings</span>
+            <Link
+              href="/dashboard/properties"
+              className="inline-flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Listings
             </Link>
-            
-            <div className="flex items-center space-x-3">
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
                 <Heart className="w-5 h-5" />
               </button>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              <button className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition">
                 <Share2 className="w-5 h-5" />
               </button>
+              <Link
+                href={`/dashboard/properties/${params.id}/edit`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Link>
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Photo Gallery */}
-      <div className="bg-black">
-        <div className="container mx-auto">
-          {photos && photos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 max-h-[500px] overflow-hidden">
-              <div className="md:row-span-2">
-                <img
-                  src={photos[0]}
-                  alt={property.title || property.address}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {photos.slice(1, 3).map((photo, i) => (
-                <div key={i} className="hidden md:block">
-                  <img
-                    src={photo}
-                    alt={`${property.title || property.address} - ${i + 2}`}
-                    className="w-full h-[249px] object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
-              <Home className="w-24 h-24 text-gray-600" />
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
-            <div>
-              <div className="flex flex-wrap gap-2 mb-3">
-                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                  property.transaction_type === 'rent' 
-                    ? 'bg-purple-100 text-purple-800' 
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  {property.transaction_type === 'rent' ? 'For Rent' : 'For Sale'}
-                </span>
-                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
-                  {property.category}
-                </span>
-                {property.featured && (
-                  <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                    Featured
-                  </span>
-                )}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Photos */}
+            <div className="bg-white rounded-2xl overflow-hidden border">
+              {property.photos?.length > 0 ? (
+                <div className="aspect-video relative">
+                  <img
+                    src={property.photos[0]}
+                    alt={property.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {property.photos.length > 1 && (
+                    <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/70 text-white text-sm rounded-lg">
+                      +{property.photos.length - 1} more
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                  <Home className="w-16 h-16 text-gray-300" />
+                </div>
+              )}
+            </div>
+
+            {/* Title & Price */}
+            <div className="bg-white rounded-2xl p-6 border">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                    {property.title}
+                  </h1>
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <MapPin className="w-4 h-4" />
+                    <span>{property.address}, {property.city}, {property.state} {property.zip_code}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {formatPrice(property.price)}
+                  </p>
+                  {pricePerSqFt && (
+                    <p className="text-sm text-gray-500">${pricePerSqFt}/sqft</p>
+                  )}
+                </div>
               </div>
-              
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {property.title || property.address}
-              </h1>
-              
-              <div className="flex items-center text-gray-600 mb-4">
-                <MapPin className="w-5 h-5 mr-2" />
-                <span>{property.address}, {property.city}, {property.state} {property.zip_code}</span>
-              </div>
-              
-              <div className="text-4xl font-bold text-blue-600">
-                {formatPrice(property.price, property.transaction_type)}
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t">
+                <div className="text-center">
+                  <Bed className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                  <p className="text-lg font-semibold">{property.bedrooms || '-'}</p>
+                  <p className="text-xs text-gray-500">Beds</p>
+                </div>
+                <div className="text-center">
+                  <Bath className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                  <p className="text-lg font-semibold">{property.bathrooms || '-'}</p>
+                  <p className="text-xs text-gray-500">Baths</p>
+                </div>
+                <div className="text-center">
+                  <Square className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                  <p className="text-lg font-semibold">{property.square_feet?.toLocaleString() || '-'}</p>
+                  <p className="text-xs text-gray-500">Sq Ft</p>
+                </div>
+                <div className="text-center">
+                  <Calendar className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                  <p className="text-lg font-semibold">{property.year_built || '-'}</p>
+                  <p className="text-xs text-gray-500">Built</p>
+                </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            {property.category === 'residential' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-white rounded-xl border border-gray-200">
-                {property.bedrooms && (
-                  <div className="text-center">
-                    <Bed className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-2xl font-bold text-gray-900">{property.bedrooms}</p>
-                    <p className="text-sm text-gray-500">Bedrooms</p>
-                  </div>
-                )}
-                {property.bathrooms && (
-                  <div className="text-center">
-                    <Bath className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-2xl font-bold text-gray-900">{property.bathrooms}</p>
-                    <p className="text-sm text-gray-500">Bathrooms</p>
-                  </div>
-                )}
-                {property.square_feet && (
-                  <div className="text-center">
-                    <Square className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-2xl font-bold text-gray-900">{property.square_feet.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Sq Ft</p>
-                  </div>
-                )}
-                {property.year_built && (
-                  <div className="text-center">
-                    <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-2xl font-bold text-gray-900">{property.year_built}</p>
-                    <p className="text-sm text-gray-500">Year Built</p>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Description */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
-              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+            <div className="bg-white rounded-2xl p-6 border">
+              <h2 className="text-lg font-semibold mb-4">About This Property</h2>
+              <p className="text-gray-600 whitespace-pre-wrap">
                 {property.description || 'No description available.'}
               </p>
             </div>
 
             {/* Features */}
-            {features && features.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Features</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Amenities */}
-            {amenities && amenities.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Amenities</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {amenities.map((amenity, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                      <span className="text-gray-700">{amenity}</span>
-                    </div>
+            {property.features?.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 border">
+                <h2 className="text-lg font-semibold mb-4">Features</h2>
+                <div className="flex flex-wrap gap-2">
+                  {property.features.map((feature: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                    >
+                      {feature}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
 
             {/* Property Details */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Property Details</h2>
+            <div className="bg-white rounded-2xl p-6 border">
+              <h2 className="text-lg font-semibold mb-4">Property Details</h2>
               <div className="grid grid-cols-2 gap-4">
-                {property.property_type && (
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Property Type</span>
-                    <span className="font-medium text-gray-900 capitalize">{property.property_type.replace('_', ' ')}</span>
-                  </div>
-                )}
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-500">Property Type</span>
+                  <span className="font-medium">{property.property_type}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-500">Status</span>
+                  <span className="font-medium capitalize">{property.status}</span>
+                </div>
                 {property.mls_number && (
-                  <div className="flex justify-between py-2 border-b border-gray-100">
+                  <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-500">MLS #</span>
-                    <span className="font-medium text-gray-900">{property.mls_number}</span>
+                    <span className="font-medium">{property.mls_number}</span>
                   </div>
                 )}
-                {property.lot_size && (
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Lot Size</span>
-                    <span className="font-medium text-gray-900">{property.lot_size} acres</span>
-                  </div>
-                )}
-                {property.county && (
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">County</span>
-                    <span className="font-medium text-gray-900">{property.county}</span>
+                {property.listed_date && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-500">Listed</span>
+                    <span className="font-medium">
+                      {new Date(property.listed_date).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Sidebar - Agent Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Listed By</h2>
-              
-              {agent ? (
-                <div>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                      {agent.first_name?.[0]}{agent.last_name?.[0]}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{agentName}</p>
-                      {agent.license_number && (
-                        <p className="text-sm text-gray-500">License: {agent.license_number}</p>
-                      )}
-                    </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Agent Card */}
+            {agent && (
+              <div className="bg-white rounded-2xl p-6 border sticky top-24">
+                <h3 className="font-semibold mb-4">Listed By</h3>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold">
+                    {agent.first_name?.[0]}{agent.last_name?.[0]}
                   </div>
-
-                  {agent.bio && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">{agent.bio}</p>
-                  )}
-
-                  <div className="space-y-3 mb-6">
-                    {agent.phone && (
-                      <a
-                        href={`tel:${agent.phone}`}
-                        className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition"
-                      >
-                        <Phone className="w-5 h-5" />
-                        <span>{agent.phone}</span>
-                      </a>
-                    )}
-                    {agent.email && (
-                      <a
-                        href={`mailto:${agent.email}`}
-                        className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition"
-                      >
-                        <Mail className="w-5 h-5" />
-                        <span className="truncate">{agent.email}</span>
-                      </a>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <a
-                      href={`tel:${agent.phone || ''}`}
-                      className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                    >
-                      <Phone className="w-5 h-5" />
-                      Call Now
-                    </a>
-                    <a
-                      href={`mailto:${agent.email || ''}?subject=Inquiry about ${property.title || property.address}`}
-                      className="w-full py-3 px-4 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2"
-                    >
-                      <Mail className="w-5 h-5" />
-                      Send Email
-                    </a>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {agent.first_name} {agent.last_name}
+                    </p>
+                    <p className="text-sm text-gray-500">Harvey Team - Premiere Plus</p>
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-500">Agent information not available</p>
-              )}
+
+                {agent.bio && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                    {agent.bio}
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  {agent.phone && (
+                    <a
+                      href={`tel:${agent.phone}`}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
+                    >
+                      <Phone className="w-5 h-5 text-gray-400" />
+                      <span className="text-gray-700">{agent.phone}</span>
+                    </a>
+                  )}
+                  {agent.email && (
+                    <a
+                      href={`mailto:${agent.email}`}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
+                    >
+                      <Mail className="w-5 h-5 text-gray-400" />
+                      <span className="text-gray-700 truncate">{agent.email}</span>
+                    </a>
+                  )}
+                </div>
+
+                <button className="w-full mt-4 px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
+                  Request Showing
+                </button>
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white">
+              <h3 className="font-semibold mb-3">Interested?</h3>
+              <p className="text-sm text-slate-300 mb-4">
+                Schedule a private showing or get more information about this property.
+              </p>
+              <div className="space-y-2">
+                <button className="w-full px-4 py-2 bg-white text-slate-900 font-medium rounded-lg hover:bg-gray-100 transition">
+                  Schedule Tour
+                </button>
+                <button className="w-full px-4 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition border border-white/20">
+                  Ask a Question
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">© {new Date().getFullYear()} CR AudioViz AI, LLC. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   )
 }
