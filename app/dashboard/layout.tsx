@@ -16,6 +16,9 @@ import {
   X,
   UserPlus,
   Megaphone,
+  BarChart3,
+  Calendar,
+  FolderOpen,
   Briefcase,
   Shield,
   Plus,
@@ -79,6 +82,9 @@ export default function DashboardLayout({
         { name: 'My Leads', href: '/dashboard/leads', icon: UserPlus },
         { name: 'CRM', href: '/dashboard/crm', icon: Users },
         { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
+        { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+        { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
+        { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Briefcase },
       ]
 
