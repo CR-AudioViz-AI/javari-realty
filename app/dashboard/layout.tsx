@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   UserPlus,
+  Megaphone,
   Briefcase,
   Shield,
   Plus,
@@ -77,6 +78,7 @@ export default function DashboardLayout({
         { name: 'My Properties', href: '/dashboard/properties', icon: Building2 },
         { name: 'My Leads', href: '/dashboard/leads', icon: UserPlus },
         { name: 'CRM', href: '/dashboard/crm', icon: Users },
+        { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Briefcase },
       ]
 
