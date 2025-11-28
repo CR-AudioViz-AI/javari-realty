@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   TrendingUp,
   Users,
@@ -11,13 +10,11 @@ import {
   Eye,
   Edit,
   MapPin,
-  Phone,
-  Mail,
-  Calendar,
   ArrowUpRight,
   Home,
-  Waves,
   Star,
+  CheckCircle,
+  Clock,
 } from 'lucide-react'
 
 export default async function RealtorDashboard() {
@@ -43,6 +40,7 @@ export default async function RealtorDashboard() {
 
   const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Realtor'
   const organization = profile.organizations
+  const isAdmin = profile.role === 'admin' || profile.is_admin
 
   // Get team members if in an organization
   let teamMembers: any[] = []
@@ -59,7 +57,7 @@ export default async function RealtorDashboard() {
     teamMemberIds = teamMembers.map(m => m.id)
   }
 
-  // Get ALL team properties (not just individual)
+  // Get ALL team properties - NO foreign key join
   const { data: properties } = await supabase
     .from('properties')
     .select('*')
@@ -80,6 +78,7 @@ export default async function RealtorDashboard() {
   const activeLeads = leads?.filter((l) => l.status === 'new' || l.status === 'contacted').length || 0
   const qualifiedLeads = leads?.filter((l) => l.status === 'qualified').length || 0
   const activeListings = teamProperties?.filter((p) => p.status === 'active').length || 0
+  const pendingListings = teamProperties?.filter((p) => p.status === 'pending').length || 0
   const myActiveListings = myProperties?.filter((p) => p.status === 'active').length || 0
   const totalVolume = teamProperties?.reduce((sum, p) => sum + (p.price || 0), 0) || 0
   const featuredListings = teamProperties?.filter((p) => p.featured) || []
@@ -90,37 +89,6 @@ export default async function RealtorDashboard() {
     }
     return `$${(price / 1000).toFixed(0)}K`
   }
-
-  const metrics = [
-    {
-      name: 'Active Leads',
-      value: activeLeads.toString(),
-      icon: Users,
-      subtext: `${qualifiedLeads} qualified`,
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      name: 'Team Listings',
-      value: activeListings.toString(),
-      icon: Building2,
-      subtext: `${myActiveListings} mine`,
-      color: 'from-emerald-500 to-emerald-600',
-    },
-    {
-      name: 'Portfolio Value',
-      value: formatPrice(totalVolume),
-      icon: DollarSign,
-      subtext: `${teamProperties?.length || 0} properties`,
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      name: 'Featured',
-      value: featuredListings.length.toString(),
-      icon: Star,
-      subtext: 'Premium listings',
-      color: 'from-amber-500 to-amber-600',
-    },
-  ]
 
   return (
     <div className="space-y-8">
@@ -169,24 +137,92 @@ export default async function RealtorDashboard() {
         </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Clickable Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric) => (
-          <div
-            key={metric.name}
-            className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group"
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${metric.color} opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition`} />
-            <div className="relative">
-              <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${metric.color} mb-4`}>
-                <metric.icon className="w-6 h-6 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-500 mb-1">{metric.name}</p>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{metric.value}</p>
-              <p className="text-sm text-gray-400">{metric.subtext}</p>
+        <Link
+          href="/dashboard/leads"
+          className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
+          <div className="relative">
+            <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 mb-4">
+              <Users className="w-6 h-6 text-white" />
             </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Active Leads</p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{activeLeads}</p>
+            <p className="text-sm text-gray-400">{qualifiedLeads} qualified</p>
           </div>
-        ))}
+        </Link>
+
+        <Link
+          href="/dashboard/properties?status=active"
+          className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
+          <div className="relative">
+            <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 mb-4">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Team Listings</p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{activeListings}</p>
+            <p className="text-sm text-gray-400">{myActiveListings} mine</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/properties"
+          className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
+          <div className="relative">
+            <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 mb-4">
+              <DollarSign className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Portfolio Value</p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{formatPrice(totalVolume)}</p>
+            <p className="text-sm text-gray-400">{teamProperties?.length || 0} properties</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/properties?status=pending"
+          className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500 to-amber-600 opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition" />
+          <div className="relative">
+            <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 mb-4">
+              <Star className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Featured</p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{featuredListings.length}</p>
+            <p className="text-sm text-gray-400">Premium listings</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Status Pills */}
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/dashboard/properties?status=all"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition flex items-center gap-2"
+        >
+          <Building2 className="w-4 h-4" />
+          All ({teamProperties?.length || 0})
+        </Link>
+        <Link
+          href="/dashboard/properties?status=active"
+          className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-full text-sm font-medium transition flex items-center gap-2"
+        >
+          <CheckCircle className="w-4 h-4" />
+          Active ({activeListings})
+        </Link>
+        <Link
+          href="/dashboard/properties?status=pending"
+          className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-full text-sm font-medium transition flex items-center gap-2"
+        >
+          <Clock className="w-4 h-4" />
+          Pending ({pendingListings})
+        </Link>
       </div>
 
       {/* Two Column Layout */}
@@ -225,11 +261,9 @@ export default async function RealtorDashboard() {
                             <Home className="w-8 h-8 text-gray-300" />
                           </div>
                         )}
-                        {property.featured && (
-                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full">
-                            Featured
-                          </div>
-                        )}
+                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full">
+                          Featured
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate group-hover:text-blue-600 transition">
