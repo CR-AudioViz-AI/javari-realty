@@ -76,6 +76,7 @@ export default function DashboardLayout({
         { name: 'Dashboard', href: '/dashboard/realtor', icon: Home },
         { name: 'My Properties', href: '/dashboard/properties', icon: Building2 },
         { name: 'My Leads', href: '/dashboard/leads', icon: UserPlus },
+        { name: 'CRM', href: '/dashboard/crm', icon: Users },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Briefcase },
       ]
 
@@ -219,3 +220,4 @@ export default function DashboardLayout({
     </div>
   )
 }
+
