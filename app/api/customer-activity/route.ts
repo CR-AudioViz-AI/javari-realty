@@ -18,7 +18,6 @@ interface Activity {
   created_at: string
 }
 
-// GET - Get all customer activity (for agents)
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const customerId = searchParams.get('customer_id')
@@ -29,9 +28,7 @@ export async function GET(request: NextRequest) {
     const activities: Activity[] = []
 
     if (customerId) {
-      // Get specific customer's activity
-      
-      // 1. Saved properties
+      // Get saved properties
       const { data: saved } = await supabase
         .from('saved_properties')
         .select('*, properties(address, city, price)')
@@ -39,19 +36,22 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      saved?.forEach((s: { id: string; created_at: string; property_id: string; properties: { address: string; city: string; price: number } | null }) => {
-        activities.push({
-          id: `saved-${s.id}`,
-          type: 'saved_property',
-          description: `Saved property: ${s.properties?.address || 'Unknown'}`,
-          property_id: s.property_id,
-          property_address: s.properties?.address,
-          metadata: { price: s.properties?.price, city: s.properties?.city },
-          created_at: s.created_at
-        })
-      })
+      if (saved) {
+        for (const s of saved) {
+          const props = s.properties as { address?: string; city?: string; price?: number } | null
+          activities.push({
+            id: `saved-${s.id}`,
+            type: 'saved_property',
+            description: `Saved property: ${props?.address || 'Unknown'}`,
+            property_id: s.property_id,
+            property_address: props?.address,
+            metadata: { price: props?.price, city: props?.city },
+            created_at: s.created_at
+          })
+        }
+      }
 
-      // 2. Showing requests
+      // Get showing requests
       const { data: showings } = await supabase
         .from('showing_requests')
         .select('*')
@@ -59,19 +59,21 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      showings?.forEach((s: { id: string; created_at: string; property_id: string; property_address: string; status: string; requested_date: string }) => {
-        activities.push({
-          id: `showing-${s.id}`,
-          type: 'showing_request',
-          description: `Requested showing: ${s.property_address}`,
-          property_id: s.property_id,
-          property_address: s.property_address,
-          metadata: { status: s.status, requested_date: s.requested_date },
-          created_at: s.created_at
-        })
-      })
+      if (showings) {
+        for (const s of showings) {
+          activities.push({
+            id: `showing-${s.id}`,
+            type: 'showing_request',
+            description: `Requested showing: ${s.property_address}`,
+            property_id: s.property_id,
+            property_address: s.property_address,
+            metadata: { status: s.status, requested_date: s.requested_date },
+            created_at: s.created_at
+          })
+        }
+      }
 
-      // 3. Messages sent
+      // Get messages
       const { data: messages } = await supabase
         .from('messages')
         .select('*')
@@ -80,17 +82,21 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      messages?.forEach((m: { id: string; created_at: string; content: string; conversation_id: string }) => {
-        activities.push({
-          id: `msg-${m.id}`,
-          type: 'message_sent',
-          description: `Sent message: "${m.content.substring(0, 50)}${m.content.length > 50 ? '...' : ''}"`,
-          metadata: { conversation_id: m.conversation_id },
-          created_at: m.created_at
-        })
-      })
+      if (messages) {
+        for (const m of messages) {
+          const content = String(m.content || '')
+          const preview = content.length > 50 ? content.substring(0, 50) + '...' : content
+          activities.push({
+            id: `msg-${m.id}`,
+            type: 'message_sent',
+            description: `Sent message: "${preview}"`,
+            metadata: { conversation_id: m.conversation_id },
+            created_at: m.created_at
+          })
+        }
+      }
 
-      // 4. Property views
+      // Get property views
       const { data: views } = await supabase
         .from('property_views')
         .select('*, properties(address)')
@@ -98,19 +104,22 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(30)
 
-      views?.forEach((v: { id: string; created_at: string; property_id: string; action: string; properties: { address: string } | null }) => {
-        activities.push({
-          id: `view-${v.id}`,
-          type: 'property_view',
-          description: `Viewed property: ${v.properties?.address || 'Unknown'}`,
-          property_id: v.property_id,
-          property_address: v.properties?.address || undefined,
-          metadata: { action: v.action },
-          created_at: v.created_at
-        })
-      })
+      if (views) {
+        for (const v of views) {
+          const props = v.properties as { address?: string } | null
+          activities.push({
+            id: `view-${v.id}`,
+            type: 'property_view',
+            description: `Viewed property: ${props?.address || 'Unknown'}`,
+            property_id: v.property_id,
+            property_address: props?.address,
+            metadata: { action: v.action },
+            created_at: v.created_at
+          })
+        }
+      }
 
-      // 5. Walkthrough feedback
+      // Get walkthrough feedback
       const { data: feedback } = await supabase
         .from('walkthrough_feedback')
         .select('*, properties(address)')
@@ -118,33 +127,40 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      feedback?.forEach((f: { id: string; created_at: string; property_id: string; overall_rating: number; properties: { address: string } | null }) => {
-        activities.push({
-          id: `feedback-${f.id}`,
-          type: 'walkthrough_feedback',
-          description: `Rated walkthrough: ${f.properties?.address || 'Unknown'} (${f.overall_rating}/5 stars)`,
-          property_id: f.property_id,
-          property_address: f.properties?.address || undefined,
-          metadata: { rating: f.overall_rating },
-          created_at: f.created_at
-        })
-      })
+      if (feedback) {
+        for (const f of feedback) {
+          const props = f.properties as { address?: string } | null
+          activities.push({
+            id: `feedback-${f.id}`,
+            type: 'walkthrough_feedback',
+            description: `Rated walkthrough: ${props?.address || 'Unknown'} (${f.overall_rating}/5 stars)`,
+            property_id: f.property_id,
+            property_address: props?.address,
+            metadata: { rating: f.overall_rating },
+            created_at: f.created_at
+          })
+        }
+      }
 
     } else if (agentId) {
-      // Get all activity for agent's customers
-      
       // Get agent's assigned customers
       const { data: customers } = await supabase
         .from('customers')
         .select('id, full_name')
         .eq('assigned_agent_id', agentId)
 
-      const customerIds = customers?.map((c: { id: string }) => c.id) || []
+      const customerIds: string[] = []
       const customerNames: Record<string, string> = {}
-      customers?.forEach((c: { id: string; full_name: string }) => { customerNames[c.id] = c.full_name })
+      
+      if (customers) {
+        for (const c of customers) {
+          customerIds.push(c.id)
+          customerNames[c.id] = c.full_name
+        }
+      }
 
       if (customerIds.length > 0) {
-        // Recent showings
+        // Get recent showings
         const { data: showings } = await supabase
           .from('showing_requests')
           .select('*')
@@ -152,18 +168,20 @@ export async function GET(request: NextRequest) {
           .order('created_at', { ascending: false })
           .limit(30)
 
-        showings?.forEach((s: { id: string; created_at: string; customer_id: string; property_address: string; status: string }) => {
-          activities.push({
-            id: `showing-${s.id}`,
-            type: 'showing_request',
-            description: `${customerNames[s.customer_id] || 'Customer'} requested showing: ${s.property_address}`,
-            property_address: s.property_address,
-            metadata: { customer_id: s.customer_id, customer_name: customerNames[s.customer_id], status: s.status },
-            created_at: s.created_at
-          })
-        })
+        if (showings) {
+          for (const s of showings) {
+            activities.push({
+              id: `showing-${s.id}`,
+              type: 'showing_request',
+              description: `${customerNames[s.customer_id] || 'Customer'} requested showing: ${s.property_address}`,
+              property_address: s.property_address,
+              metadata: { customer_id: s.customer_id, customer_name: customerNames[s.customer_id], status: s.status },
+              created_at: s.created_at
+            })
+          }
+        }
 
-        // Recent saves
+        // Get recent saves
         const { data: saved } = await supabase
           .from('saved_properties')
           .select('*, properties(address, price)')
@@ -171,18 +189,21 @@ export async function GET(request: NextRequest) {
           .order('created_at', { ascending: false })
           .limit(30)
 
-        saved?.forEach((s: { id: string; created_at: string; customer_id: string; properties: { address: string; price: number } | null }) => {
-          activities.push({
-            id: `saved-${s.id}`,
-            type: 'saved_property',
-            description: `${customerNames[s.customer_id] || 'Customer'} saved: ${s.properties?.address || 'Unknown'}`,
-            property_address: s.properties?.address || undefined,
-            metadata: { customer_id: s.customer_id, customer_name: customerNames[s.customer_id], price: s.properties?.price },
-            created_at: s.created_at
-          })
-        })
+        if (saved) {
+          for (const s of saved) {
+            const props = s.properties as { address?: string; price?: number } | null
+            activities.push({
+              id: `saved-${s.id}`,
+              type: 'saved_property',
+              description: `${customerNames[s.customer_id] || 'Customer'} saved: ${props?.address || 'Unknown'}`,
+              property_address: props?.address,
+              metadata: { customer_id: s.customer_id, customer_name: customerNames[s.customer_id], price: props?.price },
+              created_at: s.created_at
+            })
+          }
+        }
 
-        // Recent feedback
+        // Get recent feedback
         const { data: feedback } = await supabase
           .from('walkthrough_feedback')
           .select('*, properties(address)')
@@ -190,16 +211,19 @@ export async function GET(request: NextRequest) {
           .order('created_at', { ascending: false })
           .limit(30)
 
-        feedback?.forEach((f: { id: string; created_at: string; customer_id: string; overall_rating: number; properties: { address: string } | null }) => {
-          activities.push({
-            id: `feedback-${f.id}`,
-            type: 'walkthrough_feedback',
-            description: `${customerNames[f.customer_id] || 'Customer'} rated: ${f.properties?.address || 'Unknown'} (${f.overall_rating}/5)`,
-            property_address: f.properties?.address || undefined,
-            metadata: { customer_id: f.customer_id, customer_name: customerNames[f.customer_id], rating: f.overall_rating },
-            created_at: f.created_at
-          })
-        })
+        if (feedback) {
+          for (const f of feedback) {
+            const props = f.properties as { address?: string } | null
+            activities.push({
+              id: `feedback-${f.id}`,
+              type: 'walkthrough_feedback',
+              description: `${customerNames[f.customer_id] || 'Customer'} rated: ${props?.address || 'Unknown'} (${f.overall_rating}/5)`,
+              property_address: props?.address,
+              metadata: { customer_id: f.customer_id, customer_name: customerNames[f.customer_id], rating: f.overall_rating },
+              created_at: f.created_at
+            })
+          }
+        }
       }
     }
 
