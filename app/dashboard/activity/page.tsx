@@ -10,15 +10,11 @@ import {
   MessageSquare,
   Eye,
   Star,
-  Award,
   ChevronRight,
   Search,
-  Filter,
   RefreshCw,
   Loader2,
   Home,
-  TrendingUp,
-  Clock,
   Phone,
   Mail,
   AlertCircle,
@@ -36,12 +32,19 @@ interface Customer {
   created_at: string
 }
 
+interface ActivityMetadata {
+  customer_name?: string
+  rating?: number
+  interest_level?: string
+  [key: string]: unknown
+}
+
 interface ActivityItem {
   id: string
   type: string
   description: string
   property_address?: string
-  metadata?: Record<string, unknown>
+  metadata?: ActivityMetadata
   created_at: string
 }
 
@@ -54,12 +57,13 @@ export default function AgentCustomerActivityPage() {
   const [allActivities, setAllActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingActivities, setLoadingActivities] = useState(false)
-  const [agentId, setAgentId] = useState<string | null>(null)
+  const [, setAgentId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activityFilter, setActivityFilter] = useState('all')
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadData() {
@@ -141,6 +145,28 @@ export default function AgentCustomerActivityPage() {
 
   const formatPrice = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 
+  // Helper functions for safe metadata access
+  const getCustomerName = (metadata?: ActivityMetadata): string | null => {
+    if (metadata?.customer_name && typeof metadata.customer_name === 'string') {
+      return metadata.customer_name
+    }
+    return null
+  }
+
+  const getRating = (metadata?: ActivityMetadata): number | null => {
+    if (metadata?.rating && typeof metadata.rating === 'number') {
+      return metadata.rating
+    }
+    return null
+  }
+
+  const getInterestLevel = (metadata?: ActivityMetadata): string | null => {
+    if (metadata?.interest_level && typeof metadata.interest_level === 'string') {
+      return metadata.interest_level
+    }
+    return null
+  }
+
   // Stats
   const stats = {
     totalCustomers: customers.length,
@@ -148,6 +174,13 @@ export default function AgentCustomerActivityPage() {
     savedProperties: allActivities.filter(a => a.type === 'saved_property').length,
     showingRequests: allActivities.filter(a => a.type === 'showing_request').length,
   }
+
+  // Hot leads count
+  const hotLeadsCount = allActivities.filter(a => {
+    if (a.type !== 'walkthrough_feedback') return false
+    const interestLevel = getInterestLevel(a.metadata)
+    return interestLevel === 'very_interested' || interestLevel === 'ready_to_offer'
+  }).length
 
   if (loading) {
     return (
@@ -163,7 +196,7 @@ export default function AgentCustomerActivityPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customer Activity</h1>
-          <p className="text-gray-500">Monitor your customers' property searches and interests</p>
+          <p className="text-gray-500">Monitor your customers&apos; property searches and interests</p>
         </div>
         <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
           <RefreshCw className="w-4 h-4" />
@@ -355,36 +388,41 @@ export default function AgentCustomerActivityPage() {
               </div>
             ) : filteredActivities.length > 0 ? (
               <div className="divide-y">
-                {filteredActivities.map(activity => (
-                  <div key={activity.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        {activityIcon(activity.type)}
+                {filteredActivities.map(activity => {
+                  const customerName = getCustomerName(activity.metadata)
+                  const rating = getRating(activity.metadata)
+                  
+                  return (
+                    <div key={activity.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {activityIcon(activity.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900">{activity.description}</p>
+                          {activity.property_address && (
+                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                              <Home className="w-3 h-3" />
+                              {activity.property_address}
+                            </p>
+                          )}
+                          {customerName && !selectedCustomer && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              by {customerName}
+                            </p>
+                          )}
+                          {rating !== null && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                              <span className="text-xs text-gray-600">{rating}/5</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{formatTime(activity.created_at)}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">{activity.description}</p>
-                        {activity.property_address && (
-                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                            <Home className="w-3 h-3" />
-                            {activity.property_address}
-                          </p>
-                        )}
-                        {activity.metadata?.customer_name && !selectedCustomer && (
-                          <p className="text-xs text-blue-600 mt-1">
-                            by {String(activity.metadata.customer_name)}
-                          </p>
-                        )}
-                        {activity.metadata?.rating && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                            <span className="text-xs text-gray-600">{Number(activity.metadata.rating)}/5</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0">{formatTime(activity.created_at)}</span>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="p-12 text-center text-gray-500">
@@ -398,15 +436,14 @@ export default function AgentCustomerActivityPage() {
       </div>
 
       {/* Hot Leads Alert */}
-      {allActivities.filter(a => a.type === 'walkthrough_feedback' && (a.metadata?.interest_level === 'very_interested' || a.metadata?.interest_level === 'ready_to_offer')).length > 0 && (
+      {hotLeadsCount > 0 && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl p-4">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-6 h-6" />
             <div>
               <p className="font-semibold">🔥 Hot Leads Detected!</p>
               <p className="text-sm text-orange-100">
-                {allActivities.filter(a => a.type === 'walkthrough_feedback' && (a.metadata?.interest_level === 'very_interested' || a.metadata?.interest_level === 'ready_to_offer')).length} customer(s) 
-                showed high interest in properties. Follow up ASAP!
+                {hotLeadsCount} customer(s) showed high interest in properties. Follow up ASAP!
               </p>
             </div>
           </div>
