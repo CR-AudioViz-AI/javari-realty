@@ -4,23 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  FileText,
-  Folder,
-  Upload,
-  Search,
-  Download,
-  Trash2,
-  Eye,
-  Share2,
-  Home,
-  Building2,
-  Video,
-  Loader2,
-  Plus,
-  X,
-  Check,
-  FolderOpen,
-  Image as ImageIcon,
+  FileText, Folder, Upload, Search, Trash2, Eye, Share2, Home,
+  Building2, Video, Loader2, Plus, X, Check, FolderOpen, Image as ImageIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -35,7 +20,6 @@ interface Document {
   title: string
   share_with_agent: boolean
   created_at: string
-  properties?: { id: string; address: string; city: string }
 }
 
 interface Property {
@@ -108,7 +92,7 @@ export default function CustomerDocumentsPage() {
 
       const { data: docs } = await supabase
         .from('property_documents')
-        .select('*, properties(id, address, city)')
+        .select('*')
         .eq('customer_id', c.id)
         .order('created_at', { ascending: false })
 
@@ -119,9 +103,15 @@ export default function CustomerDocumentsPage() {
         .select('property_id, properties(*)')
         .eq('customer_id', c.id)
 
-      interface SavedProperty { properties: Property }
-      const props = saved?.map((s: SavedProperty) => s.properties).filter(Boolean) || []
-      setProperties(props as Property[])
+      // Fixed: properly handle the joined data
+      const props: Property[] = []
+      if (saved) {
+        for (const item of saved) {
+          const p = item.properties as unknown as Property | null
+          if (p) props.push(p)
+        }
+      }
+      setProperties(props)
     } catch (error) {
       console.error('Error:', error)
     } finally {
