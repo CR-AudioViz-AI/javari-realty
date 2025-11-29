@@ -371,13 +371,13 @@ export default function AgentCustomerActivityPage() {
                         )}
                         {activity.metadata?.customer_name && !selectedCustomer && (
                           <p className="text-xs text-blue-600 mt-1">
-                            by {activity.metadata.customer_name as string}
+                            by {String(activity.metadata.customer_name)}
                           </p>
                         )}
                         {activity.metadata?.rating && (
                           <div className="flex items-center gap-1 mt-1">
                             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                            <span className="text-xs text-gray-600">{activity.metadata.rating as number}/5</span>
+                            <span className="text-xs text-gray-600">{Number(activity.metadata.rating)}/5</span>
                           </div>
                         )}
                       </div>
