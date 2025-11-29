@@ -86,6 +86,7 @@ export default function DashboardLayout({
         { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
         { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Briefcase },
+        { name: 'Open House', href: '/dashboard/openhouse', icon: Home },
       ]
 
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : 'Loading...'
