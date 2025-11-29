@@ -12,7 +12,6 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const propertyId = searchParams.get('property_id')
-  const city = searchParams.get('city')
   const limit = parseInt(searchParams.get('limit') || '20')
 
   try {
@@ -30,10 +29,6 @@ export async function GET(request: NextRequest) {
 
     if (propertyId) {
       query = query.eq('property_id', propertyId)
-    }
-
-    if (city) {
-      query = query.eq('properties.city', city)
     }
 
     const { data, error } = await query
@@ -99,7 +94,8 @@ export async function POST(request: NextRequest) {
         .eq('id', open_house_id)
         .single()
 
-      if (openHouse?.max_attendees && openHouse.current_rsvps >= openHouse.max_attendees) {
+      const oh = openHouse as { max_attendees?: number; current_rsvps?: number } | null
+      if (oh?.max_attendees && (oh.current_rsvps || 0) >= oh.max_attendees) {
         return NextResponse.json({ error: 'This open house is at capacity' }, { status: 400 })
       }
 
@@ -132,13 +128,14 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (ohData) {
+        const props = ohData.properties as unknown as { address: string } | null
         await supabase.from('leads').insert({
           full_name: visitor_name,
           email: visitor_email,
           phone: visitor_phone,
           source: 'open_house_rsvp',
           status: 'new',
-          notes: `Open House RSVP for: ${(ohData.properties as { address: string })?.address}`,
+          notes: `Open House RSVP for: ${props?.address || 'Unknown property'}`,
           assigned_to: ohData.host_agent_id,
           created_at: new Date().toISOString()
         })
@@ -176,6 +173,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (ohData) {
+        const props = ohData.properties as unknown as { address: string } | null
         await supabase.from('leads').insert({
           full_name: visitor_name,
           email: visitor_email,
@@ -184,7 +182,7 @@ export async function POST(request: NextRequest) {
           status: 'new',
           buyer_type,
           timeline,
-          notes: `Open House Walk-in: ${(ohData.properties as { address: string })?.address}\n${notes || ''}`,
+          notes: `Open House Walk-in: ${props?.address || 'Unknown property'}\n${notes || ''}`,
           assigned_to: ohData.host_agent_id,
           created_at: new Date().toISOString()
         })
