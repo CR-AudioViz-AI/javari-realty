@@ -1,12 +1,13 @@
 // =====================================================
 // CR REALTOR PLATFORM - CUSTOMER INVITE API
 // Path: app/api/customers/invite/route.ts
-// Timestamp: 2025-12-01 3:58 PM EST
-// Purpose: Agent creates customer → system emails credentials
+// Timestamp: 2025-12-01 4:45 PM EST
+// Purpose: Agent creates customer → system auto-emails credentials
 // =====================================================
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase-helpers'
+import { sendCustomerInviteEmail } from '@/lib/email'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
@@ -38,10 +39,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user is an agent
+    // Verify user is an agent and get their profile
     const { data: agentProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, first_name, last_name, email, organization_id')
+      .select('id, role, first_name, last_name, email, phone, organization_id')
       .eq('id', user.id)
       .single()
 
@@ -77,7 +78,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingCustomer) {
-      // Customer exists - check if already assigned to this agent
       if (existingCustomer.assigned_agent_id === user.id) {
         return NextResponse.json({ 
           error: 'This customer is already assigned to you',
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         customer_email: email.toLowerCase(),
         customer_name: full_name,
         customer_phone: phone,
-        temp_password: tempPassword, // Store for re-send capability
+        temp_password: tempPassword,
         token: inviteToken,
         status: 'pending',
         customer_id: customer.id,
@@ -184,22 +184,49 @@ export async function POST(request: NextRequest) {
 
     if (inviteError) {
       console.error('Error creating invitation:', inviteError)
-      // Continue anyway - invitation tracking is optional
     }
 
-    // Prepare email content
+    // Prepare credentials
     const agentName = `${agentProfile.first_name} ${agentProfile.last_name}`
     const loginUrl = process.env.NEXT_PUBLIC_APP_URL 
       ? `${process.env.NEXT_PUBLIC_APP_URL}/customer/login`
       : 'https://cr-realtor-platform.vercel.app/customer/login'
 
-    // Try to send email via Supabase (if configured)
-    // Note: Supabase auth email is already sent on user creation
-    // This is for additional custom notification
+    // ========================================
+    // AUTO-SEND EMAIL TO CUSTOMER
+    // ========================================
+    const emailResult = await sendCustomerInviteEmail({
+      customerEmail: email.toLowerCase(),
+      customerName: full_name,
+      agentName,
+      agentEmail: agentProfile.email,
+      agentPhone: agentProfile.phone,
+      tempPassword,
+      loginUrl
+    })
+
+    // Update invitation with email status
+    if (invitation) {
+      await supabase
+        .from('customer_invitations')
+        .update({
+          metadata: {
+            email_sent: emailResult.success,
+            email_sent_at: emailResult.success ? new Date().toISOString() : null,
+            email_error: emailResult.error || null,
+            email_message_id: emailResult.messageId || null
+          }
+        })
+        .eq('id', invitation.id)
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Customer account created successfully',
+      message: emailResult.success 
+        ? 'Customer account created and email sent!' 
+        : 'Customer account created. Email not configured - share credentials manually.',
+      email_sent: emailResult.success,
+      email_error: emailResult.error,
       customer: {
         id: customer.id,
         email: customer.email,
@@ -209,13 +236,13 @@ export async function POST(request: NextRequest) {
         id: invitation.id,
         token: invitation.token
       } : null,
-      // Credentials for agent to share manually if email fails
+      // Always include credentials for agent to copy if needed
       credentials: {
         email: email.toLowerCase(),
         temporary_password: tempPassword,
         login_url: loginUrl,
         agent_name: agentName,
-        message: `Your real estate agent ${agentName} has created an account for you. Login at ${loginUrl} with email: ${email} and password: ${tempPassword}`
+        message: `Hi ${full_name.split(' ')[0]}! Your agent ${agentName} has created an account for you. Login at ${loginUrl} with email: ${email} and password: ${tempPassword}`
       }
     })
 
@@ -239,7 +266,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // pending, accepted, expired, all
+    const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
 
     let query = supabase
@@ -282,6 +309,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get agent profile for email
+    const { data: agentProfile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email, phone')
+      .eq('id', user.id)
+      .single()
+
     const body = await request.json()
     const { invitation_id, action } = body
 
@@ -294,7 +328,7 @@ export async function PATCH(request: NextRequest) {
       .from('customer_invitations')
       .select('*')
       .eq('id', invitation_id)
-      .eq('agent_id', user.id) // Ensure agent owns this invitation
+      .eq('agent_id', user.id)
       .single()
 
     if (fetchError || !invitation) {
@@ -324,7 +358,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Update invitation
-      const { data: updated, error: updateError } = await supabase
+      await supabase
         .from('customer_invitations')
         .update({
           temp_password: newPassword,
@@ -332,16 +366,32 @@ export async function PATCH(request: NextRequest) {
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         })
         .eq('id', invitation_id)
-        .select()
-        .single()
 
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
-      }
+      // Resend email
+      const loginUrl = process.env.NEXT_PUBLIC_APP_URL 
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/customer/login`
+        : 'https://cr-realtor-platform.vercel.app/customer/login'
+
+      const agentName = agentProfile 
+        ? `${agentProfile.first_name} ${agentProfile.last_name}`
+        : 'Your Agent'
+
+      const emailResult = await sendCustomerInviteEmail({
+        customerEmail: invitation.customer_email,
+        customerName: invitation.customer_name,
+        agentName,
+        agentEmail: agentProfile?.email,
+        agentPhone: agentProfile?.phone,
+        tempPassword: newPassword,
+        loginUrl
+      })
 
       return NextResponse.json({
         success: true,
-        message: 'Invitation credentials updated',
+        message: emailResult.success 
+          ? 'New credentials sent to customer!' 
+          : 'Credentials updated. Email not sent - share manually.',
+        email_sent: emailResult.success,
         credentials: {
           email: invitation.customer_email,
           temporary_password: newPassword
@@ -350,14 +400,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === 'expire') {
-      const { error: updateError } = await supabase
+      await supabase
         .from('customer_invitations')
         .update({ status: 'expired' })
         .eq('id', invitation_id)
-
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
-      }
 
       return NextResponse.json({
         success: true,
