@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - AGENT EMAIL SETTINGS API
 // Path: app/api/agent/email-settings/route.ts
-// Timestamp: 2025-12-01 4:58 PM EST
+// Timestamp: 2025-12-01 5:13 PM EST
 // Purpose: Configure agent's email integration
 // =====================================================
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: settings, error } = await supabase
-      .from('agent_email_settings')
+      .from('agent_email_settings' as any)
       .select('*')
       .eq('agent_id', user.id)
       .single()
@@ -32,27 +32,28 @@ export async function GET(request: NextRequest) {
 
     // Don't expose sensitive tokens to frontend
     if (settings) {
+      const s = settings as any
       return NextResponse.json({
         settings: {
-          id: settings.id,
-          provider: settings.provider,
-          sender_email: settings.sender_email,
-          sender_name: settings.sender_name,
-          reply_to: settings.reply_to,
-          signature_html: settings.signature_html,
-          signature_text: settings.signature_text,
-          is_verified: settings.is_verified,
-          verified_at: settings.verified_at,
-          last_used_at: settings.last_used_at,
-          last_error: settings.last_error,
-          is_active: settings.is_active,
-          send_copy_to_self: settings.send_copy_to_self,
+          id: s.id,
+          provider: s.provider,
+          sender_email: s.sender_email,
+          sender_name: s.sender_name,
+          reply_to: s.reply_to,
+          signature_html: s.signature_html,
+          signature_text: s.signature_text,
+          is_verified: s.is_verified,
+          verified_at: s.verified_at,
+          last_used_at: s.last_used_at,
+          last_error: s.last_error,
+          is_active: s.is_active,
+          send_copy_to_self: s.send_copy_to_self,
           // For SMTP, indicate if configured (but don't show password)
-          smtp_configured: settings.provider === 'smtp' && !!settings.smtp_host,
-          smtp_host: settings.smtp_host,
-          smtp_port: settings.smtp_port,
+          smtp_configured: s.provider === 'smtp' && !!s.smtp_host,
+          smtp_host: s.smtp_host,
+          smtp_port: s.smtp_port,
           // For OAuth, indicate if connected
-          oauth_connected: ['gmail', 'outlook'].includes(settings.provider) && !!settings.refresh_token
+          oauth_connected: ['gmail', 'outlook'].includes(s.provider) && !!s.refresh_token
         }
       })
     }
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert settings
     const { data: settings, error } = await supabase
-      .from('agent_email_settings')
+      .from('agent_email_settings' as any)
       .upsert(settingsData, {
         onConflict: 'agent_id',
         ignoreDuplicates: false
@@ -152,14 +153,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const s = settings as any
     return NextResponse.json({
       success: true,
       message: 'Email settings saved',
       settings: {
-        id: settings.id,
-        provider: settings.provider,
-        sender_email: settings.sender_email,
-        is_verified: settings.is_verified
+        id: s.id,
+        provider: s.provider,
+        sender_email: s.sender_email,
+        is_verified: s.is_verified
       }
     })
 
@@ -179,7 +181,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await supabase
-      .from('agent_email_settings')
+      .from('agent_email_settings' as any)
       .delete()
       .eq('agent_id', user.id)
 
