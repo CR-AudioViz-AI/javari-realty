@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - AGENT EMAIL SETTINGS API
 // Path: app/api/agent/email-settings/route.ts
-// Timestamp: 2025-12-01 5:13 PM EST
+// Timestamp: 2025-12-01 5:30 PM EST
 // Purpose: Configure agent's email integration
 // =====================================================
 
@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // @ts-ignore - table not in generated types yet
     const { data: settings, error } = await supabase
-      .from('agent_email_settings' as any)
+      .from('agent_email_settings')
       .select('*')
       .eq('agent_id', user.id)
       .single()
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Don't expose sensitive tokens to frontend
     if (settings) {
-      const s = settings as any
+      const s = settings as Record<string, unknown>
       return NextResponse.json({
         settings: {
           id: s.id,
@@ -53,15 +54,16 @@ export async function GET(request: NextRequest) {
           smtp_host: s.smtp_host,
           smtp_port: s.smtp_port,
           // For OAuth, indicate if connected
-          oauth_connected: ['gmail', 'outlook'].includes(s.provider) && !!s.refresh_token
+          oauth_connected: ['gmail', 'outlook'].includes(s.provider as string) && !!s.refresh_token
         }
       })
     }
 
     return NextResponse.json({ settings: null })
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build settings object
-    const settingsData: any = {
+    const settingsData: Record<string, unknown> = {
       agent_id: user.id,
       provider,
       sender_email: sender_email || null,
@@ -139,8 +141,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert settings
+    // @ts-ignore - table not in generated types yet
     const { data: settings, error } = await supabase
-      .from('agent_email_settings' as any)
+      .from('agent_email_settings')
       .upsert(settingsData, {
         onConflict: 'agent_id',
         ignoreDuplicates: false
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const s = settings as any
+    const s = settings as Record<string, unknown>
     return NextResponse.json({
       success: true,
       message: 'Email settings saved',
@@ -165,8 +168,9 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -180,8 +184,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // @ts-ignore - table not in generated types yet
     const { error } = await supabase
-      .from('agent_email_settings' as any)
+      .from('agent_email_settings')
       .delete()
       .eq('agent_id', user.id)
 
@@ -194,7 +199,8 @@ export async function DELETE(request: NextRequest) {
       message: 'Email settings removed'
     })
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
