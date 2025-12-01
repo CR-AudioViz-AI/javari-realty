@@ -1,206 +1,158 @@
-// =====================================================
-// CR REALTOR PLATFORM - AGENT EMAIL SETTINGS API
-// Path: app/api/agent/email-settings/route.ts
-// Timestamp: 2025-12-01 5:30 PM EST
-// Purpose: Configure agent's email integration
-// =====================================================
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-export const dynamic = 'force-dynamic'
+// Admin client for email settings operations
+const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
+// Untyped client for tables not yet in generated types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db: any = adminClient;
 
 // GET - Retrieve agent's email settings
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const agentId = request.nextUrl.searchParams.get('agent_id');
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!agentId) {
+      return NextResponse.json(
+        { error: 'agent_id is required' },
+        { status: 400 }
+      );
     }
 
-    // @ts-ignore - table not in generated types yet
-    const { data: settings, error } = await supabase
+    const { data, error } = await db
       .from('agent_email_settings')
       .select('*')
-      .eq('agent_id', user.id)
-      .single()
+      .eq('agent_id', agentId)
+      .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error && error.code !== 'PGRST116') {
+      console.error('Database error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch email settings' },
+        { status: 500 }
+      );
     }
 
     // Don't expose sensitive tokens to frontend
-    if (settings) {
-      const s = settings as Record<string, unknown>
-      return NextResponse.json({
-        settings: {
-          id: s.id,
-          provider: s.provider,
-          sender_email: s.sender_email,
-          sender_name: s.sender_name,
-          reply_to: s.reply_to,
-          signature_html: s.signature_html,
-          signature_text: s.signature_text,
-          is_verified: s.is_verified,
-          verified_at: s.verified_at,
-          last_used_at: s.last_used_at,
-          last_error: s.last_error,
-          is_active: s.is_active,
-          send_copy_to_self: s.send_copy_to_self,
-          // For SMTP, indicate if configured (but don't show password)
-          smtp_configured: s.provider === 'smtp' && !!s.smtp_host,
-          smtp_host: s.smtp_host,
-          smtp_port: s.smtp_port,
-          // For OAuth, indicate if connected
-          oauth_connected: ['gmail', 'outlook'].includes(s.provider as string) && !!s.refresh_token
-        }
-      })
+    if (data) {
+      const safeData = data as Record<string, unknown>;
+      const sanitized = {
+        ...safeData,
+        access_token: safeData.access_token ? '[REDACTED]' : null,
+        refresh_token: safeData.refresh_token ? '[REDACTED]' : null,
+        smtp_password: safeData.smtp_password ? '[REDACTED]' : null,
+      };
+      return NextResponse.json({ settings: sanitized });
     }
 
-    return NextResponse.json({ settings: null })
-
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ settings: null });
+  } catch (err) {
+    console.error('Email settings GET error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 // POST - Create or update email settings
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const body = await request.json();
+    const { agent_id, provider, smtp_host, smtp_port, smtp_user, smtp_password, sender_email, sender_name, signature } = body;
+
+    if (!agent_id) {
+      return NextResponse.json(
+        { error: 'agent_id is required' },
+        { status: 400 }
+      );
     }
 
-    const body = await request.json()
-    const {
-      provider,
-      sender_email,
-      sender_name,
-      reply_to,
-      signature_html,
-      signature_text,
-      smtp_host,
-      smtp_port,
-      smtp_username,
-      smtp_password,
-      smtp_secure,
-      send_copy_to_self
-    } = body
+    // Build update object based on provided fields
+    const updateData: Record<string, unknown> = {
+      agent_id,
+      updated_at: new Date().toISOString(),
+    };
 
-    // Validate provider
-    if (!['gmail', 'outlook', 'smtp', 'none'].includes(provider)) {
-      return NextResponse.json({ error: 'Invalid provider' }, { status: 400 })
-    }
+    if (provider) updateData.provider = provider;
+    if (smtp_host !== undefined) updateData.smtp_host = smtp_host;
+    if (smtp_port !== undefined) updateData.smtp_port = smtp_port;
+    if (smtp_user !== undefined) updateData.smtp_user = smtp_user;
+    if (smtp_password !== undefined) updateData.smtp_password = smtp_password;
+    if (sender_email !== undefined) updateData.sender_email = sender_email;
+    if (sender_name !== undefined) updateData.sender_name = sender_name;
+    if (signature !== undefined) updateData.signature = signature;
 
-    // Validate SMTP settings if provider is smtp
-    if (provider === 'smtp') {
-      if (!smtp_host || !smtp_port || !smtp_username || !sender_email) {
-        return NextResponse.json({ 
-          error: 'SMTP requires host, port, username, and sender email' 
-        }, { status: 400 })
-      }
-    }
-
-    // Build settings object
-    const settingsData: Record<string, unknown> = {
-      agent_id: user.id,
-      provider,
-      sender_email: sender_email || null,
-      sender_name: sender_name || null,
-      reply_to: reply_to || null,
-      signature_html: signature_html || null,
-      signature_text: signature_text || null,
-      send_copy_to_self: send_copy_to_self || false,
-      is_verified: false, // Reset on update
-      last_error: null
-    }
-
-    // Add SMTP settings if applicable
-    if (provider === 'smtp') {
-      settingsData.smtp_host = smtp_host
-      settingsData.smtp_port = smtp_port
-      settingsData.smtp_username = smtp_username
-      settingsData.smtp_secure = smtp_secure !== false
-      
-      // Only update password if provided (allows updating other fields without re-entering password)
-      if (smtp_password) {
-        settingsData.smtp_password = smtp_password // Should be encrypted in production
-      }
-    } else {
-      // Clear SMTP settings if switching provider
-      settingsData.smtp_host = null
-      settingsData.smtp_port = null
-      settingsData.smtp_username = null
-      settingsData.smtp_password = null
-    }
-
-    // Upsert settings
-    // @ts-ignore - table not in generated types yet
-    const { data: settings, error } = await supabase
+    const { data, error } = await db
       .from('agent_email_settings')
-      .upsert(settingsData, {
-        onConflict: 'agent_id',
-        ignoreDuplicates: false
-      })
+      .upsert(updateData, { onConflict: 'agent_id' })
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('Error saving email settings:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Database error:', error);
+      return NextResponse.json(
+        { error: 'Failed to save email settings' },
+        { status: 500 }
+      );
     }
 
-    const s = settings as Record<string, unknown>
-    return NextResponse.json({
-      success: true,
-      message: 'Email settings saved',
-      settings: {
-        id: s.id,
-        provider: s.provider,
-        sender_email: s.sender_email,
-        is_verified: s.is_verified
-      }
-    })
+    // Sanitize response
+    const safeData = data as Record<string, unknown>;
+    const sanitized = {
+      ...safeData,
+      access_token: safeData.access_token ? '[REDACTED]' : null,
+      refresh_token: safeData.refresh_token ? '[REDACTED]' : null,
+      smtp_password: safeData.smtp_password ? '[REDACTED]' : null,
+    };
 
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ settings: sanitized, success: true });
+  } catch (err) {
+    console.error('Email settings POST error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE - Remove email settings (disconnect)
+// DELETE - Disconnect email provider
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const agentId = request.nextUrl.searchParams.get('agent_id');
+
+    if (!agentId) {
+      return NextResponse.json(
+        { error: 'agent_id is required' },
+        { status: 400 }
+      );
     }
 
-    // @ts-ignore - table not in generated types yet
-    const { error } = await supabase
+    const { error } = await db
       .from('agent_email_settings')
       .delete()
-      .eq('agent_id', user.id)
+      .eq('agent_id', agentId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Database error:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete email settings' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Email settings removed'
-    })
-
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Email settings DELETE error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
