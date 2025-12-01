@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - CUSTOMER MESSAGING API
 // Path: app/api/messages/customer/route.ts
-// Timestamp: 2025-12-01 5:03 PM EST
+// Timestamp: 2025-12-01 10:50 AM EST
 // Purpose: Agent-customer messaging with email delivery
 // =====================================================
 
@@ -104,8 +104,9 @@ export async function GET(request: NextRequest) {
       customer_id: targetCustomerId
     })
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -218,24 +219,26 @@ export async function POST(request: NextRequest) {
       if (customer?.email) {
         // Check if agent has email configured
         const hasEmail = await hasAgentEmailConfigured(user.id)
+        const emailSubject = `Message from ${senderName}`
 
         if (hasEmail) {
-          // Send from agent's own email
-          emailResult = await sendAgentEmail(user.id, {
+          // Send from agent's own email - FIXED: single object parameter
+          emailResult = await sendAgentEmail({
+            agentId: user.id,
             to: customer.email,
-            subject: `Message from ${senderName}`,
+            subject: emailSubject,
             html: buildMessageEmailHtml(content, senderName, profile?.phone, property_id)
           })
 
-          // Log the email
-          await logEmailSend(
-            user.id,
-            targetCustomerId,
-            customer.email,
-            `Message from ${senderName}`,
-            'direct_message',
-            emailResult
-          )
+          // Log the email - FIXED: single object parameter
+          await logEmailSend({
+            agentId: user.id,
+            recipientEmail: customer.email,
+            subject: emailSubject,
+            status: emailResult.success ? 'sent' : 'failed',
+            messageId: emailResult.messageId,
+            error: emailResult.error
+          })
         } else {
           // Fallback to system email (Resend)
           emailResult = await sendEmail({
@@ -280,9 +283,10 @@ export async function POST(request: NextRequest) {
       email_error: emailResult.error
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Message error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -346,8 +350,9 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ error: 'No messages specified' }, { status: 400 })
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
