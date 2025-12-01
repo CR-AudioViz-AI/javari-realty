@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -13,9 +12,6 @@ const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
 // Untyped client for tables not yet in generated types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db: any = adminClient;
-
-// Resend client for fallback
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 interface EmailSettings {
   id: string;
@@ -238,34 +234,37 @@ async function sendViaOutlook(
 }
 
 /**
- * Send email via Resend (fallback)
+ * Send email via Resend (fallback) - uses existing lib/email.ts
  */
 async function sendViaResend(params: SendEmailParams): Promise<EmailResult> {
-  if (!resend) {
-    return { success: false, error: 'Resend not configured' };
+  if (!resendApiKey) {
+    return { success: false, error: 'Resend not configured (RESEND_API_KEY missing)' };
   }
 
   try {
-    const result = await resend.emails.send({
-      from: 'noreply@craudiovizai.com',
+    // Use the existing email.ts sendEmail function instead of importing Resend directly
+    // This avoids requiring the resend package if it's not installed
+    const { sendEmail } = await import('@/lib/email');
+    
+    const result = await sendEmail({
       to: params.to,
       subject: params.subject,
       html: params.html,
       text: params.text,
     });
 
-    if (result.error) {
-      return { success: false, error: result.error.message };
+    if (!result.success) {
+      return { success: false, error: result.error || 'Failed to send via Resend' };
     }
 
     return {
       success: true,
-      messageId: result.data?.id,
+      messageId: result.messageId,
       provider: 'resend',
     };
   } catch (err) {
-    console.error('Resend error:', err);
-    return { success: false, error: 'Failed to send via Resend' };
+    console.error('Resend import/send error:', err);
+    return { success: false, error: 'Resend fallback not available' };
   }
 }
 
@@ -291,7 +290,7 @@ export async function sendAgentEmail(params: SendEmailParams): Promise<EmailResu
     }
   }
 
-  // Fallback to Resend
+  // Fallback to Resend via existing lib/email.ts
   console.log('Using Resend fallback for agent:', params.agentId);
   return sendViaResend(params);
 }
