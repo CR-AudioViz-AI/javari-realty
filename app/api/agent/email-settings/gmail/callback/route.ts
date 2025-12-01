@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - GMAIL OAUTH CALLBACK
 // Path: app/api/agent/email-settings/gmail/callback/route.ts
-// Timestamp: 2025-12-01 5:11 PM EST
+// Timestamp: 2025-12-01 5:31 PM EST
 // Purpose: Handle Gmail OAuth callback and store tokens
 // =====================================================
 
@@ -71,11 +71,11 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json()
 
     // Store tokens in database using admin client
-    // Use raw SQL approach since table may not be in generated types yet
     const adminClient = createAdminClient()
     
+    // @ts-ignore - table not in generated types yet
     const { error: upsertError } = await adminClient
-      .from('agent_email_settings' as any)
+      .from('agent_email_settings')
       .upsert({
         agent_id: state,
         provider: 'gmail',
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         is_verified: true,
         verified_at: new Date().toISOString(),
         last_error: null
-      } as any, {
+      }, {
         onConflict: 'agent_id'
       })
 
@@ -103,10 +103,11 @@ export async function GET(request: NextRequest) {
       new URL('/dashboard/settings/email?email_connected=gmail', request.url)
     )
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Gmail callback error:', error)
+    const message = error instanceof Error ? error.message : 'unknown_error'
     return NextResponse.redirect(
-      new URL(`/dashboard/settings/email?email_error=${encodeURIComponent(error.message)}`, request.url)
+      new URL(`/dashboard/settings/email?email_error=${encodeURIComponent(message)}`, request.url)
     )
   }
 }
