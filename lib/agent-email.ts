@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - AGENT EMAIL SERVICE
 // Path: lib/agent-email.ts
-// Timestamp: 2025-12-01 5:12 PM EST
+// Timestamp: 2025-12-01 5:28 PM EST
 // Purpose: Send emails FROM agent's own email address
 // =====================================================
 
@@ -49,8 +49,9 @@ interface EmailResult {
 export async function getAgentEmailSettings(agentId: string): Promise<AgentEmailSettings | null> {
   const adminClient = createAdminClient()
   
+  // @ts-ignore - table not in generated types yet
   const { data, error } = await adminClient
-    .from('agent_email_settings' as any)
+    .from('agent_email_settings')
     .select('*')
     .eq('agent_id', agentId)
     .eq('is_active', true)
@@ -98,12 +99,13 @@ async function refreshGmailToken(settings: AgentEmailSettings): Promise<string |
 
     // Update stored token
     const adminClient = createAdminClient()
+    // @ts-ignore - table not in generated types yet
     await adminClient
-      .from('agent_email_settings' as any)
+      .from('agent_email_settings')
       .update({
         access_token: tokens.access_token,
         token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-      } as any)
+      })
       .eq('id', settings.id)
 
     return tokens.access_token
@@ -187,9 +189,10 @@ async function sendViaGmail(
       
       // Update last error
       const adminClient = createAdminClient()
+      // @ts-ignore - table not in generated types yet
       await adminClient
-        .from('agent_email_settings' as any)
-        .update({ last_error: result.error?.message || 'Send failed' } as any)
+        .from('agent_email_settings')
+        .update({ last_error: result.error?.message || 'Send failed' })
         .eq('id', settings.id)
 
       return { 
@@ -201,9 +204,10 @@ async function sendViaGmail(
 
     // Update last used
     const adminClient = createAdminClient()
+    // @ts-ignore - table not in generated types yet
     await adminClient
-      .from('agent_email_settings' as any)
-      .update({ last_used_at: new Date().toISOString(), last_error: null } as any)
+      .from('agent_email_settings')
+      .update({ last_used_at: new Date().toISOString(), last_error: null })
       .eq('id', settings.id)
 
     return { 
@@ -212,9 +216,10 @@ async function sendViaGmail(
       provider: 'gmail'
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AgentEmail] Gmail error:', error)
-    return { success: false, error: error.message, provider: 'gmail' }
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return { success: false, error: message, provider: 'gmail' }
   }
 }
 
@@ -308,8 +313,9 @@ export async function logEmailSend(
 ) {
   const adminClient = createAdminClient()
   
+  // @ts-ignore - table not in generated types yet
   await adminClient
-    .from('agent_email_log' as any)
+    .from('agent_email_log')
     .insert({
       agent_id: agentId,
       customer_id: customerId,
@@ -320,7 +326,7 @@ export async function logEmailSend(
       provider: result.provider,
       provider_message_id: result.messageId,
       error_message: result.error
-    } as any)
+    })
 }
 
 /**
