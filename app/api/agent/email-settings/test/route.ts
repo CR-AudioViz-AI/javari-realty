@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - TEST EMAIL SETTINGS
 // Path: app/api/agent/email-settings/test/route.ts
-// Timestamp: 2025-12-01 5:14 PM EST
+// Timestamp: 2025-12-01 5:32 PM EST
 // Purpose: Send test email to verify configuration
 // =====================================================
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     const body = await request.json()
-    const p = profile as any
+    const p = profile as Record<string, unknown> | null
     const testEmail = body.test_email || p?.email
 
     if (!testEmail) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Send test email
     const result = await sendAgentEmail(user.id, {
-      to: testEmail,
+      to: testEmail as string,
       subject: 'Test Email - CR Realtor Platform',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     await logEmailSend(
       user.id,
       null,
-      testEmail,
+      testEmail as string,
       'Test Email - CR Realtor Platform',
       'test',
       result
@@ -67,13 +67,14 @@ export async function POST(request: NextRequest) {
 
     if (result.success) {
       // Mark as verified if test succeeds
+      // @ts-ignore - table not in generated types yet
       await supabase
-        .from('agent_email_settings' as any)
+        .from('agent_email_settings')
         .update({ 
           is_verified: true, 
           verified_at: new Date().toISOString(),
           last_error: null
-        } as any)
+        })
         .eq('agent_id', user.id)
 
       return NextResponse.json({
@@ -90,8 +91,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Test email error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
