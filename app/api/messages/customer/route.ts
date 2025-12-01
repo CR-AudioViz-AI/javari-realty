@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     // ========================================
     // SEND EMAIL NOTIFICATION
     // ========================================
-    let emailResult = { success: false, error: 'Email not sent' }
+    let emailResult: { success: boolean; error?: string; messageId?: string; provider?: string } = { success: false, error: 'Email not sent' }
 
     if (send_email && isAgent) {
       // Agent messaging customer - send from agent's email
