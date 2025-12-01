@@ -64,6 +64,14 @@ export async function getAgentEmailSettings(agentId: string): Promise<EmailSetti
 }
 
 /**
+ * Check if agent has email configured and verified
+ */
+export async function hasAgentEmailConfigured(agentId: string): Promise<boolean> {
+  const settings = await getAgentEmailSettings(agentId);
+  return settings !== null && settings.is_verified === true;
+}
+
+/**
  * Refresh Gmail access token if expired
  */
 async function refreshGmailToken(settings: EmailSettings): Promise<string | null> {
