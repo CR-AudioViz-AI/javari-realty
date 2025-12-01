@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - TEST EMAIL SETTINGS
 // Path: app/api/agent/email-settings/test/route.ts
-// Timestamp: 2025-12-01 5:01 PM EST
+// Timestamp: 2025-12-01 5:14 PM EST
 // Purpose: Send test email to verify configuration
 // =====================================================
 
@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     const body = await request.json()
-    const testEmail = body.test_email || profile?.email
+    const p = profile as any
+    const testEmail = body.test_email || p?.email
 
     if (!testEmail) {
       return NextResponse.json({ error: 'No test email provided' }, { status: 400 })
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #1e40af;">✅ Email Configuration Successful!</h2>
-          <p>Hi ${profile?.first_name || 'there'},</p>
+          <p>Hi ${p?.first_name || 'there'},</p>
           <p>This test email confirms your email integration is working correctly.</p>
           <p>When you message customers through the CR Realtor Platform, emails will be sent from your connected email address.</p>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
@@ -67,12 +68,12 @@ export async function POST(request: NextRequest) {
     if (result.success) {
       // Mark as verified if test succeeds
       await supabase
-        .from('agent_email_settings')
+        .from('agent_email_settings' as any)
         .update({ 
           is_verified: true, 
           verified_at: new Date().toISOString(),
           last_error: null
-        })
+        } as any)
         .eq('agent_id', user.id)
 
       return NextResponse.json({
