@@ -258,7 +258,6 @@ async function sendViaResend(params: SendEmailParams): Promise<EmailResult> {
       to: params.to,
       subject: params.subject,
       html: params.html,
-      text: params.text,
     });
 
     if (!result.success) {
@@ -330,3 +329,4 @@ export async function logEmailSend(params: {
     console.error('Failed to log email send:', err);
   }
 }
+
