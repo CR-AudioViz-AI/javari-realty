@@ -3,42 +3,13 @@
 // =====================================================
 // CR REALTOR PLATFORM - AGENT CUSTOMER MANAGEMENT
 // Path: app/dashboard/customers/page.tsx
-// Timestamp: 2025-12-01 4:10 PM EST
+// Timestamp: 2025-12-01 4:25 PM EST
 // Purpose: Tony can create, view, and message customers
+// Uses: Pure Tailwind CSS (no shadcn/ui)
 // =====================================================
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { 
   UserPlus, 
   Mail, 
@@ -52,9 +23,9 @@ import {
   Calendar,
   Home,
   Search,
-  FileText
+  FileText,
+  X
 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
 
 interface Customer {
   id: string
@@ -86,12 +57,13 @@ interface InviteCredentials {
 export default function AgentCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
-  const [showInviteDialog, setShowInviteDialog] = useState(false)
-  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false)
   const [credentials, setCredentials] = useState<InviteCredentials | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [inviting, setInviting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -106,7 +78,6 @@ export default function AgentCustomersPage() {
     bedroom_preference: ''
   })
 
-  const { toast } = useToast()
   const supabase = createClient()
 
   useEffect(() => {
@@ -115,6 +86,7 @@ export default function AgentCustomersPage() {
 
   async function loadCustomers() {
     setLoading(true)
+    setError(null)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -127,12 +99,8 @@ export default function AgentCustomersPage() {
 
       if (error) throw error
       setCustomers(data || [])
-    } catch (error: any) {
-      toast({
-        title: 'Error loading customers',
-        description: error.message,
-        variant: 'destructive'
-      })
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -141,6 +109,7 @@ export default function AgentCustomersPage() {
   async function handleInviteCustomer(e: React.FormEvent) {
     e.preventDefault()
     setInviting(true)
+    setError(null)
 
     try {
       const response = await fetch('/api/customers/invite', {
@@ -167,8 +136,8 @@ export default function AgentCustomersPage() {
 
       // Success - show credentials
       setCredentials(data.credentials)
-      setShowInviteDialog(false)
-      setShowCredentialsDialog(true)
+      setShowInviteModal(false)
+      setShowCredentialsModal(true)
 
       // Reset form
       setFormData({
@@ -186,17 +155,8 @@ export default function AgentCustomersPage() {
       // Reload customers
       loadCustomers()
 
-      toast({
-        title: 'Customer created!',
-        description: `Account created for ${data.customer.full_name}`,
-      })
-
-    } catch (error: any) {
-      toast({
-        title: 'Error creating customer',
-        description: error.message,
-        variant: 'destructive'
-      })
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setInviting(false)
     }
@@ -223,464 +183,466 @@ export default function AgentCustomersPage() {
     }).format(amount)
   }
 
+  const activeCount = customers.filter(c => c.status === 'active').length
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const recentLoginCount = customers.filter(c => c.last_login && new Date(c.last_login) > weekAgo).length
+  const neverLoggedInCount = customers.filter(c => !c.last_login && c.user_id).length
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">My Customers</h1>
-          <p className="text-muted-foreground">
-            Manage your customer accounts and communications
-          </p>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Customers</h1>
+            <p className="text-gray-500 mt-1">
+              Manage your customer accounts and communications
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Add Customer
+          </button>
         </div>
-        <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Customer
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create Customer Account</DialogTitle>
-              <DialogDescription>
-                Enter customer details. They'll receive login credentials via email.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleInviteCustomer} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    value={formData.full_name}
-                    onChange={e => setFormData({...formData, full_name: e.target.value})}
-                    placeholder="John & Sarah Smith"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                    placeholder="(239) 555-0123"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeline">Timeline</Label>
-                  <Select
-                    value={formData.timeline}
-                    onValueChange={value => setFormData({...formData, timeline: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timeline" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Immediately">Immediately</SelectItem>
-                      <SelectItem value="1-3 months">1-3 months</SelectItem>
-                      <SelectItem value="3-6 months">3-6 months</SelectItem>
-                      <SelectItem value="6+ months">6+ months</SelectItem>
-                      <SelectItem value="Just browsing">Just browsing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="budget_min">Budget Min</Label>
-                  <Input
-                    id="budget_min"
-                    type="number"
-                    value={formData.budget_min}
-                    onChange={e => setFormData({...formData, budget_min: e.target.value})}
-                    placeholder="300000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="budget_max">Budget Max</Label>
-                  <Input
-                    id="budget_max"
-                    type="number"
-                    value={formData.budget_max}
-                    onChange={e => setFormData({...formData, budget_max: e.target.value})}
-                    placeholder="500000"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="property_type">Property Type</Label>
-                  <Select
-                    value={formData.property_type_preference}
-                    onValueChange={value => setFormData({...formData, property_type_preference: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Single Family">Single Family</SelectItem>
-                      <SelectItem value="Condo">Condo</SelectItem>
-                      <SelectItem value="Townhouse">Townhouse</SelectItem>
-                      <SelectItem value="Multi-Family">Multi-Family</SelectItem>
-                      <SelectItem value="Land">Land</SelectItem>
-                      <SelectItem value="Commercial">Commercial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bedrooms">Bedrooms</Label>
-                  <Select
-                    value={formData.bedroom_preference}
-                    onValueChange={value => setFormData({...formData, bedroom_preference: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select bedrooms" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1+</SelectItem>
-                      <SelectItem value="2">2+</SelectItem>
-                      <SelectItem value="3">3+</SelectItem>
-                      <SelectItem value="4">4+</SelectItem>
-                      <SelectItem value="5">5+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  placeholder="Looking for waterfront, prefers newer construction..."
-                  rows={3}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowInviteDialog(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={inviting}>
-                  {inviting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Create Account
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Credentials Dialog */}
-      <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <Check className="h-5 w-5" />
-              Customer Account Created!
-            </DialogTitle>
-            <DialogDescription>
-              Share these login credentials with your customer
-            </DialogDescription>
-          </DialogHeader>
-          {credentials && (
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="pt-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Email</Label>
-                      <p className="font-medium">{credentials.email}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(credentials.email, 'email')}
-                    >
-                      {copiedField === 'email' ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Temporary Password</Label>
-                      <p className="font-mono font-medium">{credentials.temporary_password}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(credentials.temporary_password, 'password')}
-                    >
-                      {copiedField === 'password' ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Login URL</Label>
-                      <p className="text-sm text-blue-600 truncate max-w-[250px]">
-                        {credentials.login_url}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(credentials.login_url, 'url')}
-                    >
-                      {copiedField === 'url' ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-between items-center bg-muted p-3 rounded-lg">
-                <span className="text-sm">Copy full message to send</span>
-                <Button
-                  size="sm"
-                  onClick={() => copyToClipboard(credentials.message, 'message')}
-                >
-                  {copiedField === 'message' ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy Message
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setShowCredentialsDialog(false)}>
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Customers</CardDescription>
-            <CardTitle className="text-3xl">{customers.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active</CardDescription>
-            <CardTitle className="text-3xl text-green-600">
-              {customers.filter(c => c.status === 'active').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Logged In This Week</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">
-              {customers.filter(c => {
-                if (!c.last_login) return false
-                const weekAgo = new Date()
-                weekAgo.setDate(weekAgo.getDate() - 7)
-                return new Date(c.last_login) > weekAgo
-              }).length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Never Logged In</CardDescription>
-            <CardTitle className="text-3xl text-amber-600">
-              {customers.filter(c => !c.last_login && c.user_id).length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Search */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total Customers</p>
+            <p className="text-3xl font-bold text-gray-900">{customers.length}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Active</p>
+            <p className="text-3xl font-bold text-green-600">{activeCount}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Logged In This Week</p>
+            <p className="text-3xl font-bold text-blue-600">{recentLoginCount}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Never Logged In</p>
+            <p className="text-3xl font-bold text-amber-600">{neverLoggedInCount}</p>
+          </div>
         </div>
-        <Button variant="outline" onClick={loadCustomers}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
 
-      {/* Customers Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Budget</TableHead>
-                <TableHead>Preferences</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {/* Search */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search customers..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button 
+            onClick={loadCustomers}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="h-5 w-5 mr-2" />
+            Refresh
+          </button>
+        </div>
+
+        {/* Customers Table */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferences</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                    Loading customers...
-                  </TableCell>
-                </TableRow>
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-gray-400" />
+                    <p className="text-gray-500">Loading customers...</p>
+                  </td>
+                </tr>
               ) : filteredCustomers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     {searchTerm ? 'No customers match your search' : 'No customers yet. Click "Add Customer" to get started.'}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
                 filteredCustomers.map(customer => (
-                  <TableRow key={customer.id}>
-                    <TableCell>
+                  <tr key={customer.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium">{customer.full_name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-gray-900">{customer.full_name}</p>
+                        <p className="text-sm text-gray-500">
                           {customer.source === 'agent_invite' ? 'Invited' : customer.source}
                         </p>
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="space-y-1">
                         <a 
                           href={`mailto:${customer.email}`}
                           className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
                         >
-                          <Mail className="h-3 w-3" />
+                          <Mail className="h-4 w-4" />
                           {customer.email}
                         </a>
                         {customer.phone && (
                           <a 
                             href={`tel:${customer.phone}`}
-                            className="flex items-center gap-1 text-sm text-muted-foreground"
+                            className="flex items-center gap-1 text-sm text-gray-500"
                           >
-                            <Phone className="h-3 w-3" />
+                            <Phone className="h-4 w-4" />
                             {customer.phone}
                           </a>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-6 py-4">
                       {customer.budget_min || customer.budget_max ? (
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">
-                            {formatCurrency(customer.budget_min)} - {formatCurrency(customer.budget_max)}
-                          </span>
+                        <div className="flex items-center gap-1 text-sm">
+                          <DollarSign className="h-4 w-4 text-gray-400" />
+                          {formatCurrency(customer.budget_min)} - {formatCurrency(customer.budget_max)}
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Not set</span>
+                        <span className="text-sm text-gray-400">Not set</span>
                       )}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="space-y-1 text-sm">
                         {customer.property_type_preference && (
                           <div className="flex items-center gap-1">
-                            <Home className="h-3 w-3 text-muted-foreground" />
+                            <Home className="h-4 w-4 text-gray-400" />
                             {customer.property_type_preference}
                           </div>
                         )}
                         {customer.timeline && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <Calendar className="h-4 w-4 text-gray-400" />
                             {customer.timeline}
                           </div>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        customer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
                         {customer.status}
-                      </Badge>
+                      </span>
                       {customer.user_id && !customer.last_login && (
-                        <Badge variant="outline" className="ml-1 text-amber-600">
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                           Never logged in
-                        </Badge>
+                        </span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right">
+                    </td>
+                    <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={`/dashboard/customers/${customer.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </a>
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={`/dashboard/customers/${customer.id}/messages`}>
-                            <MessageSquare className="h-4 w-4" />
-                          </a>
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={`/dashboard/customers/${customer.id}/documents`}>
-                            <FileText className="h-4 w-4" />
-                          </a>
-                        </Button>
+                        <a 
+                          href={`/dashboard/customers/${customer.id}`}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="View Details"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href={`/dashboard/customers/${customer.id}/messages`}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="Messages"
+                        >
+                          <MessageSquare className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href={`/dashboard/customers/${customer.id}/documents`}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="Documents"
+                        >
+                          <FileText className="h-5 w-5" />
+                        </a>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Invite Modal */}
+        {showInviteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Create Customer Account</h2>
+                  <p className="text-sm text-gray-500 mt-1">Enter customer details. They'll receive login credentials.</p>
+                </div>
+                <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleInviteCustomer} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={formData.full_name}
+                      onChange={e => setFormData({...formData, full_name: e.target.value})}
+                      placeholder="John & Sarah Smith"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      placeholder="john@example.com"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      placeholder="(239) 555-0123"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Timeline</label>
+                    <select
+                      value={formData.timeline}
+                      onChange={e => setFormData({...formData, timeline: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select timeline</option>
+                      <option value="Immediately">Immediately</option>
+                      <option value="1-3 months">1-3 months</option>
+                      <option value="3-6 months">3-6 months</option>
+                      <option value="6+ months">6+ months</option>
+                      <option value="Just browsing">Just browsing</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Budget Min</label>
+                    <input
+                      type="number"
+                      value={formData.budget_min}
+                      onChange={e => setFormData({...formData, budget_min: e.target.value})}
+                      placeholder="300000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Budget Max</label>
+                    <input
+                      type="number"
+                      value={formData.budget_max}
+                      onChange={e => setFormData({...formData, budget_max: e.target.value})}
+                      placeholder="500000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                    <select
+                      value={formData.property_type_preference}
+                      onChange={e => setFormData({...formData, property_type_preference: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select type</option>
+                      <option value="Single Family">Single Family</option>
+                      <option value="Condo">Condo</option>
+                      <option value="Townhouse">Townhouse</option>
+                      <option value="Multi-Family">Multi-Family</option>
+                      <option value="Land">Land</option>
+                      <option value="Commercial">Commercial</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
+                    <select
+                      value={formData.bedroom_preference}
+                      onChange={e => setFormData({...formData, bedroom_preference: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select bedrooms</option>
+                      <option value="1">1+</option>
+                      <option value="2">2+</option>
+                      <option value="3">3+</option>
+                      <option value="4">4+</option>
+                      <option value="5">5+</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    placeholder="Looking for waterfront, prefers newer construction..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setShowInviteModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={inviting}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {inviting ? (
+                      <>
+                        <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-5 w-5 mr-2" />
+                        Create Account
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Credentials Modal */}
+        {showCredentialsModal && credentials && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center gap-2 text-green-600 mb-4">
+                  <Check className="h-6 w-6" />
+                  <h2 className="text-xl font-semibold">Customer Account Created!</h2>
+                </div>
+                <p className="text-gray-500 mb-6">Share these login credentials with your customer</p>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="font-medium">{credentials.email}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(credentials.email, 'email')}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {copiedField === 'email' ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5 text-gray-400" />}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-gray-500">Temporary Password</p>
+                      <p className="font-mono font-medium">{credentials.temporary_password}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(credentials.temporary_password, 'password')}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {copiedField === 'password' ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5 text-gray-400" />}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-gray-500">Login URL</p>
+                      <p className="text-sm text-blue-600 truncate max-w-[200px]">{credentials.login_url}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(credentials.login_url, 'url')}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {copiedField === 'url' ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5 text-gray-400" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-between items-center bg-blue-50 p-3 rounded-lg">
+                  <span className="text-sm text-blue-700">Copy full message to send</span>
+                  <button
+                    onClick={() => copyToClipboard(credentials.message, 'message')}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                  >
+                    {copiedField === 'message' ? (
+                      <>
+                        <Check className="h-4 w-4 mr-1" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy Message
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowCredentialsModal(false)}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
