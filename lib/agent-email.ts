@@ -1,7 +1,7 @@
 // =====================================================
 // CR REALTOR PLATFORM - AGENT EMAIL SERVICE
 // Path: lib/agent-email.ts
-// Timestamp: 2025-12-01 4:59 PM EST
+// Timestamp: 2025-12-01 5:12 PM EST
 // Purpose: Send emails FROM agent's own email address
 // =====================================================
 
@@ -50,7 +50,7 @@ export async function getAgentEmailSettings(agentId: string): Promise<AgentEmail
   const adminClient = createAdminClient()
   
   const { data, error } = await adminClient
-    .from('agent_email_settings')
+    .from('agent_email_settings' as any)
     .select('*')
     .eq('agent_id', agentId)
     .eq('is_active', true)
@@ -99,11 +99,11 @@ async function refreshGmailToken(settings: AgentEmailSettings): Promise<string |
     // Update stored token
     const adminClient = createAdminClient()
     await adminClient
-      .from('agent_email_settings')
+      .from('agent_email_settings' as any)
       .update({
         access_token: tokens.access_token,
         token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-      })
+      } as any)
       .eq('id', settings.id)
 
     return tokens.access_token
@@ -188,8 +188,8 @@ async function sendViaGmail(
       // Update last error
       const adminClient = createAdminClient()
       await adminClient
-        .from('agent_email_settings')
-        .update({ last_error: result.error?.message || 'Send failed' })
+        .from('agent_email_settings' as any)
+        .update({ last_error: result.error?.message || 'Send failed' } as any)
         .eq('id', settings.id)
 
       return { 
@@ -202,8 +202,8 @@ async function sendViaGmail(
     // Update last used
     const adminClient = createAdminClient()
     await adminClient
-      .from('agent_email_settings')
-      .update({ last_used_at: new Date().toISOString(), last_error: null })
+      .from('agent_email_settings' as any)
+      .update({ last_used_at: new Date().toISOString(), last_error: null } as any)
       .eq('id', settings.id)
 
     return { 
@@ -309,7 +309,7 @@ export async function logEmailSend(
   const adminClient = createAdminClient()
   
   await adminClient
-    .from('agent_email_log')
+    .from('agent_email_log' as any)
     .insert({
       agent_id: agentId,
       customer_id: customerId,
@@ -320,7 +320,7 @@ export async function logEmailSend(
       provider: result.provider,
       provider_message_id: result.messageId,
       error_message: result.error
-    })
+    } as any)
 }
 
 /**
