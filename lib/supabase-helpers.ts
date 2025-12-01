@@ -1,10 +1,12 @@
 /**
  * Supabase Type Helpers for TypeScript Strict Mode
  * Provides utilities to handle type assertions safely
+ * 
+ * Updated: 2025-12-01 - Added createAdminClient for customer invitation system
  */
 
 import { Database } from '@/types/database.complete'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 
 // Extract table types
 export type Tables = Database['public']['Tables']
@@ -22,6 +24,31 @@ export type Insert<T extends TableName> = Tables[T] extends { Insert: infer I }
 export type Update<T extends TableName> = Tables[T] extends { Update: infer U }
   ? U
   : Partial<Row<T>>
+
+/**
+ * Create Supabase Admin Client with Service Role
+ * Used for privileged operations like:
+ * - Creating users
+ * - Bypassing RLS
+ * - Admin dashboard operations
+ * 
+ * SECURITY: Only use server-side, never expose to client
+ */
+export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing Supabase environment variables for admin client')
+  }
+
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 /**
  * Type-safe query builder for Supabase
@@ -104,6 +131,10 @@ export function hasData<T>(
 
 /**
  * Usage Examples:
+ * 
+ * // Admin operations (server-side only):
+ * const adminClient = createAdminClient()
+ * await adminClient.auth.admin.createUser({ email, password })
  * 
  * // Instead of:
  * const { data } = await supabase.from('profiles').select('*')
