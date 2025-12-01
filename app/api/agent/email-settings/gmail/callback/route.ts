@@ -1,11 +1,10 @@
 // =====================================================
 // CR REALTOR PLATFORM - GMAIL OAUTH CALLBACK
 // Path: app/api/agent/email-settings/gmail/callback/route.ts
-// Timestamp: 2025-12-01 5:02 PM EST
+// Timestamp: 2025-12-01 5:11 PM EST
 // Purpose: Handle Gmail OAuth callback and store tokens
 // =====================================================
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase-helpers'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -27,13 +26,19 @@ export async function GET(request: NextRequest) {
     // Handle errors from Google
     if (error) {
       return NextResponse.redirect(
-        new URL(`/dashboard/settings?email_error=${encodeURIComponent(error)}`, request.url)
+        new URL(`/dashboard/settings/email?email_error=${encodeURIComponent(error)}`, request.url)
       )
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        new URL('/dashboard/settings?email_error=missing_params', request.url)
+        new URL('/dashboard/settings/email?email_error=missing_params', request.url)
+      )
+    }
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return NextResponse.redirect(
+        new URL('/dashboard/settings/email?email_error=oauth_not_configured', request.url)
       )
     }
 
@@ -42,8 +47,8 @@ export async function GET(request: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID!,
-        client_secret: GOOGLE_CLIENT_SECRET!,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
         code,
         grant_type: 'authorization_code',
         redirect_uri: REDIRECT_URI
@@ -55,7 +60,7 @@ export async function GET(request: NextRequest) {
     if (tokens.error) {
       console.error('Gmail token error:', tokens)
       return NextResponse.redirect(
-        new URL(`/dashboard/settings?email_error=${encodeURIComponent(tokens.error)}`, request.url)
+        new URL(`/dashboard/settings/email?email_error=${encodeURIComponent(tokens.error)}`, request.url)
       )
     }
 
@@ -66,10 +71,11 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json()
 
     // Store tokens in database using admin client
+    // Use raw SQL approach since table may not be in generated types yet
     const adminClient = createAdminClient()
     
     const { error: upsertError } = await adminClient
-      .from('agent_email_settings')
+      .from('agent_email_settings' as any)
       .upsert({
         agent_id: state,
         provider: 'gmail',
@@ -81,26 +87,26 @@ export async function GET(request: NextRequest) {
         is_verified: true,
         verified_at: new Date().toISOString(),
         last_error: null
-      }, {
+      } as any, {
         onConflict: 'agent_id'
       })
 
     if (upsertError) {
       console.error('Error storing Gmail tokens:', upsertError)
       return NextResponse.redirect(
-        new URL(`/dashboard/settings?email_error=storage_failed`, request.url)
+        new URL(`/dashboard/settings/email?email_error=storage_failed`, request.url)
       )
     }
 
     // Success - redirect back to settings
     return NextResponse.redirect(
-      new URL('/dashboard/settings?email_connected=gmail', request.url)
+      new URL('/dashboard/settings/email?email_connected=gmail', request.url)
     )
 
   } catch (error: any) {
     console.error('Gmail callback error:', error)
     return NextResponse.redirect(
-      new URL(`/dashboard/settings?email_error=${encodeURIComponent(error.message)}`, request.url)
+      new URL(`/dashboard/settings/email?email_error=${encodeURIComponent(error.message)}`, request.url)
     )
   }
 }
