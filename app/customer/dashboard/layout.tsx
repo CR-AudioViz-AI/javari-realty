@@ -23,6 +23,7 @@ import {
   X,
   Bell,
   Search,
+  Briefcase,
 } from 'lucide-react'
 
 interface CustomerData {
@@ -116,6 +117,7 @@ export default function CustomerDashboardLayout({
     { name: 'Saved Homes', href: '/customer/dashboard/favorites', icon: Heart },
     { name: 'Messages', href: '/customer/dashboard/messages', icon: MessageSquare, badge: unreadMessages },
     { name: 'Documents', href: '/customer/dashboard/documents', icon: FileText },
+    { name: 'Service Providers', href: '/customer/dashboard/vendors', icon: Briefcase },
     { name: 'My Profile', href: '/customer/dashboard/profile', icon: User },
   ]
 
@@ -268,3 +270,4 @@ export default function CustomerDashboardLayout({
     </div>
   )
 }
+
