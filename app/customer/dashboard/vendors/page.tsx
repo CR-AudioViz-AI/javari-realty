@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { 
   Building2, Search, Phone, Mail, Globe, MapPin, Star, 
   ChevronDown, ChevronUp, ExternalLink, Filter, X
@@ -63,7 +63,7 @@ interface VendorService {
 }
 
 export default function CustomerVendorsPage() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
