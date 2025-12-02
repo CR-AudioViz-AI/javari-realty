@@ -92,7 +92,7 @@ export default function CustomerFavoritesPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setSavedProperties((data as SavedProperty[]) || [])
+      setSavedProperties((data as unknown as SavedProperty[]) || [])
     } catch (error) {
       console.error('Error loading saved properties:', error)
     } finally {
