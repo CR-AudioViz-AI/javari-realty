@@ -626,7 +626,7 @@ export default function CustomerInsightsPage() {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-xs font-medium text-gray-500 mb-2">SEARCH CRITERIA</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      {search.criteria?.cities?.length > 0 && (
+                      {(search.criteria?.cities?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-gray-500 text-xs">Cities</p>
                           <p className="font-medium">{search.criteria.cities.join(', ')}</p>
@@ -660,7 +660,7 @@ export default function CustomerInsightsPage() {
                           <p className="font-medium">{search.criteria.min_sqft.toLocaleString()}</p>
                         </div>
                       )}
-                      {search.criteria?.property_types?.length > 0 && (
+                      {(search.criteria?.property_types?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-gray-500 text-xs">Property Types</p>
                           <p className="font-medium capitalize">
@@ -668,7 +668,7 @@ export default function CustomerInsightsPage() {
                           </p>
                         </div>
                       )}
-                      {search.criteria?.features?.length > 0 && (
+                      {(search.criteria?.features?.length ?? 0) > 0 && (
                         <div className="col-span-2">
                           <p className="text-gray-500 text-xs">Features</p>
                           <p className="font-medium">{search.criteria.features.join(', ')}</p>
@@ -786,3 +786,4 @@ export default function CustomerInsightsPage() {
     </div>
   )
 }
+
