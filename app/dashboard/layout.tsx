@@ -85,6 +85,7 @@ export default function DashboardLayout({
         { name: 'Customers', href: '/dashboard/customers', icon: Users },
         { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
         { name: 'Share Listings', href: '/dashboard/share-listings', icon: Sparkles },
+        { name: 'Vendors', href: '/dashboard/vendors', icon: Briefcase },
         { name: 'CRM', href: '/dashboard/crm', icon: Users },
         { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
         { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
@@ -237,6 +238,7 @@ export default function DashboardLayout({
 
 
 // Build trigger v1
+
 
 
 
