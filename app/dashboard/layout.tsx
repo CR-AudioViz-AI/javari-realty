@@ -23,6 +23,7 @@ import {
   Shield,
   Plus,
   MessageSquare,
+  Sparkles,
 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -83,6 +84,7 @@ export default function DashboardLayout({
         { name: 'My Leads', href: '/dashboard/leads', icon: UserPlus },
         { name: 'Customers', href: '/dashboard/customers', icon: Users },
         { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
+        { name: 'Share Listings', href: '/dashboard/share-listings', icon: Sparkles },
         { name: 'CRM', href: '/dashboard/crm', icon: Users },
         { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
         { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
@@ -235,5 +237,6 @@ export default function DashboardLayout({
 
 
 // Build trigger v1
+
 
 
