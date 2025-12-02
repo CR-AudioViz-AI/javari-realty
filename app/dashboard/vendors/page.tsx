@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { 
   Search, Plus, Phone, Mail, Globe, MapPin, Star, Building2,
   ClipboardCheck, Landmark, FileText, Shield, Calculator, Scale,
@@ -76,7 +76,7 @@ interface Customer {
 }
 
 export default function VendorRolodexPage() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [categories, setCategories] = useState<VendorCategory[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
