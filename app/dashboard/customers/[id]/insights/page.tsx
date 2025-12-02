@@ -629,7 +629,7 @@ export default function CustomerInsightsPage() {
                       {(search.criteria?.cities?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-gray-500 text-xs">Cities</p>
-                          <p className="font-medium">{search.criteria.cities.join(', ')}</p>
+                          <p className="font-medium">{search.criteria.cities!.join(', ')}</p>
                         </div>
                       )}
                       {(search.criteria?.min_price || search.criteria?.max_price) && (
@@ -664,14 +664,14 @@ export default function CustomerInsightsPage() {
                         <div>
                           <p className="text-gray-500 text-xs">Property Types</p>
                           <p className="font-medium capitalize">
-                            {search.criteria.property_types.map(t => t.replace('_', ' ')).join(', ')}
+                            {search.criteria.property_types!.map(t => t.replace('_', ' ')).join(', ')}
                           </p>
                         </div>
                       )}
                       {(search.criteria?.features?.length ?? 0) > 0 && (
                         <div className="col-span-2">
                           <p className="text-gray-500 text-xs">Features</p>
-                          <p className="font-medium">{search.criteria.features.join(', ')}</p>
+                          <p className="font-medium">{search.criteria.features!.join(', ')}</p>
                         </div>
                       )}
                     </div>
@@ -786,3 +786,4 @@ export default function CustomerInsightsPage() {
     </div>
   )
 }
+
