@@ -22,6 +22,7 @@ import {
   Briefcase,
   Shield,
   Plus,
+  MessageSquare,
 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -80,6 +81,8 @@ export default function DashboardLayout({
         { name: 'Dashboard', href: '/dashboard/realtor', icon: Home },
         { name: 'My Properties', href: '/dashboard/properties', icon: Building2 },
         { name: 'My Leads', href: '/dashboard/leads', icon: UserPlus },
+        { name: 'Customers', href: '/dashboard/customers', icon: Users },
+        { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
         { name: 'CRM', href: '/dashboard/crm', icon: Users },
         { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
         { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
@@ -232,3 +235,5 @@ export default function DashboardLayout({
 
 
 // Build trigger v1
+
+
