@@ -501,12 +501,12 @@ export default function CustomerInsightsPage() {
                       ))}
                       {search.criteria?.min_price && (
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                          ${(search.criteria.min_price / 1000).toFixed(0)}k+
+                          ${(search.criteria?.min_price / 1000).toFixed(0)}k+
                         </span>
                       )}
                       {search.criteria?.min_bedrooms && (
                         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-                          {search.criteria.min_bedrooms}+ beds
+                          {search.criteria?.min_bedrooms}+ beds
                         </span>
                       )}
                     </div>
@@ -629,49 +629,49 @@ export default function CustomerInsightsPage() {
                       {(search.criteria?.cities?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-gray-500 text-xs">Cities</p>
-                          <p className="font-medium">{search.criteria.cities!.join(', ')}</p>
+                          <p className="font-medium">{search.criteria?.cities?.join(', ')}</p>
                         </div>
                       )}
                       {(search.criteria?.min_price || search.criteria?.max_price) && (
                         <div>
                           <p className="text-gray-500 text-xs">Price Range</p>
                           <p className="font-medium">
-                            {search.criteria.min_price ? formatPrice(search.criteria.min_price) : '$0'}
+                            {search.criteria?.min_price ? formatPrice(search.criteria?.min_price) : '$0'}
                             {' - '}
-                            {search.criteria.max_price ? formatPrice(search.criteria.max_price) : 'Any'}
+                            {search.criteria?.max_price ? formatPrice(search.criteria?.max_price) : 'Any'}
                           </p>
                         </div>
                       )}
                       {search.criteria?.min_bedrooms && (
                         <div>
                           <p className="text-gray-500 text-xs">Bedrooms</p>
-                          <p className="font-medium">{search.criteria.min_bedrooms}+</p>
+                          <p className="font-medium">{search.criteria?.min_bedrooms}+</p>
                         </div>
                       )}
                       {search.criteria?.min_bathrooms && (
                         <div>
                           <p className="text-gray-500 text-xs">Bathrooms</p>
-                          <p className="font-medium">{search.criteria.min_bathrooms}+</p>
+                          <p className="font-medium">{search.criteria?.min_bathrooms}+</p>
                         </div>
                       )}
                       {search.criteria?.min_sqft && (
                         <div>
                           <p className="text-gray-500 text-xs">Min Sq Ft</p>
-                          <p className="font-medium">{search.criteria.min_sqft.toLocaleString()}</p>
+                          <p className="font-medium">{search.criteria?.min_sqft?.toLocaleString()}</p>
                         </div>
                       )}
                       {(search.criteria?.property_types?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-gray-500 text-xs">Property Types</p>
                           <p className="font-medium capitalize">
-                            {search.criteria.property_types!.map(t => t.replace('_', ' ')).join(', ')}
+                            {search.criteria?.property_types?.map(t => t.replace('_', ' ')).join(', ')}
                           </p>
                         </div>
                       )}
                       {(search.criteria?.features?.length ?? 0) > 0 && (
                         <div className="col-span-2">
                           <p className="text-gray-500 text-xs">Features</p>
-                          <p className="font-medium">{search.criteria.features!.join(', ')}</p>
+                          <p className="font-medium">{search.criteria?.features?.join(', ')}</p>
                         </div>
                       )}
                     </div>
@@ -786,4 +786,5 @@ export default function CustomerInsightsPage() {
     </div>
   )
 }
+
 
