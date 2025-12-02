@@ -1,337 +1,202 @@
+// =====================================================
+// CR REALTOR PLATFORM - CUSTOMER LOGIN PAGE
+// Path: app/customer/login/page.tsx
+// Timestamp: 2025-12-01 11:12 AM EST
+// Purpose: Customer portal login (multi-tenant)
+// =====================================================
+
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  Home,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Loader2,
-  ArrowRight,
-  User,
-  Phone,
-  CheckCircle,
-} from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 
 export default function CustomerLoginPage() {
-  const router = useRouter()
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const router = useRouter()
+  const supabase = createClient()
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    full_name: '',
-    phone: '',
-  })
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
     setLoading(true)
+    setError('')
 
-    if (mode === 'register') {
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match')
-        setLoading(false)
-        return
-      }
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters')
-        setLoading(false)
-        return
-      }
+    try {
+      // Sign in with Supabase
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
 
-      // Save to localStorage for demo
-      const customers = JSON.parse(localStorage.getItem('cr_customers') || '[]')
-      const exists = customers.find((c: any) => c.email === formData.email)
-      if (exists) {
-        setError('An account with this email already exists')
-        setLoading(false)
+      if (signInError) {
+        setError(signInError.message)
         return
       }
 
-      const newCustomer = {
-        id: crypto.randomUUID(),
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.full_name,
-        phone: formData.phone,
-        created_at: new Date().toISOString(),
-        saved_properties: [],
-        saved_searches: [],
-        showing_requests: [],
+      if (!data.user) {
+        setError('Login failed. Please try again.')
+        return
       }
-      customers.push(newCustomer)
-      localStorage.setItem('cr_customers', JSON.stringify(customers))
-      localStorage.setItem('cr_current_customer', JSON.stringify(newCustomer))
-      
-      setLoading(false)
+
+      // Verify this user has a customer record
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id, status, assigned_agent_id')
+        .eq('user_id', data.user.id)
+        .single()
+
+      if (customerError || !customer) {
+        // Not a customer account - might be an agent
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+
+        if (profile?.role === 'agent') {
+          // Redirect agents to their dashboard
+          router.push('/dashboard/realtor')
+          return
+        }
+
+        setError('No customer account found. Please contact your agent.')
+        await supabase.auth.signOut()
+        return
+      }
+
+      if (customer.status === 'inactive') {
+        setError('Your account has been deactivated. Please contact your agent.')
+        await supabase.auth.signOut()
+        return
+      }
+
+      // Success - redirect to customer dashboard
       router.push('/customer/dashboard')
-      return
-    }
 
-    if (mode === 'login') {
-      const customers = JSON.parse(localStorage.getItem('cr_customers') || '[]')
-      const customer = customers.find((c: any) => c.email === formData.email && c.password === formData.password)
-      
-      if (!customer) {
-        setError('Invalid email or password')
-        setLoading(false)
-        return
-      }
-
-      localStorage.setItem('cr_current_customer', JSON.stringify(customer))
-      setLoading(false)
-      router.push('/customer/dashboard')
-      return
-    }
-
-    if (mode === 'forgot') {
-      // Demo: just show success message
-      setSuccess('If an account exists with this email, you will receive a password reset link.')
+    } catch (err: any) {
+      setError(err.message || 'An error occurred')
+    } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 p-12 flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3 text-white">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Home className="w-6 h-6" />
-            </div>
-            <span className="text-2xl font-bold">CR Realty</span>
-          </div>
-        </div>
-        
-        <div className="text-white">
-          <h1 className="text-4xl font-bold mb-6">Find Your Dream Home</h1>
-          <p className="text-xl text-blue-100 mb-8">
-            Access your personalized property search, saved listings, and connect with your dedicated agent.
-          </p>
-          
-          <div className="space-y-4">
-            {[
-              'Save your favorite properties',
-              'Schedule showings online',
-              'Track your home search progress',
-              'Direct messaging with your agent',
-              'Get instant listing alerts',
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
-                <span className="text-blue-100">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col">
+      {/* Header */}
+      <header className="p-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-white hover:text-blue-300 transition-colors">
+          <Home className="h-5 w-5" />
+          <span className="font-semibold">Back to Home</span>
+        </Link>
+      </header>
 
-        <p className="text-blue-200 text-sm">
-          © 2024 CR Realty. Powered by CR AudioViz AI
-        </p>
-      </div>
-
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Home className="w-6 h-6 text-white" />
+          {/* Logo/Title */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+              <Home className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">CR Realty</span>
+            <h1 className="text-3xl font-bold text-white mb-2">Customer Portal</h1>
+            <p className="text-blue-200">Sign in to access your home search</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {mode === 'login' && 'Welcome Back'}
-              {mode === 'register' && 'Create Account'}
-              {mode === 'forgot' && 'Reset Password'}
-            </h2>
-            <p className="text-gray-500 mb-6">
-              {mode === 'login' && 'Sign in to access your property dashboard'}
-              {mode === 'register' && 'Join us to start your home search journey'}
-              {mode === 'forgot' && 'Enter your email to reset your password'}
-            </p>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-lg text-sm">
-                {success}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'register' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        required
-                        placeholder="John Smith"
-                        className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="(555) 123-4567"
-                        className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                </>
+          {/* Login Form */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <form onSubmit={handleLogin} className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
               )}
 
+              {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
+                    id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="john@example.com"
-                    className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="you@example.com"
                   />
                 </div>
               </div>
 
-              {mode !== 'forgot' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      required
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {mode === 'login' && (
-                <div className="flex justify-end">
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your password"
+                  />
                   <button
                     type="button"
-                    onClick={() => setMode('forgot')}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    Forgot password?
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
-              )}
+              </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    {mode === 'login' && 'Sign In'}
-                    {mode === 'register' && 'Create Account'}
-                    {mode === 'forgot' && 'Send Reset Link'}
-                    <ArrowRight className="w-5 h-5" />
+                    Sign In
+                    <ArrowRight className="h-5 w-5" />
                   </>
                 )}
               </button>
             </form>
 
-            <div className="mt-6 text-center">
-              {mode === 'login' && (
-                <p className="text-gray-600">
-                  Don&apos;t have an account?{' '}
-                  <button onClick={() => setMode('register')} className="text-blue-600 hover:text-blue-700 font-medium">
-                    Sign up
-                  </button>
-                </p>
-              )}
-              {mode === 'register' && (
-                <p className="text-gray-600">
-                  Already have an account?{' '}
-                  <button onClick={() => setMode('login')} className="text-blue-600 hover:text-blue-700 font-medium">
-                    Sign in
-                  </button>
-                </p>
-              )}
-              {mode === 'forgot' && (
-                <p className="text-gray-600">
-                  Remember your password?{' '}
-                  <button onClick={() => setMode('login')} className="text-blue-600 hover:text-blue-700 font-medium">
-                    Sign in
-                  </button>
-                </p>
-              )}
+            {/* Help Text */}
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <span className="text-blue-600 font-medium">
+                  Contact your real estate agent
+                </span>
+              </p>
             </div>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Are you a real estate agent?{' '}
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              Agent Login
-            </Link>
+          {/* Footer */}
+          <p className="mt-8 text-center text-sm text-blue-200">
+            Powered by CR Realtor Platform
           </p>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
