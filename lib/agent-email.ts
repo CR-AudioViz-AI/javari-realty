@@ -261,7 +261,7 @@ async function sendViaResend(params: SendEmailParams): Promise<EmailResult> {
     });
 
     if (!result.success) {
-      return { success: false, error: result.error || 'Failed to send via Resend' };
+      return { success: false, error: typeof result.error === 'object' ? JSON.stringify(result.error) : (result.error || 'Failed to send via Resend') };
     }
 
     return {
@@ -329,4 +329,5 @@ export async function logEmailSend(params: {
     console.error('Failed to log email send:', err);
   }
 }
+
 
