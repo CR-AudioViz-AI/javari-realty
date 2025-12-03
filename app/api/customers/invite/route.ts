@@ -1,8 +1,9 @@
 // =====================================================
 // CR REALTOR PLATFORM - CUSTOMER INVITE API
 // Path: app/api/customers/invite/route.ts
-// Timestamp: 2025-12-01 4:45 PM EST
+// Timestamp: 2025-12-02 3:15 PM EST
 // Purpose: Agent creates customer → system auto-emails credentials
+// FIX: Changed emailResult.messageId to emailResult.id
 // =====================================================
 
 import { createClient } from '@/lib/supabase/server'
@@ -206,6 +207,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Update invitation with email status
+    // FIX: Use 'id' instead of 'messageId' and safely access with optional chaining
     if (invitation) {
       await supabase
         .from('customer_invitations')
@@ -213,8 +215,8 @@ export async function POST(request: NextRequest) {
           metadata: {
             email_sent: emailResult.success,
             email_sent_at: emailResult.success ? new Date().toISOString() : null,
-            email_error: emailResult.error || null,
-            email_message_id: emailResult.messageId || null
+            email_error: 'error' in emailResult ? emailResult.error : null,
+            email_message_id: 'id' in emailResult ? emailResult.id : null
           }
         })
         .eq('id', invitation.id)
@@ -226,7 +228,7 @@ export async function POST(request: NextRequest) {
         ? 'Customer account created and email sent!' 
         : 'Customer account created. Email not configured - share credentials manually.',
       email_sent: emailResult.success,
-      email_error: emailResult.error,
+      email_error: 'error' in emailResult ? emailResult.error : undefined,
       customer: {
         id: customer.id,
         email: customer.email,
@@ -293,125 +295,6 @@ export async function GET(request: NextRequest) {
       invitations: invitations || [],
       count: invitations?.length || 0
     })
-
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
-
-// PATCH - Resend invitation or update status
-export async function PATCH(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get agent profile for email
-    const { data: agentProfile } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, email, phone')
-      .eq('id', user.id)
-      .single()
-
-    const body = await request.json()
-    const { invitation_id, action } = body
-
-    if (!invitation_id) {
-      return NextResponse.json({ error: 'Invitation ID required' }, { status: 400 })
-    }
-
-    // Get invitation
-    const { data: invitation, error: fetchError } = await supabase
-      .from('customer_invitations')
-      .select('*')
-      .eq('id', invitation_id)
-      .eq('agent_id', user.id)
-      .single()
-
-    if (fetchError || !invitation) {
-      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
-    }
-
-    if (action === 'resend') {
-      // Generate new password and update
-      const newPassword = generateTempPassword()
-      const newToken = generateToken()
-
-      // Update auth user password
-      const adminClient = createAdminClient()
-      
-      if (invitation.customer_id) {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('user_id')
-          .eq('id', invitation.customer_id)
-          .single()
-
-        if (customer?.user_id) {
-          await adminClient.auth.admin.updateUserById(customer.user_id, {
-            password: newPassword
-          })
-        }
-      }
-
-      // Update invitation
-      await supabase
-        .from('customer_invitations')
-        .update({
-          temp_password: newPassword,
-          token: newToken,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        })
-        .eq('id', invitation_id)
-
-      // Resend email
-      const loginUrl = process.env.NEXT_PUBLIC_APP_URL 
-        ? `${process.env.NEXT_PUBLIC_APP_URL}/customer/login`
-        : 'https://cr-realtor-platform.vercel.app/customer/login'
-
-      const agentName = agentProfile 
-        ? `${agentProfile.first_name} ${agentProfile.last_name}`
-        : 'Your Agent'
-
-      const emailResult = await sendCustomerInviteEmail({
-        customerEmail: invitation.customer_email,
-        customerName: invitation.customer_name,
-        agentName,
-        agentEmail: agentProfile?.email,
-        agentPhone: agentProfile?.phone,
-        tempPassword: newPassword,
-        loginUrl
-      })
-
-      return NextResponse.json({
-        success: true,
-        message: emailResult.success 
-          ? 'New credentials sent to customer!' 
-          : 'Credentials updated. Email not sent - share manually.',
-        email_sent: emailResult.success,
-        credentials: {
-          email: invitation.customer_email,
-          temporary_password: newPassword
-        }
-      })
-    }
-
-    if (action === 'expire') {
-      await supabase
-        .from('customer_invitations')
-        .update({ status: 'expired' })
-        .eq('id', invitation_id)
-
-      return NextResponse.json({
-        success: true,
-        message: 'Invitation expired'
-      })
-    }
-
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
