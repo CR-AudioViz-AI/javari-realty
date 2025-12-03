@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Calendar, Clock, MapPin, User, Phone, Mail, 
   ChevronLeft, ChevronRight, Check, X, AlertCircle,
@@ -72,7 +72,7 @@ export default function ShowingScheduler({
   onSuccess,
   onCancel,
 }: ShowingSchedulerProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [step, setStep] = useState<'date' | 'time' | 'info' | 'confirm' | 'success'>('date');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -637,3 +637,4 @@ export default function ShowingScheduler({
     </div>
   );
 }
+
