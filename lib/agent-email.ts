@@ -266,7 +266,7 @@ async function sendViaResend(params: SendEmailParams): Promise<EmailResult> {
 
     return {
       success: true,
-      messageId: result.messageId,
+      messageId: result.id,
       provider: 'resend',
     };
   } catch (err) {
@@ -329,6 +329,7 @@ export async function logEmailSend(params: {
     console.error('Failed to log email send:', err);
   }
 }
+
 
 
 
