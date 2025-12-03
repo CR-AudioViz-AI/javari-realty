@@ -1,8 +1,9 @@
 // =====================================================
 // CR REALTOR PLATFORM - CUSTOMER MESSAGING API
 // Path: app/api/messages/customer/route.ts
-// Timestamp: 2025-12-01 10:50 AM EST
+// Timestamp: 2025-12-02 3:20 PM EST
 // Purpose: Agent-customer messaging with email delivery
+// FIX: Adapted sendEmail result type to match expected emailResult type
 // =====================================================
 
 import { createClient } from '@/lib/supabase/server'
@@ -241,11 +242,18 @@ export async function POST(request: NextRequest) {
           })
         } else {
           // Fallback to system email (Resend)
-          emailResult = await sendEmail({
+          const sendResult = await sendEmail({
             to: customer.email,
             subject: `New message from ${senderName}`,
             html: buildMessageEmailHtml(content, senderName, profile?.phone, property_id, true)
           })
+          // Adapt the sendEmail result to match our expected type
+          emailResult = {
+            success: sendResult.success,
+            messageId: 'id' in sendResult ? sendResult.id : undefined,
+            error: 'error' in sendResult ? String(sendResult.error) : undefined,
+            provider: 'demo' in sendResult && sendResult.demo ? 'demo' : 'resend'
+          }
         }
       }
     } else if (send_email && !isAgent) {
@@ -264,7 +272,7 @@ export async function POST(request: NextRequest) {
 
       if (agentProfile?.email) {
         // Send notification via system email
-        emailResult = await sendEmail({
+        const sendResult = await sendEmail({
           to: agentProfile.email,
           subject: `New message from ${customer?.full_name || 'your customer'}`,
           html: buildCustomerMessageNotificationHtml(
@@ -273,6 +281,13 @@ export async function POST(request: NextRequest) {
             agentProfile.first_name || 'Agent'
           )
         })
+        // Adapt the sendEmail result to match our expected type
+        emailResult = {
+          success: sendResult.success,
+          messageId: 'id' in sendResult ? sendResult.id : undefined,
+          error: 'error' in sendResult ? String(sendResult.error) : undefined,
+          provider: 'demo' in sendResult && sendResult.demo ? 'demo' : 'resend'
+        }
       }
     }
 
