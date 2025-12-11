@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Create lead record
     const { data: lead, error } = await (supabase as any)
-      .from('leads')
+      .from('realtor_leads')
       .insert({
         name,
         email,
