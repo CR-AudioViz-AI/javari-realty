@@ -64,7 +64,7 @@ export default function CustomerDashboardPage() {
 
       // Get customer record
       const { data: customerData } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('user_id', user.id)
         .single()
