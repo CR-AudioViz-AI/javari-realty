@@ -88,7 +88,7 @@ export default function LeadCapturePage() {
 
     // Also try to save to Supabase
     try {
-      await supabase.from('leads').insert({
+      await supabase.from('realtor_leads').insert({
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
