@@ -106,7 +106,7 @@ export default function ShareListingsPage() {
 
       // Load agent's customers
       const { data: custData } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('assigned_agent_id', user.id)
         .eq('status', 'active')
