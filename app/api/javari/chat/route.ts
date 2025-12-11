@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     if (lastMessage.includes('lead') || lastMessage.includes('follow')) {
       const { data: leads } = await supabase
-        .from('leads')
+        .from('realtor_leads')
         .select('full_name, status, priority, notes')
         .order('created_at', { ascending: false })
         .limit(10)
