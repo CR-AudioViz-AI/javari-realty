@@ -66,7 +66,7 @@ export default async function RealtorDashboard() {
 
   // Get ALL team leads
   const { data: leads } = await supabase
-    .from('leads')
+    .from('realtor_leads')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(50)
