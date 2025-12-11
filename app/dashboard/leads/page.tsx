@@ -19,7 +19,7 @@ export default async function LeadsPage() {
 
   // Get all leads (admin sees all, agents see all for now - can filter later)
   const { data: leads } = await supabase
-    .from('leads')
+    .from('realtor_leads')
     .select('*')
     .order('created_at', { ascending: false })
 
