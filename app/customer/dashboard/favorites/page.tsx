@@ -57,7 +57,7 @@ export default function CustomerFavoritesPage() {
 
       // Get customer record
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id')
         .eq('user_id', user.id)
         .single()
