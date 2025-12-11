@@ -74,7 +74,7 @@ export default function PropertyRankingsPage() {
       }
 
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id')
         .eq('id', session.user.id)
         .single()
