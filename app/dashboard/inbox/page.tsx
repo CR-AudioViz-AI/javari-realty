@@ -75,7 +75,7 @@ export default function AgentInboxPage() {
         const customerIds = [...new Set(convs.map((c: Conversation) => c.customer_id))]
         if (customerIds.length > 0) {
           const { data: custData } = await supabase
-            .from('customers')
+            .from('realtor_customers')
             .select('*')
             .in('id', customerIds)
           
