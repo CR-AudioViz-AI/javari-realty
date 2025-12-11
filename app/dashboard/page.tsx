@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     .eq('listing_agent_id', user.id)
   
   const { count: myLeads } = await supabase
-    .from('leads')
+    .from('realtor_leads')
     .select('*', { count: 'exact', head: true })
     .eq('realtor_id', user.id)
 
