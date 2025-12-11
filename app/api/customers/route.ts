@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Get customer profile
     const { data: customer, error: customerError } = await supabase
-      .from('customers')
+      .from('realtor_customers')
       .select('*')
       .eq('id', customerId)
       .single()
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
       // Create customer record
       const { data: customer, error: customerError } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .insert({
           id: authData.user?.id,
           email,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
       // Get customer record
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('id', authData.user?.id)
         .single()
