@@ -46,7 +46,7 @@ export default function CustomerLoginPage() {
 
       // Verify this user has a customer record
       const { data: customer, error: customerError } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, status, assigned_agent_id')
         .eq('user_id', data.user.id)
         .single()
