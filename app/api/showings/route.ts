@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     // Also create a lead from this showing request if customer info provided
     if (customer_email) {
       await supabase
-        .from('leads')
+        .from('realtor_leads')
         .upsert({
           email: customer_email,
           full_name: customer_name,
