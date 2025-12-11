@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     let targetCustomerId = customerId
     if (!isAgent) {
       const { data: customerRecord } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id')
         .eq('user_id', user.id)
         .single()
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Verify agent owns this customer
     if (isAgent) {
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id')
         .eq('id', targetCustomerId)
         .single()
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     if (!isAgent) {
       // Customer sending message - get their record
       const { data: customerRecord } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id')
         .eq('user_id', user.id)
         .single()
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Agent sending - verify ownership
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id, email, full_name, user_id')
         .eq('id', targetCustomerId)
         .single()
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     if (send_email && isAgent) {
       // Agent messaging customer - send from agent's email
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('email, full_name')
         .eq('id', targetCustomerId)
         .single()
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('full_name')
         .eq('id', targetCustomerId)
         .single()
