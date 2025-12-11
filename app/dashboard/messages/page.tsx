@@ -76,7 +76,7 @@ export default function MessagesPage() {
 
       // Get all customers for this agent
       const { data: customerData, error } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('assigned_agent_id', user.id)
         .order('updated_at', { ascending: false })
