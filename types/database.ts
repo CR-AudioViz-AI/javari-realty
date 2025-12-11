@@ -1,6 +1,6 @@
-// AUTO-GENERATED - DO NOT EDIT
-// Generated from actual Supabase database schema
-// Last updated: 2025-11-20 10:06 PM EST
+// CR REALTOR PLATFORM - DATABASE TYPES
+// Generated: December 10, 2025
+// Matches: DEPLOY_CR_REALTOR_SAFE.sql schema
 
 export type Json =
   | string
@@ -10,18 +10,80 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Enum types matching PostgreSQL enums
+export type UserRole = 'platform_admin' | 'broker_admin' | 'office_manager' | 'realtor' | 'client'
+export type PropertyStatus = 'active' | 'pending' | 'sold' | 'off_market' | 'coming_soon'
+export type PropertyType = 'single_family' | 'condo' | 'townhouse' | 'multi_family' | 'land' | 'commercial' | 'mobile_home' | 'farm_ranch'
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'showing' | 'offer' | 'under_contract' | 'closed' | 'lost'
+export type TransactionStatus = 'active' | 'pending' | 'under_contract' | 'closed' | 'cancelled' | 'expired'
+
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          phone: string | null
+          role: UserRole
+          avatar_url: string | null
+          license_number: string | null
+          license_state: string | null
+          brokerage: string | null
+          bio: string | null
+          specialties: string[] | null
+          service_areas: string[] | null
+          years_experience: number | null
+          is_admin: boolean
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string | null
+          phone?: string | null
+          role?: UserRole
+          avatar_url?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          brokerage?: string | null
+          bio?: string | null
+          specialties?: string[] | null
+          service_areas?: string[] | null
+          years_experience?: number | null
+          is_admin?: boolean
+          is_active?: boolean
+        }
+        Update: {
+          email?: string
+          full_name?: string | null
+          phone?: string | null
+          role?: UserRole
+          avatar_url?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          brokerage?: string | null
+          bio?: string | null
+          specialties?: string[] | null
+          service_areas?: string[] | null
+          years_experience?: number | null
+          is_admin?: boolean
+          is_active?: boolean
+        }
+      }
+      
       properties: {
         Row: {
           id: string
-          category: string | null
-          transaction_type: string | null
-          property_type: string | null
-          title: string | null
+          agent_id: string | null
+          mls_id: string | null
+          title: string
           description: string | null
-          price: number | null
+          property_type: string
+          status: string
           address: string
           city: string
           state: string
@@ -29,45 +91,31 @@ export type Database = {
           county: string | null
           latitude: number | null
           longitude: number | null
-          location: unknown | null
+          price: number
           bedrooms: number | null
           bathrooms: number | null
-          square_feet: number | null
+          sqft: number | null
           lot_size: number | null
           year_built: number | null
-          zoning: string | null
-          building_class: string | null
-          office_space: number | null
-          warehouse_space: number | null
-          retail_space: number | null
-          loading_docks: number | null
-          ceiling_height: number | null
-          power_capacity: number | null
           features: string[] | null
-          amenities: string[] | null
-          parking_spaces: number | null
-          garage_spaces: number | null
           photos: string[] | null
-          video_url: string | null
+          primary_image_url: string | null
           virtual_tour_url: string | null
-          mls_number: string | null
-          mls_status: string | null
-          status: string | null
-          featured: boolean | null
-          listing_agent_id: string | null
+          is_featured: boolean
           listed_date: string | null
-          slug: string | null
+          sold_date: string | null
+          sold_price: number | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          category?: string | null
-          transaction_type?: string | null
-          property_type?: string | null
-          title?: string | null
+          agent_id?: string | null
+          mls_id?: string | null
+          title: string
           description?: string | null
-          price?: number | null
+          property_type?: string
+          status?: string
           address: string
           city: string
           state: string
@@ -75,45 +123,26 @@ export type Database = {
           county?: string | null
           latitude?: number | null
           longitude?: number | null
-          location?: unknown | null
+          price: number
           bedrooms?: number | null
           bathrooms?: number | null
-          square_feet?: number | null
+          sqft?: number | null
           lot_size?: number | null
           year_built?: number | null
-          zoning?: string | null
-          building_class?: string | null
-          office_space?: number | null
-          warehouse_space?: number | null
-          retail_space?: number | null
-          loading_docks?: number | null
-          ceiling_height?: number | null
-          power_capacity?: number | null
           features?: string[] | null
-          amenities?: string[] | null
-          parking_spaces?: number | null
-          garage_spaces?: number | null
           photos?: string[] | null
-          video_url?: string | null
+          primary_image_url?: string | null
           virtual_tour_url?: string | null
-          mls_number?: string | null
-          mls_status?: string | null
-          status?: string | null
-          featured?: boolean | null
-          listing_agent_id?: string | null
+          is_featured?: boolean
           listed_date?: string | null
-          slug?: string | null
-          created_at?: string
-          updated_at?: string
         }
         Update: {
-          id?: string
-          category?: string | null
-          transaction_type?: string | null
-          property_type?: string | null
-          title?: string | null
+          agent_id?: string | null
+          mls_id?: string | null
+          title?: string
           description?: string | null
-          price?: number | null
+          property_type?: string
+          status?: string
           address?: string
           city?: string
           state?: string
@@ -121,308 +150,382 @@ export type Database = {
           county?: string | null
           latitude?: number | null
           longitude?: number | null
-          location?: unknown | null
+          price?: number
           bedrooms?: number | null
           bathrooms?: number | null
-          square_feet?: number | null
+          sqft?: number | null
           lot_size?: number | null
           year_built?: number | null
-          zoning?: string | null
-          building_class?: string | null
-          office_space?: number | null
-          warehouse_space?: number | null
-          retail_space?: number | null
-          loading_docks?: number | null
-          ceiling_height?: number | null
-          power_capacity?: number | null
           features?: string[] | null
-          amenities?: string[] | null
-          parking_spaces?: number | null
-          garage_spaces?: number | null
           photos?: string[] | null
-          video_url?: string | null
+          primary_image_url?: string | null
           virtual_tour_url?: string | null
-          mls_number?: string | null
-          mls_status?: string | null
-          status?: string | null
-          featured?: boolean | null
-          listing_agent_id?: string | null
+          is_featured?: boolean
           listed_date?: string | null
-          slug?: string | null
-          created_at?: string
-          updated_at?: string
+          sold_date?: string | null
+          sold_price?: number | null
         }
       }
-      leads: {
+      
+      realtor_customers: {
         Row: {
           id: string
-          realtor_id: string | null
-          name: string | null
-          email: string | null
+          auth_user_id: string | null
+          agent_id: string | null
+          email: string
+          full_name: string
           phone: string | null
-          message: string | null
-          property_id: string | null
-          status: string | null
+          preferred_contact: string
+          budget_min: number | null
+          budget_max: number | null
+          preferred_locations: string[] | null
+          property_types: string[] | null
+          notes: string | null
+          status: string
           source: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          realtor_id?: string | null
-          name?: string | null
-          email?: string | null
+          auth_user_id?: string | null
+          agent_id?: string | null
+          email: string
+          full_name: string
           phone?: string | null
-          message?: string | null
-          property_id?: string | null
-          status?: string | null
+          preferred_contact?: string
+          budget_min?: number | null
+          budget_max?: number | null
+          preferred_locations?: string[] | null
+          property_types?: string[] | null
+          notes?: string | null
+          status?: string
           source?: string | null
-          created_at?: string
-          updated_at?: string
         }
         Update: {
-          id?: string
-          realtor_id?: string | null
-          name?: string | null
-          email?: string | null
+          auth_user_id?: string | null
+          agent_id?: string | null
+          email?: string
+          full_name?: string
           phone?: string | null
-          message?: string | null
-          property_id?: string | null
-          status?: string | null
+          preferred_contact?: string
+          budget_min?: number | null
+          budget_max?: number | null
+          preferred_locations?: string[] | null
+          property_types?: string[] | null
+          notes?: string | null
+          status?: string
           source?: string | null
-          created_at?: string
-          updated_at?: string
         }
       }
-      profiles: {
+      
+      realtor_leads: {
         Row: {
           id: string
-          email: string | null
-          full_name: string | null
+          agent_id: string | null
+          email: string
+          full_name: string
           phone: string | null
-          role: string | null
-          avatar_url: string | null
-          broker_id: string | null
-          office_id: string | null
-          is_active: boolean | null
+          source: string | null
+          property_interest: string | null
+          message: string | null
+          status: string
+          priority: string
+          last_contact_date: string | null
+          next_follow_up_date: string | null
+          converted_to_customer_id: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
-          email?: string | null
-          full_name?: string | null
+          id?: string
+          agent_id?: string | null
+          email: string
+          full_name: string
           phone?: string | null
-          role?: string | null
-          avatar_url?: string | null
-          broker_id?: string | null
-          office_id?: string | null
-          is_active?: boolean | null
-          created_at?: string
-          updated_at?: string
+          source?: string | null
+          property_interest?: string | null
+          message?: string | null
+          status?: string
+          priority?: string
+          last_contact_date?: string | null
+          next_follow_up_date?: string | null
+          converted_to_customer_id?: string | null
         }
         Update: {
-          id?: string
-          email?: string | null
-          full_name?: string | null
+          agent_id?: string | null
+          email?: string
+          full_name?: string
           phone?: string | null
-          role?: string | null
-          avatar_url?: string | null
-          broker_id?: string | null
-          office_id?: string | null
-          is_active?: boolean | null
-          created_at?: string
-          updated_at?: string
+          source?: string | null
+          property_interest?: string | null
+          message?: string | null
+          status?: string
+          priority?: string
+          last_contact_date?: string | null
+          next_follow_up_date?: string | null
+          converted_to_customer_id?: string | null
         }
       }
-      transactions: {
+      
+      realtor_transactions: {
         Row: {
           id: string
+          agent_id: string | null
           property_id: string | null
-          buyer_agent_id: string | null
-          seller_agent_id: string | null
-          stage: string | null
-          status: string | null
+          customer_id: string | null
+          transaction_type: string
+          status: string
+          property_address: string | null
+          list_price: number | null
+          sale_price: number | null
+          commission_rate: number | null
+          commission_amount: number | null
+          buyer_name: string | null
+          seller_name: string | null
+          list_date: string | null
+          closing_date: string | null
+          notes: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
+          agent_id?: string | null
           property_id?: string | null
-          buyer_agent_id?: string | null
-          seller_agent_id?: string | null
-          stage?: string | null
-          status?: string | null
-          created_at?: string
-          updated_at?: string
+          customer_id?: string | null
+          transaction_type: string
+          status?: string
+          property_address?: string | null
+          list_price?: number | null
+          sale_price?: number | null
+          commission_rate?: number | null
+          commission_amount?: number | null
+          buyer_name?: string | null
+          seller_name?: string | null
+          list_date?: string | null
+          closing_date?: string | null
+          notes?: string | null
         }
         Update: {
-          id?: string
+          agent_id?: string | null
           property_id?: string | null
-          buyer_agent_id?: string | null
-          seller_agent_id?: string | null
-          stage?: string | null
-          status?: string | null
-          created_at?: string
-          updated_at?: string
+          customer_id?: string | null
+          transaction_type?: string
+          status?: string
+          property_address?: string | null
+          list_price?: number | null
+          sale_price?: number | null
+          commission_rate?: number | null
+          commission_amount?: number | null
+          buyer_name?: string | null
+          seller_name?: string | null
+          list_date?: string | null
+          closing_date?: string | null
+          notes?: string | null
         }
       }
-      features: {
+      
+      vendors: {
         Row: {
           id: string
-          name: string
+          agent_id: string | null
+          business_name: string
+          contact_name: string | null
+          email: string | null
+          phone: string | null
+          website: string | null
+          category: string
           description: string | null
-          category: string | null
+          services_offered: string[] | null
+          agent_rating: number | null
+          agent_notes: string | null
+          is_preferred: boolean
+          commission_type: string | null
+          commission_amount: number | null
           is_active: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          name: string
+          agent_id?: string | null
+          business_name: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          category: string
           description?: string | null
-          category?: string | null
+          services_offered?: string[] | null
+          agent_rating?: number | null
+          agent_notes?: string | null
+          is_preferred?: boolean
+          commission_type?: string | null
+          commission_amount?: number | null
           is_active?: boolean
-          created_at?: string
-          updated_at?: string
         }
         Update: {
-          id?: string
-          name?: string
+          agent_id?: string | null
+          business_name?: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          category?: string
           description?: string | null
-          category?: string | null
+          services_offered?: string[] | null
+          agent_rating?: number | null
+          agent_notes?: string | null
+          is_preferred?: boolean
+          commission_type?: string | null
+          commission_amount?: number | null
           is_active?: boolean
-          created_at?: string
-          updated_at?: string
         }
       }
-      platform_feature_toggles: {
+      
+      messages: {
         Row: {
           id: string
-          feature_id: string
-          is_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          feature_id: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          feature_id?: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      broker_feature_toggles: {
-        Row: {
-          id: string
-          broker_id: string
-          feature_id: string
-          is_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          broker_id: string
-          feature_id: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          broker_id?: string
-          feature_id?: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      office_feature_toggles: {
-        Row: {
-          id: string
-          office_id: string
-          feature_id: string
-          is_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          office_id: string
-          feature_id: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          office_id?: string
-          feature_id?: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      realtor_feature_toggles: {
-        Row: {
-          id: string
-          realtor_id: string
-          feature_id: string
-          is_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          realtor_id: string
-          feature_id: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          realtor_id?: string
-          feature_id?: string
-          is_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      feature_usage_tracking: {
-        Row: {
-          id: string
-          user_id: string
-          feature_id: string
-          usage_count: number
-          last_used_at: string
+          sender_id: string
+          sender_type: string
+          recipient_id: string
+          recipient_type: string
+          agent_id: string | null
+          customer_id: string | null
+          subject: string | null
+          content: string
+          property_id: string | null
+          is_read: boolean
+          read_at: string | null
           created_at: string
         }
         Insert: {
           id?: string
-          user_id: string
-          feature_id: string
-          usage_count?: number
-          last_used_at?: string
-          created_at?: string
+          sender_id: string
+          sender_type: string
+          recipient_id: string
+          recipient_type: string
+          agent_id?: string | null
+          customer_id?: string | null
+          subject?: string | null
+          content: string
+          property_id?: string | null
+          is_read?: boolean
+          read_at?: string | null
         }
         Update: {
+          sender_id?: string
+          sender_type?: string
+          recipient_id?: string
+          recipient_type?: string
+          agent_id?: string | null
+          customer_id?: string | null
+          subject?: string | null
+          content?: string
+          property_id?: string | null
+          is_read?: boolean
+          read_at?: string | null
+        }
+      }
+      
+      saved_properties: {
+        Row: {
+          id: string
+          customer_id: string | null
+          property_id: string | null
+          notes: string | null
+          rating: number | null
+          created_at: string
+        }
+        Insert: {
           id?: string
-          user_id?: string
-          feature_id?: string
-          usage_count?: number
-          last_used_at?: string
-          created_at?: string
+          customer_id?: string | null
+          property_id?: string | null
+          notes?: string | null
+          rating?: number | null
+        }
+        Update: {
+          customer_id?: string | null
+          property_id?: string | null
+          notes?: string | null
+          rating?: number | null
+        }
+      }
+      
+      showings: {
+        Row: {
+          id: string
+          property_id: string | null
+          agent_id: string | null
+          customer_id: string | null
+          showing_date: string
+          showing_time: string
+          status: string
+          feedback: string | null
+          interest_level: number | null
+          attendee_name: string | null
+          attendee_phone: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id?: string | null
+          agent_id?: string | null
+          customer_id?: string | null
+          showing_date: string
+          showing_time: string
+          status?: string
+          feedback?: string | null
+          interest_level?: number | null
+          attendee_name?: string | null
+          attendee_phone?: string | null
+          notes?: string | null
+        }
+        Update: {
+          property_id?: string | null
+          agent_id?: string | null
+          customer_id?: string | null
+          showing_date?: string
+          showing_time?: string
+          status?: string
+          feedback?: string | null
+          interest_level?: number | null
+          attendee_name?: string | null
+          attendee_phone?: string | null
+          notes?: string | null
         }
       }
     }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      user_role: UserRole
+      property_status: PropertyStatus
+      property_type: PropertyType
+      lead_status: LeadStatus
+      transaction_status: TransactionStatus
+    }
   }
 }
+
+// Helper types
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type InsertTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type UpdateTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+
+// Convenience types
+export type Profile = Tables<'profiles'>
+export type Property = Tables<'properties'>
+export type Customer = Tables<'realtor_customers'>
+export type Lead = Tables<'realtor_leads'>
+export type Transaction = Tables<'realtor_transactions'>
+export type Vendor = Tables<'vendors'>
+export type Message = Tables<'messages'>
+export type SavedProperty = Tables<'saved_properties'>
+export type Showing = Tables<'showings'>
