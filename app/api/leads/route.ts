@@ -18,7 +18,7 @@ export async function GET() {
       .eq('id', user.id)
       .single()
 
-    let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
+    let query = supabase.from('realtor_leads').select('*').order('created_at', { ascending: false })
 
     if (profile?.role !== 'admin' && !profile?.is_admin) {
       query = query.eq('realtor_id', user.id)
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const { data, error } = await supabase
-      .from('leads')
+      .from('realtor_leads')
       .insert(body)
       .select()
       .single()
