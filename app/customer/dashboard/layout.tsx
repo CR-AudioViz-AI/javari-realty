@@ -68,7 +68,7 @@ export default function CustomerDashboardLayout({
 
       // Get customer record
       const { data: customerData, error: customerError } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('user_id', user.id)
         .single()
