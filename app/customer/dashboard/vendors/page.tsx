@@ -82,7 +82,7 @@ export default function CustomerVendorsPage() {
 
     // First get the customer's assigned agent
     const { data: customer } = await supabase
-      .from('customers')
+      .from('realtor_customers')
       .select('assigned_agent_id, profiles:assigned_agent_id(full_name)')
       .eq('auth_user_id', user.id)
       .single()
