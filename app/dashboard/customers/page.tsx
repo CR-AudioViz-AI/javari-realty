@@ -92,7 +92,7 @@ export default function AgentCustomersPage() {
       if (!user) return
 
       const { data, error } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('*')
         .eq('assigned_agent_id', user.id)
         .order('created_at', { ascending: false })
