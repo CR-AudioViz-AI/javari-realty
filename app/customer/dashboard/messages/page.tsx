@@ -93,7 +93,7 @@ export default function CustomerMessagesPage() {
     if (!user) return
 
     const { data: customer } = await supabase
-      .from('customers')
+      .from('realtor_customers')
       .select('assigned_agent_id')
       .eq('user_id', user.id)
       .single()
