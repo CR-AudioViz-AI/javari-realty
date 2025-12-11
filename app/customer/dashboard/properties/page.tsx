@@ -154,7 +154,7 @@ export default function CustomerPropertiesPage() {
 
       // Get customer record
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id')
         .eq('user_id', user.id)
         .single()
