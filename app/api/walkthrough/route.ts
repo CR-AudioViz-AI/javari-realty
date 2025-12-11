@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAdminClient } from '@/lib/supabase/admin'
+
+// Helper to get Supabase client
+function getDb() { return getAdminClient(); }
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 // GET - Get walkthrough feedback
 export async function GET(request: NextRequest) {
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
   const agentId = searchParams.get('agent_id')
 
   try {
-    let query = supabase
+    let query = getDb()
       .from('walkthrough_feedback')
       .select(`
         *,
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Insert main feedback
-    const { data: feedback, error: feedbackError } = await supabase
+    const { data: feedback, error: feedbackError } = await getDb()
       .from('walkthrough_feedback')
       .insert({
         property_id,
@@ -112,31 +111,31 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString()
       }))
 
-      await supabase.from('walkthrough_photos').insert(photoRecords)
+      await getDb().from('walkthrough_photos').insert(photoRecords)
     }
 
     // Notify agent of new feedback
     if (agent_id) {
-      const { data: agentData } = await supabase
+      const { data: agentData } = await getDb()
         .from('profiles')
         .select('email, full_name')
         .eq('id', agent_id)
         .single()
 
-      const { data: customerData } = await supabase
-        .from('customers')
+      const { data: customerData } = await getDb()
+        .from('realtor_customers')
         .select('full_name')
         .eq('id', customer_id)
         .single()
 
-      const { data: propertyData } = await supabase
+      const { data: propertyData } = await getDb()
         .from('properties')
         .select('address')
         .eq('id', property_id)
         .single()
 
       // Create notification record
-      await supabase.from('agent_notifications').insert({
+      await getDb().from('agent_notifications').insert({
         agent_id,
         type: 'walkthrough_feedback',
         title: 'New Walkthrough Feedback',
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Update showing request if linked
     if (showing_id) {
-      await supabase
+      await getDb()
         .from('showing_requests')
         .update({ 
           feedback_id: feedback.id,
@@ -181,7 +180,7 @@ export async function PATCH(request: NextRequest) {
     // rankings = [{ feedback_id, rank_position, rank_notes }]
     
     for (const ranking of rankings) {
-      await supabase
+      await getDb()
         .from('walkthrough_feedback')
         .update({ 
           rank_position: ranking.rank_position,
@@ -193,15 +192,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Notify agent of ranking update
-    const { data: customer } = await supabase
-      .from('customers')
+    const { data: customer } = await getDb()
+      .from('realtor_customers')
       .select('assigned_agent_id, full_name')
       .eq('id', customer_id)
       .single()
 
     if (customer) {
       const cust = customer as { assigned_agent_id: string; full_name: string }
-      await supabase.from('agent_notifications').insert({
+      await getDb().from('agent_notifications').insert({
         agent_id: cust.assigned_agent_id,
         type: 'rankings_updated',
         title: 'Property Rankings Updated',
