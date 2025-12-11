@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAdminClient } from '@/lib/supabase/admin'
+
+// Helper to get Supabase client
+function getDb() { return getAdminClient(); }
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 // GET - List upcoming open houses
 export async function GET(request: NextRequest) {
@@ -15,7 +14,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20')
 
   try {
-    let query = supabase
+    let query = getDb()
       .from('open_houses')
       .select(`
         *,
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
       // Create a new open house (agent only)
       const { property_id, date, start_time, end_time, host_agent_id, notes, max_attendees } = body
 
-      const { data, error } = await supabase
+      const { data, error } = await getDb()
         .from('open_houses')
         .insert({
           property_id,
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
       const { open_house_id, visitor_name, visitor_email, visitor_phone, party_size, notes } = body
 
       // Check if already RSVPed
-      const { data: existing } = await supabase
+      const { data: existing } = await getDb()
         .from('open_house_rsvps')
         .select('id')
         .eq('open_house_id', open_house_id)
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check capacity
-      const { data: openHouse } = await supabase
+      const { data: openHouse } = await getDb()
         .from('open_houses')
         .select('max_attendees, current_rsvps')
         .eq('id', open_house_id)
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create RSVP
-      const { data, error } = await supabase
+      const { data, error } = await getDb()
         .from('open_house_rsvps')
         .insert({
           open_house_id,
@@ -118,10 +117,10 @@ export async function POST(request: NextRequest) {
       if (error) throw error
 
       // Update RSVP count
-      await supabase.rpc('increment_open_house_rsvps', { oh_id: open_house_id, increment_by: party_size || 1 })
+      await getDb().rpc('increment_open_house_rsvps', { oh_id: open_house_id, increment_by: party_size || 1 })
 
       // Create lead from RSVP
-      const { data: ohData } = await supabase
+      const { data: ohData } = await getDb()
         .from('open_houses')
         .select('property_id, host_agent_id, properties(address)')
         .eq('id', open_house_id)
@@ -129,7 +128,7 @@ export async function POST(request: NextRequest) {
 
       if (ohData) {
         const props = ohData.properties as unknown as { address: string } | null
-        await supabase.from('leads').insert({
+        await getDb().from('realtor_leads').insert({
           full_name: visitor_name,
           email: visitor_email,
           phone: visitor_phone,
@@ -147,7 +146,7 @@ export async function POST(request: NextRequest) {
       // Walk-in sign-in at open house
       const { open_house_id, visitor_name, visitor_email, visitor_phone, interested_in_property, buyer_type, timeline, notes } = body
 
-      const { data, error } = await supabase
+      const { data, error } = await getDb()
         .from('open_house_signins')
         .insert({
           open_house_id,
@@ -166,7 +165,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error
 
       // Create lead from sign-in
-      const { data: ohData } = await supabase
+      const { data: ohData } = await getDb()
         .from('open_houses')
         .select('property_id, host_agent_id, properties(address)')
         .eq('id', open_house_id)
@@ -174,7 +173,7 @@ export async function POST(request: NextRequest) {
 
       if (ohData) {
         const props = ohData.properties as unknown as { address: string } | null
-        await supabase.from('leads').insert({
+        await getDb().from('realtor_leads').insert({
           full_name: visitor_name,
           email: visitor_email,
           phone: visitor_phone,
