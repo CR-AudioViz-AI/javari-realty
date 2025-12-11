@@ -79,7 +79,7 @@ export default function CustomerDocumentsPage() {
       if (!session?.user) { router.push('/customer/login'); return }
 
       const { data: customer } = await supabase
-        .from('customers')
+        .from('realtor_customers')
         .select('id, assigned_agent_id')
         .eq('id', session.user.id)
         .single()
