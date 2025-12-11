@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
     .select('id, status')
   
   const { data: leads } = await supabase
-    .from('leads')
+    .from('realtor_leads')
     .select('id, status')
 
   const totalUsers = allProfiles?.length || 0
