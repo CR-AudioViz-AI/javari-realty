@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
     setProperties(props || [])
 
     // Fetch leads
-    let leadQuery = supabase.from('leads').select('*')
+    let leadQuery = supabase.from('realtor_leads').select('*')
     if (!isAdmin) {
       leadQuery = leadQuery.in('agent_id', teamIds)
     }
