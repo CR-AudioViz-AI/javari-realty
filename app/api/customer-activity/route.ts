@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAdminClient } from '@/lib/supabase/admin'
+
+// Helper to get Supabase client
+function getDb() { return getAdminClient(); }
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface Activity {
   id: string
@@ -29,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (customerId) {
       // Get saved properties
-      const { data: saved } = await supabase
+      const { data: saved } = await getDb()
         .from('saved_properties')
         .select('*, properties(address, city, price)')
         .eq('customer_id', customerId)
@@ -52,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get showing requests
-      const { data: showings } = await supabase
+      const { data: showings } = await getDb()
         .from('showing_requests')
         .select('*')
         .eq('customer_id', customerId)
@@ -74,7 +73,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get messages
-      const { data: messages } = await supabase
+      const { data: messages } = await getDb()
         .from('messages')
         .select('*')
         .eq('sender_type', 'customer')
@@ -97,7 +96,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get property views
-      const { data: views } = await supabase
+      const { data: views } = await getDb()
         .from('property_views')
         .select('*, properties(address)')
         .eq('customer_id', customerId)
@@ -120,7 +119,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get walkthrough feedback
-      const { data: feedback } = await supabase
+      const { data: feedback } = await getDb()
         .from('walkthrough_feedback')
         .select('*, properties(address)')
         .eq('customer_id', customerId)
@@ -144,8 +143,8 @@ export async function GET(request: NextRequest) {
 
     } else if (agentId) {
       // Get agent's assigned customers
-      const { data: customers } = await supabase
-        .from('customers')
+      const { data: customers } = await getDb()
+        .from('realtor_customers')
         .select('id, full_name')
         .eq('assigned_agent_id', agentId)
 
@@ -161,7 +160,7 @@ export async function GET(request: NextRequest) {
 
       if (customerIds.length > 0) {
         // Get recent showings
-        const { data: showings } = await supabase
+        const { data: showings } = await getDb()
           .from('showing_requests')
           .select('*')
           .in('customer_id', customerIds)
@@ -182,7 +181,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get recent saves
-        const { data: saved } = await supabase
+        const { data: saved } = await getDb()
           .from('saved_properties')
           .select('*, properties(address, price)')
           .in('customer_id', customerIds)
@@ -204,7 +203,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get recent feedback
-        const { data: feedback } = await supabase
+        const { data: feedback } = await getDb()
           .from('walkthrough_feedback')
           .select('*, properties(address)')
           .in('customer_id', customerIds)
