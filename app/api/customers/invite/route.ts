@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     // Check if customer already exists with this email
     const { data: existingCustomer } = await supabase
-      .from('customers')
+      .from('realtor_customers')
       .select('id, email, assigned_agent_id')
       .eq('email', email.toLowerCase())
       .single()
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Create customer record
     const { data: customer, error: customerError } = await supabase
-      .from('customers')
+      .from('realtor_customers')
       .insert({
         user_id: authData.user?.id,
         assigned_agent_id: user.id,
