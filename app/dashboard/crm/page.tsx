@@ -74,7 +74,7 @@ export default async function CRMPage({
 
   // Get leads for pipeline view
   let leadsQuery = supabase
-    .from('leads')
+    .from('realtor_leads')
     .select('*')
     .order('created_at', { ascending: false })
 
