@@ -24,10 +24,14 @@ jobs:
           
       - name: Run Migration
         env:
+          PGHOST: db.kteobfyferrukqeolofj.supabase.co
+          PGPORT: 5432
+          PGUSER: postgres
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGDATABASE: postgres
+          PGSSLMODE: require
         run: |
-          psql "postgresql://postgres:$PGPASSWORD@db.kteobfyferrukqeolofj.supabase.co:5432/postgres" << 'ENDSQL'
-          
+          cat << 'ENDSQL' | psql
           -- CR REALTOR PLATFORM MIGRATION
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -120,33 +124,15 @@ jobs:
           ALTER TABLE realtor_messages ENABLE ROW LEVEL SECURITY;
 
           -- Service role policies
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON profiles FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON properties FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON realtor_customers FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON realtor_leads FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON saved_properties FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON showings FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON vendors FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON organizations FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-          DO $$ BEGIN
-          CREATE POLICY "service_role_all" ON realtor_messages FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON profiles FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON properties FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON realtor_customers FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON realtor_leads FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON saved_properties FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON showings FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON vendors FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON organizations FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE POLICY "service_role_all" ON realtor_messages FOR ALL USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
           -- Public read policies
           DO $$ BEGIN CREATE POLICY "public_read" ON profiles FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -196,12 +182,12 @@ jobs:
           
       - name: Verify Tables
         env:
+          PGHOST: db.kteobfyferrukqeolofj.supabase.co
+          PGPORT: 5432
+          PGUSER: postgres
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGDATABASE: postgres
+          PGSSLMODE: require
         run: |
-          psql "postgresql://postgres:$PGPASSWORD@db.kteobfyferrukqeolofj.supabase.co:5432/postgres" -c "
-            SELECT table_name FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 
-                               'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages')
-            ORDER BY table_name;
-          "
+          psql -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages') ORDER BY table_name;"
+          psql -c "SELECT COUNT(*) as profile_count FROM profiles;"
