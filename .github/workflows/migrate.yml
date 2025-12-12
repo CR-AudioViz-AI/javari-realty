@@ -22,23 +22,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           
-      - name: Get IPv4 Address
-        id: ipv4
-        run: |
-          # Force resolve to IPv4
-          IPV4=$(dig +short A db.kteobfyferrukqeolofj.supabase.co | head -1)
-          echo "ip=$IPV4" >> $GITHUB_OUTPUT
-          echo "Resolved IPv4: $IPV4"
-          
-      - name: Run Migration
+      - name: Run Migration via Pooler
         env:
-          PGHOST: ${{ steps.ipv4.outputs.ip }}
-          PGPORT: 5432
-          PGUSER: postgres
+          PGHOST: aws-0-us-east-1.pooler.supabase.com
+          PGPORT: 6543
+          PGUSER: postgres.kteobfyferrukqeolofj
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PGDATABASE: postgres
           PGSSLMODE: require
         run: |
+          echo "Connecting to Supabase Pooler..."
           cat << 'ENDSQL' | psql
           -- CR REALTOR PLATFORM MIGRATION
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -181,12 +174,13 @@ jobs:
           
       - name: Verify Tables
         env:
-          PGHOST: ${{ steps.ipv4.outputs.ip }}
-          PGPORT: 5432
-          PGUSER: postgres
+          PGHOST: aws-0-us-east-1.pooler.supabase.com
+          PGPORT: 6543
+          PGUSER: postgres.kteobfyferrukqeolofj
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PGDATABASE: postgres
           PGSSLMODE: require
         run: |
+          echo "Verifying migration..."
           psql -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages') ORDER BY table_name;"
           psql -c "SELECT COUNT(*) as profile_count FROM profiles;"
