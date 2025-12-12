@@ -1,16 +1,13 @@
-// Migration endpoint - Updated: December 11, 2025 10:49 PM EST
-// Uses Supabase connection pooler for reliable connectivity
+// Migration endpoint - Updated: December 11, 2025 10:52 PM EST
+// Uses Supabase connection pooler with proper SSL configuration
 
 import { NextResponse } from 'next/server'
 import { Pool } from 'pg'
 
-// Migration endpoint - uses DATABASE_URL for direct SQL execution
 const MIGRATION_SECRET = 'cr-realtor-migrate-2025'
 
 const MIGRATION_SQL = `
 -- CR REALTOR PLATFORM - COMPLETE DATABASE SCHEMA
--- Created: December 11, 2025
-
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -199,38 +196,6 @@ ALTER TABLE showings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE realtor_messages ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies - Public read
-DO $$ BEGIN
-  DROP POLICY IF EXISTS "profiles_public_read" ON profiles;
-  CREATE POLICY "profiles_public_read" ON profiles FOR SELECT USING (true);
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  DROP POLICY IF EXISTS "properties_public_read" ON properties;
-  CREATE POLICY "properties_public_read" ON properties FOR SELECT USING (true);
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  DROP POLICY IF EXISTS "organizations_public_read" ON organizations;
-  CREATE POLICY "organizations_public_read" ON organizations FOR SELECT USING (true);
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
--- Service role policies for all tables
-DO $$ 
-DECLARE
-  tbl TEXT;
-BEGIN
-  FOREACH tbl IN ARRAY ARRAY['profiles', 'properties', 'realtor_customers', 'organizations', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'realtor_messages']
-  LOOP
-    EXECUTE format('DROP POLICY IF EXISTS "service_role_all_%s" ON %I', tbl, tbl);
-    EXECUTE format('CREATE POLICY "service_role_all_%s" ON %I FOR ALL USING (current_setting(''request.jwt.claims'', true)::json->>''role'' = ''service_role'')', tbl, tbl);
-  END LOOP;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
@@ -238,46 +203,8 @@ CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
 CREATE INDEX IF NOT EXISTS idx_properties_city ON properties(city);
 CREATE INDEX IF NOT EXISTS idx_properties_agent ON properties(agent_id);
 CREATE INDEX IF NOT EXISTS idx_leads_agent ON realtor_leads(agent_id);
-CREATE INDEX IF NOT EXISTS idx_leads_status ON realtor_leads(status);
 CREATE INDEX IF NOT EXISTS idx_vendors_agent ON vendors(agent_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
-
--- Trigger function for updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Apply triggers
-DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_properties_updated_at ON properties;
-CREATE TRIGGER update_properties_updated_at BEFORE UPDATE ON properties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Auto-create profile on auth signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
-    'client'
-  )
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Seed profiles from existing auth users
 INSERT INTO profiles (id, email, full_name, role)
@@ -311,26 +238,6 @@ VALUES (
   'FL',
   true
 ) ON CONFLICT (id) DO NOTHING;
-
--- Add sample properties for Tony
-INSERT INTO properties (agent_id, title, address, city, state, zip_code, price, bedrooms, bathrooms, sqft, property_type, status, description)
-SELECT 
-  p.id,
-  '123 Palm Beach Drive',
-  '123 Palm Beach Drive',
-  'Fort Myers',
-  'FL',
-  '33901',
-  450000,
-  4,
-  3,
-  2400,
-  'single_family',
-  'active',
-  'Beautiful waterfront home in Fort Myers with modern finishes and stunning views.'
-FROM profiles p
-WHERE p.email LIKE '%tony%'
-ON CONFLICT DO NOTHING;
 `;
 
 export async function POST(request: Request) {
@@ -350,7 +257,13 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
     
-    const pool = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+    // Create pool with SSL settings for Supabase pooler
+    const pool = new Pool({ 
+      connectionString: databaseUrl,
+      ssl: {
+        rejectUnauthorized: false // Required for Supabase pooler
+      }
+    })
     
     const client = await pool.connect()
     
@@ -365,7 +278,7 @@ export async function POST(request: Request) {
         ORDER BY table_name
       `)
       
-      const tables = result.rows.map(r => r.table_name)
+      const tables = result.rows.map((r: any) => r.table_name)
       
       // Count profiles
       const profileCount = await client.query('SELECT COUNT(*) FROM profiles')
