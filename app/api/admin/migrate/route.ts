@@ -6,7 +6,6 @@ import { Pool } from 'pg'
 
 const MIGRATION_SQL = `
 -- CR REALTOR PLATFORM - DATABASE MIGRATION
--- Executed: ${new Date().toISOString()}
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -339,10 +338,12 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
     
-    // Create PostgreSQL pool
+    // Create PostgreSQL pool with proper SSL for Supabase
     const pool = new Pool({
       connectionString: databaseUrl,
-      ssl: { rejectUnauthorized: false }
+      ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false
+      } : false
     })
     
     const client = await pool.connect()
