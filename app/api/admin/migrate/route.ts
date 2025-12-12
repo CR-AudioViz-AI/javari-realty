@@ -1,3 +1,6 @@
+// Migration endpoint - Updated: December 11, 2025 10:49 PM EST
+// Uses Supabase connection pooler for reliable connectivity
+
 import { NextResponse } from 'next/server'
 import { Pool } from 'pg'
 
