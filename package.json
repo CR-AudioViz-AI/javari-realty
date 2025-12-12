@@ -27,8 +27,7 @@
     "resend": "^3.2.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8",
-    "pg": "^8.11.3"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -37,7 +36,6 @@
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5",
-    "@types/pg": "^8.10.9"
+    "typescript": "^5"
   }
 }
