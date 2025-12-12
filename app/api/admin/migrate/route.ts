@@ -1,17 +1,12 @@
-// Migration endpoint - Updated: December 11, 2025 10:52 PM EST
-// Uses Supabase connection pooler with proper SSL configuration
-
+// Migration endpoint v3 - Let DATABASE_URL handle SSL via query params
 import { NextResponse } from 'next/server'
 import { Pool } from 'pg'
 
 const MIGRATION_SECRET = 'cr-realtor-migrate-2025'
 
 const MIGRATION_SQL = `
--- CR REALTOR PLATFORM - COMPLETE DATABASE SCHEMA
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
@@ -32,7 +27,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Properties table
 CREATE TABLE IF NOT EXISTS properties (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   agent_id UUID REFERENCES profiles(id),
@@ -66,7 +60,6 @@ CREATE TABLE IF NOT EXISTS properties (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Realtor customers table
 CREATE TABLE IF NOT EXISTS realtor_customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   auth_user_id UUID,
@@ -86,7 +79,6 @@ CREATE TABLE IF NOT EXISTS realtor_customers (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Organizations table
 CREATE TABLE IF NOT EXISTS organizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -104,7 +96,6 @@ CREATE TABLE IF NOT EXISTS organizations (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Realtor leads table
 CREATE TABLE IF NOT EXISTS realtor_leads (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   agent_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -125,7 +116,6 @@ CREATE TABLE IF NOT EXISTS realtor_leads (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Saved properties table
 CREATE TABLE IF NOT EXISTS saved_properties (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID,
@@ -136,7 +126,6 @@ CREATE TABLE IF NOT EXISTS saved_properties (
   UNIQUE(user_id, property_id)
 );
 
--- Showings table
 CREATE TABLE IF NOT EXISTS showings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   property_id UUID REFERENCES properties(id),
@@ -151,7 +140,6 @@ CREATE TABLE IF NOT EXISTS showings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Vendors table
 CREATE TABLE IF NOT EXISTS vendors (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   agent_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -172,7 +160,6 @@ CREATE TABLE IF NOT EXISTS vendors (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Realtor messages table
 CREATE TABLE IF NOT EXISTS realtor_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   conversation_id UUID,
@@ -185,7 +172,6 @@ CREATE TABLE IF NOT EXISTS realtor_messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE realtor_customers ENABLE ROW LEVEL SECURITY;
@@ -196,7 +182,6 @@ ALTER TABLE showings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE realtor_messages ENABLE ROW LEVEL SECURITY;
 
--- Create indexes
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
@@ -206,7 +191,6 @@ CREATE INDEX IF NOT EXISTS idx_leads_agent ON realtor_leads(agent_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_agent ON vendors(agent_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
 
--- Seed profiles from existing auth users
 INSERT INTO profiles (id, email, full_name, role)
 SELECT 
   id, 
@@ -227,7 +211,6 @@ ON CONFLICT (id) DO UPDATE SET
   END,
   updated_at = NOW();
 
--- Create Harvey Team organization
 INSERT INTO organizations (id, name, slug, contact_email, city, state, is_active)
 VALUES (
   'c858a6cb-1520-4f6a-b023-d61673b36853',
@@ -252,25 +235,18 @@ export async function POST(request: Request) {
     const databaseUrl = process.env.DATABASE_URL
     if (!databaseUrl) {
       return NextResponse.json({ 
-        error: 'DATABASE_URL not configured',
-        hint: 'Add DATABASE_URL to Vercel environment variables'
+        error: 'DATABASE_URL not configured'
       }, { status: 500 })
     }
     
-    // Create pool with SSL settings for Supabase pooler
-    const pool = new Pool({ 
-      connectionString: databaseUrl,
-      ssl: {
-        rejectUnauthorized: false // Required for Supabase pooler
-      }
-    })
+    // Don't specify SSL config - let the URL handle it
+    const pool = new Pool({ connectionString: databaseUrl })
     
     const client = await pool.connect()
     
     try {
       await client.query(MIGRATION_SQL)
       
-      // Verify tables created
       const result = await client.query(`
         SELECT table_name FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -279,13 +255,11 @@ export async function POST(request: Request) {
       `)
       
       const tables = result.rows.map((r: any) => r.table_name)
-      
-      // Count profiles
       const profileCount = await client.query('SELECT COUNT(*) FROM profiles')
       
       return NextResponse.json({
         status: 'success',
-        message: 'Migration completed successfully!',
+        message: 'Migration completed!',
         tables_created: tables,
         profile_count: parseInt(profileCount.rows[0].count),
         timestamp: new Date().toISOString()
@@ -300,7 +274,8 @@ export async function POST(request: Request) {
     console.error('Migration error:', error)
     return NextResponse.json({ 
       error: error.message,
-      detail: error.detail || error.hint || 'Check DATABASE_URL'
+      stack: error.stack?.split('\n').slice(0, 3),
+      detail: error.detail || error.hint || 'Unknown error'
     }, { status: 500 })
   }
 }
