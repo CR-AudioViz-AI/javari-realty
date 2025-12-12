@@ -95,7 +95,7 @@ export default function DashboardLayout({
         { name: 'Open House', href: '/dashboard/openhouse', icon: Home },
       ]
 
-  const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : 'Loading...'
+  const displayName = profile?.full_name || profile?.email?.split('@')[0] || 'Agent'
 
   if (loading) {
     return (
@@ -153,7 +153,7 @@ export default function DashboardLayout({
           <div className="px-4 pb-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{displayName}</p>
@@ -238,6 +238,7 @@ export default function DashboardLayout({
 
 
 // Build trigger v1
+
 
 
 
