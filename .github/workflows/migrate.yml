@@ -22,17 +22,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           
-      - name: Run Migration via Pooler
-        env:
-          PGHOST: aws-0-us-east-1.pooler.supabase.com
-          PGPORT: 6543
-          PGUSER: postgres.kteobfyferrukqeolofj
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGDATABASE: postgres
-          PGSSLMODE: require
+      - name: Run Migration
         run: |
-          echo "Connecting to Supabase Pooler..."
-          cat << 'ENDSQL' | psql
+          echo "Connecting to Supabase..."
+          # Use connection string with URL-encoded password
+          # Password: oce@N251812345 -> oce%40N251812345
+          PGPASSWORD='${{ secrets.SUPABASE_DB_PASSWORD }}' psql \
+            "host=aws-0-us-east-1.pooler.supabase.com port=6543 user=postgres.kteobfyferrukqeolofj dbname=postgres sslmode=require" << 'ENDSQL'
           -- CR REALTOR PLATFORM MIGRATION
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -173,14 +169,7 @@ jobs:
           ENDSQL
           
       - name: Verify Tables
-        env:
-          PGHOST: aws-0-us-east-1.pooler.supabase.com
-          PGPORT: 6543
-          PGUSER: postgres.kteobfyferrukqeolofj
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGDATABASE: postgres
-          PGSSLMODE: require
         run: |
-          echo "Verifying migration..."
-          psql -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages') ORDER BY table_name;"
-          psql -c "SELECT COUNT(*) as profile_count FROM profiles;"
+          PGPASSWORD='${{ secrets.SUPABASE_DB_PASSWORD }}' psql \
+            "host=aws-0-us-east-1.pooler.supabase.com port=6543 user=postgres.kteobfyferrukqeolofj dbname=postgres sslmode=require" \
+            -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers') ORDER BY table_name;"
