@@ -25,34 +25,73 @@ jobs:
       - name: Install dependencies
         run: npm install pg
         
-      - name: Run Migration
+      - name: Debug and Run Migration
         env:
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
+          # Test both connection formats
           node << 'NODESCRIPT'
           const { Client } = require('pg');
           
           const password = process.env.DB_PASSWORD;
-          console.log('Password length:', password ? password.length : 0);
-          console.log('Password starts with:', password ? password.substring(0, 3) : 'n/a');
+          console.log('Password info:');
+          console.log('  - Length:', password ? password.length : 0);
+          console.log('  - First 3 chars:', password ? password.substring(0, 3) : 'n/a');
+          console.log('  - Has @ symbol:', password ? password.includes('@') : false);
           
-          // Try direct connection to Supabase
-          const client = new Client({
-            host: 'db.kteobfyferrukqeolofj.supabase.co',
-            port: 5432,
-            user: 'postgres',
-            password: password,
-            database: 'postgres',
-            ssl: { rejectUnauthorized: false }
-          });
-          
-          async function runMigration() {
+          // Try direct connection (port 5432)
+          async function tryDirectConnection() {
+            console.log('\n--- Trying DIRECT connection (port 5432) ---');
+            const client = new Client({
+              host: 'db.kteobfyferrukqeolofj.supabase.co',
+              port: 5432,
+              user: 'postgres',
+              password: password,
+              database: 'postgres',
+              ssl: { rejectUnauthorized: false },
+              connectionTimeoutMillis: 10000
+            });
+            
             try {
-              console.log('Connecting to Supabase (direct)...');
               await client.connect();
-              console.log('Connected!');
+              console.log('✅ Direct connection successful!');
               
-              const sql = `
+              // Run a test query
+              const res = await client.query('SELECT version()');
+              console.log('PostgreSQL version:', res.rows[0].version.substring(0, 50) + '...');
+              
+              return client;
+            } catch (error) {
+              console.log('❌ Direct connection failed:', error.message);
+              return null;
+            }
+          }
+          
+          // Try transaction pooler (port 6543, mode=transaction)
+          async function tryPoolerConnection() {
+            console.log('\n--- Trying POOLER connection (port 6543) ---');
+            const client = new Client({
+              host: 'aws-0-us-east-1.pooler.supabase.com',
+              port: 6543,
+              user: 'postgres.kteobfyferrukqeolofj',
+              password: password,
+              database: 'postgres',
+              ssl: { rejectUnauthorized: false },
+              connectionTimeoutMillis: 10000
+            });
+            
+            try {
+              await client.connect();
+              console.log('✅ Pooler connection successful!');
+              return client;
+            } catch (error) {
+              console.log('❌ Pooler connection failed:', error.message);
+              return null;
+            }
+          }
+          
+          async function runMigration(client) {
+            const sql = `
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS profiles (id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, email TEXT UNIQUE NOT NULL, full_name TEXT, phone TEXT, role TEXT DEFAULT 'client', avatar_url TEXT, license_number TEXT, license_state TEXT, brokerage TEXT, bio TEXT, specialties TEXT[], service_areas TEXT[], years_experience INTEGER, is_admin BOOLEAN DEFAULT false, is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS properties (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), agent_id UUID REFERENCES profiles(id), mls_id TEXT, title TEXT NOT NULL, description TEXT, property_type TEXT DEFAULT 'single_family', status TEXT DEFAULT 'active', address TEXT NOT NULL, city TEXT NOT NULL, state TEXT NOT NULL, zip_code TEXT NOT NULL, county TEXT, latitude NUMERIC(10, 7), longitude NUMERIC(10, 7), price NUMERIC(12, 2) NOT NULL, bedrooms INTEGER, bathrooms NUMERIC(3, 1), sqft INTEGER, lot_size NUMERIC(10, 2), year_built INTEGER, features TEXT[], photos TEXT[], primary_image_url TEXT, virtual_tour_url TEXT, is_featured BOOLEAN DEFAULT false, listed_date DATE, sold_date DATE, sold_price NUMERIC(12, 2), created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
@@ -97,27 +136,43 @@ CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER AS $$ BEGIN 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 INSERT INTO profiles (id, email, full_name, role) SELECT id, email, COALESCE(raw_user_meta_data->>'full_name', ''), CASE WHEN email LIKE '%tony%' OR email LIKE '%laura%' THEN 'realtor' ELSE 'client' END FROM auth.users ON CONFLICT (id) DO UPDATE SET role = CASE WHEN EXCLUDED.email LIKE '%tony%' OR EXCLUDED.email LIKE '%laura%' THEN 'realtor' ELSE profiles.role END;
-              `;
-              
-              console.log('Running migration...');
-              await client.query(sql);
-              console.log('Migration SQL executed!');
-              
-              const result = await client.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages') ORDER BY table_name");
-              console.log('Tables created:', result.rows.map(r => r.table_name).join(', '));
-              
-              const countResult = await client.query("SELECT COUNT(*) as count FROM profiles");
-              console.log('Profiles count:', countResult.rows[0].count);
-              
-              console.log('\\n✅ Migration complete!');
-              
-            } catch (error) {
-              console.error('Migration failed:', error.message);
+            `;
+            
+            console.log('\nRunning migration SQL...');
+            await client.query(sql);
+            console.log('Migration executed!');
+            
+            const result = await client.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('profiles', 'properties', 'realtor_customers', 'realtor_leads', 'saved_properties', 'showings', 'vendors', 'organizations', 'realtor_messages') ORDER BY table_name");
+            console.log('Tables created:', result.rows.map(r => r.table_name).join(', '));
+            
+            const countResult = await client.query("SELECT COUNT(*) as count FROM profiles");
+            console.log('Profiles count:', countResult.rows[0].count);
+          }
+          
+          async function main() {
+            // Try direct first (should work on GH Actions)
+            let client = await tryDirectConnection();
+            
+            // If direct fails, try pooler
+            if (!client) {
+              client = await tryPoolerConnection();
+            }
+            
+            if (client) {
+              try {
+                await runMigration(client);
+                console.log('\n✅ MIGRATION COMPLETE!');
+              } catch (error) {
+                console.error('\nMigration failed:', error.message);
+                process.exit(1);
+              } finally {
+                await client.end();
+              }
+            } else {
+              console.error('\n❌ All connection attempts failed!');
               process.exit(1);
-            } finally {
-              await client.end();
             }
           }
           
-          runMigration();
+          main();
           NODESCRIPT
