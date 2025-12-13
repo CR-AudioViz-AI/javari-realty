@@ -94,7 +94,7 @@ export default function AgentCustomersPage() {
       const { data, error } = await supabase
         .from('realtor_customers')
         .select('*')
-        .eq('assigned_agent_id', user.id)
+        .eq('agent_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -646,3 +646,4 @@ export default function AgentCustomersPage() {
     </div>
   )
 }
+
