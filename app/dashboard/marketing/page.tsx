@@ -41,14 +41,7 @@ export default async function MarketingPage() {
   if (!profile) redirect('/auth/login')
 
   // Get properties for marketing
-  let teamMemberIds: string[] = [user.id]
-  if (false && profile.organization_id) { // Disabled
-    const { data: team } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('organization_id', profile.organization_id)
-    if (team) teamMemberIds = team.map(m => m.id)
-  }
+  const teamMemberIds: string[] = [user.id]
 
   const { data: properties } = await supabase
     .from('properties')
