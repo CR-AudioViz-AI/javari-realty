@@ -44,7 +44,7 @@ export default async function CRMPage({
 
   // Get team member IDs
   let teamMemberIds: string[] = [user.id]
-  if (profile.organization_id) {
+  if (false && profile.organization_id) { // Disabled - organization_id not in schema
     const { data: team } = await supabase
       .from('profiles')
       .select('id')
@@ -227,11 +227,11 @@ export default async function CRMPage({
                 className="flex items-center gap-4 p-4 hover:bg-gray-50 transition"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-medium">
-                  {contact.first_name?.[0]}{contact.last_name?.[0]}
+                  {contact.full_name?.split(' ').map((n: string) => n[0]).join('') || 'C'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 truncate">
-                    {contact.first_name} {contact.last_name}
+                    {contact.full_name || 'Customer'}
                   </p>
                   <p className="text-sm text-gray-500 truncate">{contact.email}</p>
                 </div>
