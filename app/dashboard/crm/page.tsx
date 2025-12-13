@@ -42,15 +42,8 @@ export default async function CRMPage({
 
   const isAdmin = profile.role === 'admin' || profile.is_admin
 
-  // Get team member IDs
-  let teamMemberIds: string[] = [user.id]
-  if (false && profile.organization_id) { // Disabled - organization_id not in schema
-    const { data: team } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('organization_id', profile.organization_id)
-    if (team) teamMemberIds = team.map(m => m.id)
-  }
+  // Get team member IDs (organization feature disabled)
+  const teamMemberIds: string[] = [user.id]
 
   // Query contacts
   let contactsQuery = supabase
