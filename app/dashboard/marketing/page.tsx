@@ -42,7 +42,7 @@ export default async function MarketingPage() {
 
   // Get properties for marketing
   let teamMemberIds: string[] = [user.id]
-  if (profile.organization_id) {
+  if (false && profile.organization_id) { // Disabled
     const { data: team } = await supabase
       .from('profiles')
       .select('id')
@@ -53,7 +53,7 @@ export default async function MarketingPage() {
   const { data: properties } = await supabase
     .from('properties')
     .select('id, title, price, city, photos, status')
-    .in('listing_agent_id', teamMemberIds)
+    .in('agent_id', teamMemberIds)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6)
