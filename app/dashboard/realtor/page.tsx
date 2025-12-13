@@ -38,7 +38,7 @@ export default async function RealtorDashboard() {
     redirect('/auth/login')
   }
 
-  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Realtor'
+  const displayName = profile.full_name || 'Realtor'
   const organization = profile.organizations
   const isAdmin = profile.role === 'admin' || profile.is_admin
 
@@ -46,10 +46,10 @@ export default async function RealtorDashboard() {
   let teamMembers: any[] = []
   let teamMemberIds: string[] = [user.id]
   
-  if (profile.organization_id) {
+  if (false && profile.organization_id) { // Disabled - organization_id not in schema
     const { data: team } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, specialties')
+      .select('id, full_name, avatar_url, specialties')
       .eq('organization_id', profile.organization_id)
       .eq('role', 'agent')
     
@@ -61,7 +61,7 @@ export default async function RealtorDashboard() {
   const { data: properties } = await supabase
     .from('properties')
     .select('*')
-    .in('listing_agent_id', teamMemberIds)
+    .in('agent_id', teamMemberIds)
     .order('price', { ascending: false })
 
   // Get ALL team leads
@@ -72,7 +72,7 @@ export default async function RealtorDashboard() {
     .limit(50)
 
   // My properties vs team properties
-  const myProperties = properties?.filter(p => p.listing_agent_id === user.id) || []
+  const myProperties = properties?.filter(p => p.agent_id === user.id) || []
   const teamProperties = properties || []
   
   const activeLeads = leads?.filter((l) => l.status === 'new' || l.status === 'contacted').length || 0
@@ -111,7 +111,7 @@ export default async function RealtorDashboard() {
                 {organization?.name || 'Welcome back'}
               </p>
               <h1 className="text-3xl font-bold mb-2">
-                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {profile.first_name}!
+                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {profile.full_name?.split(' ')[0] || 'there'}!
               </h1>
               <p className="text-blue-100/80 max-w-xl">
                 {organization?.settings?.tagline || "Here's what's happening with your real estate business today."}
@@ -355,7 +355,7 @@ export default async function RealtorDashboard() {
                           {property.bedrooms && <span>{property.bedrooms} bed</span>}
                           {property.bathrooms && <span>{property.bathrooms} bath</span>}
                           {property.square_feet && <span>{property.square_feet.toLocaleString()} sqft</span>}
-                          {property.listing_agent_id === user.id && (
+                          {property.agent_id === user.id && (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">Mine</span>
                           )}
                         </div>
@@ -445,11 +445,11 @@ export default async function RealtorDashboard() {
                 {teamMembers.map((member) => (
                   <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                      {member.first_name?.[0]}{member.last_name?.[0]}
+                      {member.full_name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">
-                        {member.first_name} {member.last_name}
+                        {member.full_name || 'Team Member'}
                         {member.id === user.id && <span className="text-blue-600 text-sm ml-1">(You)</span>}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
