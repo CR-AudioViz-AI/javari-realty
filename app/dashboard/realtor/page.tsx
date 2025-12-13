@@ -46,8 +46,7 @@ export default async function RealtorDashboard() {
   let teamMembers: any[] = []
   let teamMemberIds: string[] = [user.id]
   
-  if (false && profile.organization_id) { // Disabled - organization_id not in schema
-    const { data: team } = await supabase
+  // Organization feature disabled = await supabase
       .from('profiles')
       .select('id, full_name, avatar_url, specialties')
       .eq('organization_id', profile.organization_id)
