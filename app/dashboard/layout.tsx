@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import JavariChat from '@/components/javari-chat'
 import {
   Home,
+  KeyRound,
   Building2,
   Calculator,
   Users,
@@ -91,6 +92,7 @@ export default function DashboardLayout({
         { name: 'Marketing', href: '/dashboard/marketing', icon: Megaphone },
         { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
         { name: 'Mortgage Tools', href: '/dashboard/mortgage', icon: Calculator },
+        { name: 'Property Mgmt', href: '/dashboard/property-management', icon: KeyRound },
         { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
         { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Briefcase },
