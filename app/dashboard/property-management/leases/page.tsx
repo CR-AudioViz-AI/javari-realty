@@ -1,48 +1,47 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { FileText, Plus, Calendar, DollarSign, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
-
-export const dynamic = 'force-dynamic'
+import { FileText, Plus, Calendar, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react'
 
 export default async function LeasesListPage() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/auth/login')
+  }
 
   let leases: any[] = []
   let tenantsMap: Record<string, any> = {}
   let propertiesMap: Record<string, any> = {}
 
-  if (user) {
-    const { data: leasesData } = await supabase
-      .from('leases')
-      .select('*')
-      .eq('agent_id', user.id)
-      .order('created_at', { ascending: false })
+  const { data: leasesData } = await supabase
+    .from('leases')
+    .select('*')
+    .eq('agent_id', user.id)
+    .order('created_at', { ascending: false })
 
-    leases = leasesData || []
+  leases = leasesData || []
 
-    if (leases.length > 0) {
-      const tenantIds = [...new Set(leases.map(l => l.tenant_id).filter(Boolean))]
-      const propertyIds = [...new Set(leases.map(l => l.property_id).filter(Boolean))]
+  if (leases.length > 0) {
+    const tenantIds = [...new Set(leases.map(l => l.tenant_id).filter(Boolean))]
+    const propertyIds = [...new Set(leases.map(l => l.property_id).filter(Boolean))]
 
-      if (tenantIds.length > 0) {
-        const { data: tenantsData } = await supabase
-          .from('tenants')
-          .select('id, full_name')
-          .in('id', tenantIds)
-        tenantsData?.forEach(t => { tenantsMap[t.id] = t })
-      }
+    if (tenantIds.length > 0) {
+      const { data: tenantsData } = await supabase
+        .from('tenants')
+        .select('id, full_name')
+        .in('id', tenantIds)
+      tenantsData?.forEach(t => { tenantsMap[t.id] = t })
+    }
 
-      if (propertyIds.length > 0) {
-        const { data: propertiesData } = await supabase
-          .from('properties')
-          .select('id, address')
-          .in('id', propertyIds)
-        propertiesData?.forEach(p => { propertiesMap[p.id] = p })
-      }
+    if (propertyIds.length > 0) {
+      const { data: propertiesData } = await supabase
+        .from('properties')
+        .select('id, address')
+        .in('id', propertyIds)
+      propertiesData?.forEach(p => { propertiesMap[p.id] = p })
     }
   }
 
