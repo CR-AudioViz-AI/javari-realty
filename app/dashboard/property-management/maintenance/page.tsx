@@ -1,37 +1,36 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Wrench, Plus, AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-react'
-
-export const dynamic = 'force-dynamic'
+import { Wrench, Plus, AlertTriangle, Clock, CheckCircle } from 'lucide-react'
 
 export default async function MaintenanceListPage() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/auth/login')
+  }
 
   let requests: any[] = []
   let propertiesMap: Record<string, any> = {}
 
-  if (user) {
-    const { data: requestsData } = await supabase
-      .from('maintenance_requests')
-      .select('*')
-      .eq('agent_id', user.id)
-      .order('created_at', { ascending: false })
+  const { data: requestsData } = await supabase
+    .from('maintenance_requests')
+    .select('*')
+    .eq('agent_id', user.id)
+    .order('created_at', { ascending: false })
 
-    requests = requestsData || []
+  requests = requestsData || []
 
-    if (requests.length > 0) {
-      const propertyIds = [...new Set(requests.map(r => r.property_id).filter(Boolean))]
-      if (propertyIds.length > 0) {
-        const { data: propertiesData } = await supabase
-          .from('properties')
-          .select('id, address')
-          .in('id', propertyIds)
-        propertiesData?.forEach(p => { propertiesMap[p.id] = p })
-      }
+  if (requests.length > 0) {
+    const propertyIds = [...new Set(requests.map(r => r.property_id).filter(Boolean))]
+    if (propertyIds.length > 0) {
+      const { data: propertiesData } = await supabase
+        .from('properties')
+        .select('id, address')
+        .in('id', propertyIds)
+      propertiesData?.forEach(p => { propertiesMap[p.id] = p })
     }
   }
 
