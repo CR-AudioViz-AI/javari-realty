@@ -1,9 +1,8 @@
 // =====================================================
 // CR REALTOR PLATFORM - CUSTOMER INVITE API
 // Path: app/api/customers/invite/route.ts
-// Timestamp: 2025-12-02 3:15 PM EST
-// Purpose: Agent creates customer → system auto-emails credentials
-// FIX: Changed emailResult.messageId to emailResult.id
+// Purpose: Agent/Realtor creates customer → system auto-emails credentials
+// FIXED: Allow realtor and admin roles to invite customers
 // =====================================================
 
 import { createClient } from '@/lib/supabase/server'
@@ -14,41 +13,41 @@ import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
 
-// Generate a secure temporary password
 function generateTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
   let password = ''
   for (let i = 0; i < 12; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length))
   }
-  return password + '!' // Add special char for complexity
+  return password + '!'
 }
 
-// Generate invitation token
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex')
 }
 
-// POST - Agent creates customer invitation
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get the current user (must be an agent)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user is an agent and get their profile
     const { data: agentProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role, first_name, last_name, email, phone, organization_id')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !agentProfile || agentProfile.role !== 'agent') {
-      return NextResponse.json({ error: 'Only agents can invite customers' }, { status: 403 })
+    // FIX: Allow agent, realtor, and admin roles
+    const allowedRoles = ['agent', 'realtor', 'admin']
+    if (profileError || !agentProfile || !allowedRoles.includes(agentProfile.role)) {
+      return NextResponse.json({ 
+        error: 'Only agents and realtors can invite customers',
+        currentRole: agentProfile?.role 
+      }, { status: 403 })
     }
 
     const body = await request.json()
@@ -64,14 +63,10 @@ export async function POST(request: NextRequest) {
       bedroom_preference
     } = body
 
-    // Validate required fields
     if (!email || !full_name) {
-      return NextResponse.json({ 
-        error: 'Email and full name are required' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'Email and full name are required' }, { status: 400 })
     }
 
-    // Check if customer already exists with this email
     const { data: existingCustomer } = await supabase
       .from('realtor_customers')
       .select('id, email, assigned_agent_id')
@@ -86,12 +81,10 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
       return NextResponse.json({ 
-        error: 'A customer with this email already exists',
-        suggestion: 'Contact admin to transfer customer to your account'
+        error: 'A customer with this email already exists'
       }, { status: 400 })
     }
 
-    // Check for pending invitation with this email
     const { data: existingInvite } = await supabase
       .from('customer_invitations')
       .select('id, status, expires_at')
@@ -102,23 +95,19 @@ export async function POST(request: NextRequest) {
 
     if (existingInvite) {
       return NextResponse.json({ 
-        error: 'A pending invitation already exists for this email',
-        invitation_id: existingInvite.id
+        error: 'A pending invitation already exists for this email'
       }, { status: 400 })
     }
 
-    // Generate credentials
     const tempPassword = generateTempPassword()
     const inviteToken = generateToken()
 
-    // Create admin client for user creation
     const adminClient = createAdminClient()
     
-    // Create auth user with temporary password
     const { data: authData, error: createUserError } = await adminClient.auth.admin.createUser({
       email: email.toLowerCase(),
       password: tempPassword,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
       user_metadata: {
         full_name,
         phone,
@@ -135,7 +124,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Create customer record
     const { data: customer, error: customerError } = await supabase
       .from('realtor_customers')
       .insert({
@@ -158,7 +146,6 @@ export async function POST(request: NextRequest) {
 
     if (customerError) {
       console.error('Error creating customer:', customerError)
-      // Try to clean up auth user if customer creation failed
       await adminClient.auth.admin.deleteUser(authData.user!.id)
       return NextResponse.json({ 
         error: 'Failed to create customer record',
@@ -166,7 +153,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Create invitation record for tracking
     const { data: invitation, error: inviteError } = await supabase
       .from('customer_invitations')
       .insert({
@@ -187,15 +173,11 @@ export async function POST(request: NextRequest) {
       console.error('Error creating invitation:', inviteError)
     }
 
-    // Prepare credentials
     const agentName = `${agentProfile.first_name} ${agentProfile.last_name}`
     const loginUrl = process.env.NEXT_PUBLIC_APP_URL 
       ? `${process.env.NEXT_PUBLIC_APP_URL}/customer/login`
       : 'https://cr-realtor-platform.vercel.app/customer/login'
 
-    // ========================================
-    // AUTO-SEND EMAIL TO CUSTOMER
-    // ========================================
     const emailResult = await sendCustomerInviteEmail({
       customerEmail: email.toLowerCase(),
       customerName: full_name,
@@ -206,8 +188,6 @@ export async function POST(request: NextRequest) {
       loginUrl
     })
 
-    // Update invitation with email status
-    // FIX: Use 'id' instead of 'messageId' and safely access with optional chaining
     if (invitation) {
       await supabase
         .from('customer_invitations')
@@ -228,36 +208,24 @@ export async function POST(request: NextRequest) {
         ? 'Customer account created and email sent!' 
         : 'Customer account created. Email not configured - share credentials manually.',
       email_sent: emailResult.success,
-      email_error: 'error' in emailResult ? emailResult.error : undefined,
       customer: {
         id: customer.id,
         email: customer.email,
         full_name: customer.full_name
       },
-      invitation: invitation ? {
-        id: invitation.id,
-        token: invitation.token
-      } : null,
-      // Always include credentials for agent to copy if needed
       credentials: {
         email: email.toLowerCase(),
         temporary_password: tempPassword,
-        login_url: loginUrl,
-        agent_name: agentName,
-        message: `Hi ${full_name.split(' ')[0]}! Your agent ${agentName} has created an account for you. Login at ${loginUrl} with email: ${email} and password: ${tempPassword}`
+        login_url: loginUrl
       }
     })
 
   } catch (error: any) {
     console.error('Invite error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error.message 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
   }
 }
 
-// GET - List agent's customer invitations
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -273,10 +241,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('customer_invitations')
-      .select(`
-        *,
-        customers (id, full_name, email, status)
-      `)
+      .select('*, customers (id, full_name, email, status)')
       .eq('agent_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit)
