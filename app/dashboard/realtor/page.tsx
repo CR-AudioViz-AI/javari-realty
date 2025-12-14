@@ -161,7 +161,7 @@ export default async function RealtorDashboard() {
           <div className="divide-y">
             {properties && properties.length > 0 ? (
               properties.slice(0, 5).map((property) => (
-                <div key={property.id} className="p-4 hover:bg-gray-50">
+                <Link key={property.id} href={`/dashboard/properties/${property.id}`} className="block p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center">
                       <Home className="w-8 h-8 text-gray-400" />
@@ -188,7 +188,7 @@ export default async function RealtorDashboard() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="p-8 text-center text-gray-500">
@@ -300,3 +300,4 @@ export default async function RealtorDashboard() {
     </div>
   )
 }
+
