@@ -19,21 +19,17 @@ export default async function DashboardPage() {
     redirect('/auth/login')
   }
 
-  // Check role and redirect appropriately
   const isAdmin = profile.role === 'admin' || profile.is_admin
-  const isAgent = profile.role === 'agent'
+  const isAgentOrRealtor = ['agent', 'realtor'].includes(profile.role)
 
-  // Redirect admin to admin dashboard
   if (isAdmin) {
     redirect('/dashboard/admin')
   }
 
-  // Redirect agents to realtor dashboard
-  if (isAgent) {
+  if (isAgentOrRealtor) {
     redirect('/dashboard/realtor')
   }
 
-  // For any other role, show basic dashboard
   const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'User'
 
   const { count: myProperties } = await supabase
@@ -50,7 +46,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">Welcome, {displayName}!</h1>
-        <p className="text-blue-100">Here&apos;s what&apos;s happening with your account today.</p>
+        <p className="text-blue-100">Your account dashboard</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -75,30 +71,38 @@ export default async function DashboardPage() {
             <TrendingUp className="w-8 h-8 text-green-600" />
             <span className="text-2xl font-bold">0</span>
           </div>
-          <div className="text-sm text-gray-600">Active Transactions</div>
+          <div className="text-sm text-gray-600">Transactions</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link href="/dashboard/properties" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
-            <Building2 className="w-8 h-8 mx-auto mb-2" />
-            <div className="font-medium text-sm">View Properties</div>
-          </Link>
-          <Link href="/dashboard/leads" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
-            <Users className="w-8 h-8 mx-auto mb-2" />
-            <div className="font-medium text-sm">View Leads</div>
-          </Link>
-          <Link href="/search" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
-            <Home className="w-8 h-8 mx-auto mb-2" />
-            <div className="font-medium text-sm">Browse Listings</div>
-          </Link>
-          <Link href="/dashboard/properties/new" className="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition text-center">
-            <Plus className="w-8 h-8 mx-auto mb-2" />
-            <div className="font-medium text-sm">Add Property</div>
-          </Link>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Link href="/dashboard/properties/new" className="block">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-500 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Plus className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Add New Property</h3>
+                <p className="text-sm text-gray-500">List a new property</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/leads" className="block">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-purple-500 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">View Leads</h3>
+                <p className="text-sm text-gray-500">Manage your leads</p>
+              </div>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
   )
