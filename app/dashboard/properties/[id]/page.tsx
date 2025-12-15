@@ -3,8 +3,17 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Edit, MapPin, Bed, Bath, Square, Calendar, DollarSign,
-  Home, Building2, Thermometer, Droplets, Car, Trees, CheckCircle
+  Home, Building2, Thermometer, Droplets, Car, Trees, CheckCircle, Share2
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+// Dynamic imports for client components
+const PropertyMap = dynamic(() => import('@/components/PropertyMap'), { ssr: false })
+const WeatherWidget = dynamic(() => import('@/components/WeatherWidget'), { ssr: false })
+const NeighborhoodData = dynamic(() => import('@/components/NeighborhoodData'), { ssr: false })
+const NearbySchools = dynamic(() => import('@/components/NearbySchools'), { ssr: false })
+const SocialShare = dynamic(() => import('@/components/SocialShare'), { ssr: false })
+const QRCodeGenerator = dynamic(() => import('@/components/QRCodeGenerator'), { ssr: false })
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -20,6 +29,13 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
 
   if (error || !property) notFound()
 
+  // Get agent profile for sharing
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, phone')
+    .eq('id', user.id)
+    .single()
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price)
   }
@@ -28,8 +44,12 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 
+  const propertyUrl = `https://realtor.craudiovizai.com/listing/${params.id}`
+  const shareTitle = property.title || property.address
+  const shareDescription = `${property.bedrooms} bed, ${property.bathrooms} bath • ${property.sqft?.toLocaleString()} sqft in ${property.city}, ${property.state}`
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -44,26 +64,26 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
         <div className="flex gap-3">
           <Link href={`/dashboard/properties/${params.id}/edit`}>
             <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-              <Edit size={18} /> Edit Property
+              <Edit size={18} /> Edit
             </button>
           </Link>
         </div>
       </div>
 
-      {/* Price & Status */}
+      {/* Price & Status Bar */}
       <div className="bg-white rounded-xl border p-6 mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
             <p className="text-3xl font-bold text-green-600">
               {property.listing_type === 'for_rent' || property.listing_type === 'for_lease'
                 ? `${formatPrice(property.rent_amount || 0)}/mo`
                 : formatPrice(property.price || 0)}
             </p>
-            {property.listing_type !== 'for_sale' && property.security_deposit && (
-              <p className="text-gray-600">Security Deposit: {formatPrice(property.security_deposit)}</p>
+            {property.sqft && (
+              <p className="text-gray-500 text-sm">{formatPrice(Math.round(property.price / property.sqft))}/sqft</p>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             <span className={`px-4 py-2 rounded-full text-sm font-medium ${
               property.status === 'active' ? 'bg-green-100 text-green-800' :
               property.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -75,12 +95,17 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             <span className="px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
               {property.listing_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
             </span>
+            {property.mls_id && (
+              <span className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                MLS# {property.mls_id}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Details */}
+        {/* Main Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Key Stats */}
           <div className="bg-white rounded-xl border p-6">
@@ -88,50 +113,46 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {property.bedrooms && (
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Bed className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Bedrooms</p>
-                    <p className="font-semibold">{property.bedrooms}</p>
-                  </div>
+                  <div className="p-2 bg-blue-50 rounded-lg"><Bed className="w-5 h-5 text-blue-600" /></div>
+                  <div><p className="text-sm text-gray-500">Bedrooms</p><p className="font-semibold">{property.bedrooms}</p></div>
                 </div>
               )}
               {property.bathrooms && (
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 rounded-lg">
-                    <Bath className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Bathrooms</p>
-                    <p className="font-semibold">{property.bathrooms}</p>
-                  </div>
+                  <div className="p-2 bg-purple-50 rounded-lg"><Bath className="w-5 h-5 text-purple-600" /></div>
+                  <div><p className="text-sm text-gray-500">Bathrooms</p><p className="font-semibold">{property.bathrooms}</p></div>
                 </div>
               )}
               {property.sqft && (
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <Square className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Sq Ft</p>
-                    <p className="font-semibold">{property.sqft.toLocaleString()}</p>
-                  </div>
+                  <div className="p-2 bg-green-50 rounded-lg"><Square className="w-5 h-5 text-green-600" /></div>
+                  <div><p className="text-sm text-gray-500">Sq Ft</p><p className="font-semibold">{property.sqft.toLocaleString()}</p></div>
                 </div>
               )}
               {property.year_built && (
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Year Built</p>
-                    <p className="font-semibold">{property.year_built}</p>
-                  </div>
+                  <div className="p-2 bg-amber-50 rounded-lg"><Calendar className="w-5 h-5 text-amber-600" /></div>
+                  <div><p className="text-sm text-gray-500">Year Built</p><p className="font-semibold">{property.year_built}</p></div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Map */}
+          {property.latitude && property.longitude && (
+            <div className="bg-white rounded-xl border overflow-hidden">
+              <div className="p-4 border-b">
+                <h2 className="font-semibold text-lg">Location</h2>
+              </div>
+              <PropertyMap
+                latitude={property.latitude}
+                longitude={property.longitude}
+                address={property.address}
+                price={property.price}
+                height="350px"
+              />
+            </div>
+          )}
 
           {/* Description */}
           {property.description && (
@@ -145,14 +166,12 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
           <div className="bg-white rounded-xl border p-6">
             <h2 className="font-semibold text-lg mb-4">Property Details</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Property Type</span>
-                <span className="font-medium">{property.property_type?.replace('_', ' ')}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-500">Category</span>
-                <span className="font-medium">{property.category}</span>
-              </div>
+              {property.property_type && (
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-500">Property Type</span>
+                  <span className="font-medium">{property.property_type?.replace('_', ' ')}</span>
+                </div>
+              )}
               {property.lot_size && (
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-gray-500">Lot Size</span>
@@ -177,12 +196,6 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                   <span className="font-medium">{property.construction}</span>
                 </div>
               )}
-              {property.roof_type && (
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-500">Roof</span>
-                  <span className="font-medium">{property.roof_type}</span>
-                </div>
-              )}
               {property.cooling && (
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-gray-500">Cooling</span>
@@ -195,19 +208,19 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                   <span className="font-medium">{property.heating}</span>
                 </div>
               )}
-              {property.mls_id && (
+              {property.hoa_fee && (
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-500">MLS #</span>
-                  <span className="font-medium">{property.mls_id}</span>
+                  <span className="text-gray-500">HOA Fee</span>
+                  <span className="font-medium">{formatPrice(property.hoa_fee)}/{property.hoa_frequency || 'month'}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Features */}
-          {(property.exterior_features?.length > 0 || property.interior_features?.length > 0) && (
+          {(property.exterior_features?.length > 0 || property.interior_features?.length > 0 || property.appliances?.length > 0) && (
             <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-lg mb-4">Features</h2>
+              <h2 className="font-semibold text-lg mb-4">Features & Amenities</h2>
               {property.exterior_features?.length > 0 && (
                 <div className="mb-4">
                   <h3 className="font-medium text-gray-700 mb-2">Exterior</h3>
@@ -221,7 +234,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                 </div>
               )}
               {property.interior_features?.length > 0 && (
-                <div>
+                <div className="mb-4">
                   <h3 className="font-medium text-gray-700 mb-2">Interior</h3>
                   <div className="flex flex-wrap gap-2">
                     {property.interior_features.map((f: string) => (
@@ -232,40 +245,65 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                   </div>
                 </div>
               )}
+              {property.appliances?.length > 0 && (
+                <div>
+                  <h3 className="font-medium text-gray-700 mb-2">Appliances</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {property.appliances.map((f: string) => (
+                      <span key={f} className="flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
+                        <CheckCircle size={14} /> {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Rooms */}
-          {property.rooms?.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-lg mb-4">Room Details</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {property.rooms.map((room: any, idx: number) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                    <p className="font-medium">{room.type}</p>
-                    {room.dimensions && <p className="text-sm text-gray-500">{room.dimensions}</p>}
-                    {room.features && <p className="text-xs text-gray-400">{room.features}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Neighborhood Data */}
+          {property.latitude && property.longitude && (
+            <NeighborhoodData latitude={property.latitude} longitude={property.longitude} />
+          )}
+
+          {/* Nearby Schools */}
+          {property.latitude && property.longitude && (
+            <NearbySchools latitude={property.latitude} longitude={property.longitude} />
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Weather for Open House Planning */}
+          {property.latitude && property.longitude && (
+            <WeatherWidget latitude={property.latitude} longitude={property.longitude} />
+          )}
+
+          {/* Share Listing */}
+          <div className="bg-white rounded-xl border p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Share2 size={18} /> Share Listing
+            </h3>
+            <SocialShare
+              url={propertyUrl}
+              title={shareTitle}
+              description={shareDescription}
+              price={property.price}
+            />
+          </div>
+
+          {/* QR Code */}
+          <QRCodeGenerator
+            url={propertyUrl}
+            title="Scan to View Listing"
+          />
+
           {/* Quick Actions */}
           <div className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-lg mb-4">Quick Actions</h2>
+            <h2 className="font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-3">
               <Link href={`/dashboard/properties/${params.id}/edit`} className="block">
                 <button className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                   <Edit size={18} /> Edit Property
-                </button>
-              </Link>
-              <Link href={`/dashboard/share-listings?property=${params.id}`} className="block">
-                <button className="w-full flex items-center justify-center gap-2 border px-4 py-2 rounded-lg hover:bg-gray-50">
-                  Share Listing
                 </button>
               </Link>
               <Link href={`/dashboard/calendar?property=${params.id}`} className="block">
@@ -273,52 +311,13 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                   Schedule Showing
                 </button>
               </Link>
+              <Link href={`/dashboard/transactions?property=${params.id}`} className="block">
+                <button className="w-full flex items-center justify-center gap-2 border px-4 py-2 rounded-lg hover:bg-gray-50">
+                  Start Transaction
+                </button>
+              </Link>
             </div>
           </div>
-
-          {/* Rental Info */}
-          {(property.listing_type === 'for_rent' || property.listing_type === 'for_lease') && (
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-lg mb-4">Rental Details</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Rent</span>
-                  <span className="font-medium">{formatPrice(property.rent_amount || 0)}/{property.rent_frequency || 'month'}</span>
-                </div>
-                {property.security_deposit && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Security Deposit</span>
-                    <span className="font-medium">{formatPrice(property.security_deposit)}</span>
-                  </div>
-                )}
-                {property.lease_term_months && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Lease Term</span>
-                    <span className="font-medium">{property.lease_term_months} months</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Pets</span>
-                  <span className="font-medium">{property.pets_allowed ? 'Allowed' : 'Not Allowed'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Furnished</span>
-                  <span className="font-medium">{property.furnished ? 'Yes' : 'No'}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* HOA Info */}
-          {property.hoa_fee && (
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-lg mb-4">HOA Information</h2>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">HOA Fee</span>
-                <span className="font-medium">{formatPrice(property.hoa_fee)}/{property.hoa_frequency || 'month'}</span>
-              </div>
-            </div>
-          )}
 
           {/* Listing Info */}
           <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
@@ -326,6 +325,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             {property.updated_at && property.updated_at !== property.created_at && (
               <p>Updated: {formatDate(property.updated_at)}</p>
             )}
+            <p className="mt-2">Agent: {profile?.full_name || 'Not specified'}</p>
           </div>
         </div>
       </div>
