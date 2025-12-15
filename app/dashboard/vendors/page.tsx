@@ -1,901 +1,388 @@
-// app/dashboard/vendors/page.tsx
-// Agent Vendor Rolodex Management
-// Created: December 1, 2025 - 1:32 PM EST
-
 'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Building2, Plus, Search, Phone, Mail, Globe, MapPin, Star, 
-  Edit, Trash2, DollarSign, ChevronDown, ChevronUp, X, Check,
-  Briefcase, Shield, Clock, Users, Filter, MoreVertical
+import Link from 'next/link'
+import {
+  Search, MapPin, Phone, Mail, Globe, Star, Plus,
+  Building2, Briefcase, Shield, Home, Hammer, Camera,
+  FileText, DollarSign, Truck, Users, ChevronRight, Filter,
+  CheckCircle, Clock, ExternalLink
 } from 'lucide-react'
-
-const VENDOR_CATEGORIES = [
-  { value: 'home_inspector', label: 'Home Inspector', icon: '🔍' },
-  { value: 'mortgage_lender', label: 'Mortgage Lender', icon: '🏦' },
-  { value: 'title_company', label: 'Title Company', icon: '📋' },
-  { value: 'insurance', label: 'Home Insurance', icon: '🛡️' },
-  { value: 'appraiser', label: 'Appraiser', icon: '📊' },
-  { value: 'attorney', label: 'Real Estate Attorney', icon: '⚖️' },
-  { value: 'contractor', label: 'General Contractor', icon: '🔨' },
-  { value: 'electrician', label: 'Electrician', icon: '⚡' },
-  { value: 'plumber', label: 'Plumber', icon: '🔧' },
-  { value: 'hvac', label: 'HVAC', icon: '❄️' },
-  { value: 'roofer', label: 'Roofing', icon: '🏠' },
-  { value: 'pest_control', label: 'Pest Control', icon: '🐜' },
-  { value: 'landscaper', label: 'Landscaper', icon: '🌳' },
-  { value: 'pool_service', label: 'Pool Service', icon: '🏊' },
-  { value: 'moving_company', label: 'Moving Company', icon: '🚚' },
-  { value: 'cleaning_service', label: 'Cleaning Service', icon: '🧹' },
-  { value: 'photographer', label: 'Photographer', icon: '📷' },
-  { value: 'stager', label: 'Home Stager', icon: '🛋️' },
-  { value: 'surveyor', label: 'Land Surveyor', icon: '📐' },
-  { value: 'other', label: 'Other', icon: '📦' },
-]
 
 interface Vendor {
   id: string
-  business_name: string
-  contact_name: string | null
-  email: string | null
-  phone: string | null
-  website: string | null
-  address_line1: string | null
-  city: string | null
-  state: string | null
-  zip_code: string | null
+  name: string
   category: string
-  description: string | null
-  license_number: string | null
-  years_in_business: number | null
-  agent_rating: number | null
-  agent_notes: string | null
-  is_preferred: boolean
-  is_active: boolean
-  created_at: string
-  vendor_services?: VendorService[]
-  vendor_commissions?: VendorCommission[]
+  subcategory?: string
+  description?: string
+  phone?: string
+  email?: string
+  website?: string
+  address?: string
+  city?: string
+  state?: string
+  zip_code?: string
+  rating?: number
+  reviews_count?: number
+  verified?: boolean
+  featured?: boolean
+  services?: string[]
+  coverage_areas?: string[]
+  years_in_business?: number
+  license_number?: string
+  insurance_verified?: boolean
 }
 
-interface VendorService {
-  id: string
-  service_name: string
-  description: string | null
-  price_range: string | null
-  turnaround_time: string | null
-  tags: string[] | null
-}
+const VENDOR_CATEGORIES = [
+  { id: 'all', name: 'All Vendors', icon: Building2, color: 'bg-gray-100' },
+  { id: 'lender', name: 'Mortgage Lenders', icon: DollarSign, color: 'bg-green-100' },
+  { id: 'title', name: 'Title Companies', icon: FileText, color: 'bg-blue-100' },
+  { id: 'inspector', name: 'Home Inspectors', icon: Search, color: 'bg-amber-100' },
+  { id: 'appraiser', name: 'Appraisers', icon: Home, color: 'bg-purple-100' },
+  { id: 'insurance', name: 'Insurance Agents', icon: Shield, color: 'bg-red-100' },
+  { id: 'contractor', name: 'Contractors', icon: Hammer, color: 'bg-orange-100' },
+  { id: 'photographer', name: 'Photographers', icon: Camera, color: 'bg-pink-100' },
+  { id: 'mover', name: 'Moving Companies', icon: Truck, color: 'bg-cyan-100' },
+  { id: 'attorney', name: 'Real Estate Attorneys', icon: Briefcase, color: 'bg-indigo-100' },
+  { id: 'stager', name: 'Home Stagers', icon: Users, color: 'bg-teal-100' },
+]
 
-interface VendorCommission {
-  id: string
-  commission_type: string
-  commission_amount: number | null
-  commission_notes: string | null
-  agreement_date: string | null
-  agreement_expires: string | null
-}
+// Sample featured vendors (would come from database)
+const FEATURED_VENDORS: Vendor[] = [
+  {
+    id: '1',
+    name: 'Southwest Florida Title',
+    category: 'title',
+    description: 'Full-service title and escrow company serving Lee and Collier counties since 1995.',
+    phone: '(239) 555-0100',
+    email: 'closings@swfltitle.com',
+    website: 'https://swfltitle.com',
+    city: 'Fort Myers',
+    state: 'FL',
+    rating: 4.9,
+    reviews_count: 127,
+    verified: true,
+    featured: true,
+    services: ['Title Insurance', 'Escrow Services', 'Mobile Closings', '1031 Exchange'],
+    years_in_business: 29,
+  },
+  {
+    id: '2',
+    name: 'Gulf Coast Mortgage',
+    category: 'lender',
+    description: 'Local lender with competitive rates and fast closings. FHA, VA, Conventional, Jumbo.',
+    phone: '(239) 555-0200',
+    email: 'loans@gulfcoastmtg.com',
+    website: 'https://gulfcoastmtg.com',
+    city: 'Cape Coral',
+    state: 'FL',
+    rating: 4.8,
+    reviews_count: 89,
+    verified: true,
+    featured: true,
+    services: ['Conventional', 'FHA', 'VA', 'USDA', 'Jumbo', 'Refinance'],
+    years_in_business: 15,
+  },
+  {
+    id: '3',
+    name: 'A+ Home Inspections',
+    category: 'inspector',
+    description: 'InterNACHI certified inspector. Thorough 400+ point inspections with same-day reports.',
+    phone: '(239) 555-0300',
+    email: 'inspect@aplusfl.com',
+    city: 'Fort Myers',
+    state: 'FL',
+    rating: 5.0,
+    reviews_count: 203,
+    verified: true,
+    featured: true,
+    services: ['Full Home Inspection', 'Wind Mitigation', '4-Point', 'Roof Certification', 'Pool/Spa'],
+    license_number: 'HI12345',
+    insurance_verified: true,
+  },
+  {
+    id: '4',
+    name: 'Sunshine Insurance Group',
+    category: 'insurance',
+    description: 'Independent agency representing 20+ carriers. Home, flood, wind, and umbrella policies.',
+    phone: '(239) 555-0400',
+    email: 'quotes@sunshineins.com',
+    city: 'Naples',
+    state: 'FL',
+    rating: 4.7,
+    reviews_count: 156,
+    verified: true,
+    services: ['Homeowners', 'Flood', 'Wind', 'Umbrella', 'Condo', 'Landlord'],
+  },
+  {
+    id: '5',
+    name: 'Premier Appraisal Services',
+    category: 'appraiser',
+    description: 'State-certified appraisers with 20+ years experience in SW Florida market.',
+    phone: '(239) 555-0500',
+    email: 'appraisals@premierappraisal.com',
+    city: 'Fort Myers',
+    state: 'FL',
+    rating: 4.9,
+    reviews_count: 78,
+    verified: true,
+    services: ['Purchase Appraisals', 'Refinance', 'Estate', 'Divorce', 'Pre-Listing'],
+    license_number: 'RD5678',
+  },
+  {
+    id: '6',
+    name: 'Paradise Home Photography',
+    category: 'photographer',
+    description: 'Professional real estate photography, drone, video tours, and Matterport 3D.',
+    phone: '(239) 555-0600',
+    email: 'book@paradisephoto.com',
+    website: 'https://paradisephoto.com',
+    city: 'Fort Myers',
+    state: 'FL',
+    rating: 5.0,
+    reviews_count: 312,
+    verified: true,
+    featured: true,
+    services: ['HDR Photography', 'Drone/Aerial', 'Video Tours', 'Matterport 3D', 'Floor Plans', 'Twilight'],
+  },
+]
 
-export default function AgentVendorsPage() {
-  const supabase = createClient()
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
-  const [expandedVendor, setExpandedVendor] = useState<string | null>(null)
-  const [showCommissionModal, setShowCommissionModal] = useState<string | null>(null)
-
-  // Form state
-  const [formData, setFormData] = useState({
-    business_name: '',
-    contact_name: '',
-    email: '',
-    phone: '',
-    website: '',
-    address_line1: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    category: 'home_inspector',
-    description: '',
-    license_number: '',
-    years_in_business: '',
-    agent_rating: 0,
-    agent_notes: '',
-    is_preferred: false,
-  })
-
-  const [commissionData, setCommissionData] = useState({
-    commission_type: 'flat',
-    commission_amount: '',
-    commission_notes: '',
-    agreement_date: '',
-    agreement_expires: '',
-  })
-
-  const [serviceForm, setServiceForm] = useState({
-    service_name: '',
-    description: '',
-    price_range: '',
-    turnaround_time: '',
-    tags: '',
-  })
-
-  useEffect(() => {
-    loadVendors()
-  }, [])
-
-  async function loadVendors() {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('vendors')
-      .select(`
-        *,
-        vendor_services(*),
-        vendor_commissions(*)
-      `)
-      .eq('agent_id', user.id)
-      .order('is_preferred', { ascending: false })
-      .order('business_name')
-
-    if (!error && data) {
-      setVendors(data)
-    }
-    setLoading(false)
-  }
-
-  async function saveVendor() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const vendorPayload = {
-      agent_id: user.id,
-      business_name: formData.business_name,
-      contact_name: formData.contact_name || null,
-      email: formData.email || null,
-      phone: formData.phone || null,
-      website: formData.website || null,
-      address_line1: formData.address_line1 || null,
-      city: formData.city || null,
-      state: formData.state || null,
-      zip_code: formData.zip_code || null,
-      category: formData.category,
-      description: formData.description || null,
-      license_number: formData.license_number || null,
-      years_in_business: formData.years_in_business ? parseInt(formData.years_in_business) : null,
-      agent_rating: formData.agent_rating || null,
-      agent_notes: formData.agent_notes || null,
-      is_preferred: formData.is_preferred,
-      is_active: true,
-    }
-
-    if (editingVendor) {
-      await supabase.from('vendors').update(vendorPayload).eq('id', editingVendor.id)
-    } else {
-      await supabase.from('vendors').insert(vendorPayload)
-    }
-
-    resetForm()
-    loadVendors()
-  }
-
-  async function deleteVendor(id: string) {
-    if (!confirm('Delete this vendor? This cannot be undone.')) return
-    await supabase.from('vendors').delete().eq('id', id)
-    loadVendors()
-  }
-
-  async function togglePreferred(vendor: Vendor) {
-    await supabase.from('vendors').update({ is_preferred: !vendor.is_preferred }).eq('id', vendor.id)
-    loadVendors()
-  }
-
-  async function saveCommission(vendorId: string) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const payload = {
-      vendor_id: vendorId,
-      agent_id: user.id,
-      commission_type: commissionData.commission_type,
-      commission_amount: commissionData.commission_amount ? parseFloat(commissionData.commission_amount) : null,
-      commission_notes: commissionData.commission_notes || null,
-      agreement_date: commissionData.agreement_date || null,
-      agreement_expires: commissionData.agreement_expires || null,
-    }
-
-    await supabase.from('vendor_commissions').upsert(payload, { onConflict: 'vendor_id,agent_id' })
-    setShowCommissionModal(null)
-    setCommissionData({ commission_type: 'flat', commission_amount: '', commission_notes: '', agreement_date: '', agreement_expires: '' })
-    loadVendors()
-  }
-
-  async function addService(vendorId: string) {
-    if (!serviceForm.service_name) return
-
-    await supabase.from('vendor_services').insert({
-      vendor_id: vendorId,
-      service_name: serviceForm.service_name,
-      description: serviceForm.description || null,
-      price_range: serviceForm.price_range || null,
-      turnaround_time: serviceForm.turnaround_time || null,
-      tags: serviceForm.tags ? serviceForm.tags.split(',').map(t => t.trim()) : null,
-    })
-
-    setServiceForm({ service_name: '', description: '', price_range: '', turnaround_time: '', tags: '' })
-    loadVendors()
-  }
-
-  async function deleteService(serviceId: string) {
-    await supabase.from('vendor_services').delete().eq('id', serviceId)
-    loadVendors()
-  }
-
-  function resetForm() {
-    setFormData({
-      business_name: '', contact_name: '', email: '', phone: '', website: '',
-      address_line1: '', city: '', state: '', zip_code: '', category: 'home_inspector',
-      description: '', license_number: '', years_in_business: '', agent_rating: 0,
-      agent_notes: '', is_preferred: false,
-    })
-    setEditingVendor(null)
-    setShowAddModal(false)
-  }
-
-  function openEditModal(vendor: Vendor) {
-    setFormData({
-      business_name: vendor.business_name,
-      contact_name: vendor.contact_name || '',
-      email: vendor.email || '',
-      phone: vendor.phone || '',
-      website: vendor.website || '',
-      address_line1: vendor.address_line1 || '',
-      city: vendor.city || '',
-      state: vendor.state || '',
-      zip_code: vendor.zip_code || '',
-      category: vendor.category,
-      description: vendor.description || '',
-      license_number: vendor.license_number || '',
-      years_in_business: vendor.years_in_business?.toString() || '',
-      agent_rating: vendor.agent_rating || 0,
-      agent_notes: vendor.agent_notes || '',
-      is_preferred: vendor.is_preferred,
-    })
-    setEditingVendor(vendor)
-    setShowAddModal(true)
-  }
-
+export default function VendorDirectoryPage() {
+  const [vendors, setVendors] = useState<Vendor[]>(FEATURED_VENDORS)
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('all')
+  const [city, setCity] = useState('')
+  
   const filteredVendors = vendors.filter(v => {
-    const matchesSearch = !searchQuery || 
-      v.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.vendor_services?.some(s => 
-        s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    const matchesCategory = !categoryFilter || v.category === categoryFilter
-    return matchesSearch && matchesCategory
+    const matchesSearch = search === '' || 
+      v.name.toLowerCase().includes(search.toLowerCase()) ||
+      v.description?.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = category === 'all' || v.category === category
+    const matchesCity = city === '' || v.city?.toLowerCase().includes(city.toLowerCase())
+    return matchesSearch && matchesCategory && matchesCity
   })
 
-  const getCategoryInfo = (cat: string) => VENDOR_CATEGORIES.find(c => c.value === cat) || { label: cat, icon: '📦' }
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        size={14}
+        className={i < Math.floor(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
+      />
+    ))
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vendor Rolodex</h1>
-          <p className="text-gray-600">Manage your trusted service providers</p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Building2 className="text-blue-600" /> Vendor Directory
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Trusted professionals to help with every step of your transaction
+          </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-5 h-5" />
-          Add Vendor
-        </button>
+        <Link href="/dashboard/vendors/add">
+          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            <Plus size={18} /> Add Vendor
+          </button>
+        </Link>
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search vendors, services, or tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Categories</option>
-          {VENDOR_CATEGORIES.map(cat => (
-            <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg border">
-          <p className="text-sm text-gray-500">Total Vendors</p>
-          <p className="text-2xl font-bold">{vendors.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <p className="text-sm text-gray-500">Preferred</p>
-          <p className="text-2xl font-bold text-yellow-600">{vendors.filter(v => v.is_preferred).length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <p className="text-sm text-gray-500">With Commission</p>
-          <p className="text-2xl font-bold text-green-600">
-            {vendors.filter(v => v.vendor_commissions && v.vendor_commissions.length > 0).length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <p className="text-sm text-gray-500">Categories</p>
-          <p className="text-2xl font-bold">{new Set(vendors.map(v => v.category)).size}</p>
+      <div className="bg-white rounded-xl border p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search vendors..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            />
+          </div>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading vendors...</p>
-        </div>
-      )}
+      {/* Category Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {VENDOR_CATEGORIES.map(cat => {
+          const count = cat.id === 'all' ? vendors.length : vendors.filter(v => v.category === cat.id).length
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors ${
+                category === cat.id 
+                  ? 'bg-blue-600 text-white' 
+                  : `${cat.color} hover:opacity-80`
+              }`}
+            >
+              <cat.icon size={16} />
+              {cat.name}
+              <span className="text-xs opacity-75">({count})</span>
+            </button>
+          )
+        })}
+      </div>
 
-      {/* Empty State */}
-      {!loading && vendors.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-          <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No vendors yet</h3>
-          <p className="text-gray-500 mb-4">Add your trusted service providers to share with customers</p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Add Your First Vendor
-          </button>
+      {/* Featured Section */}
+      {category === 'all' && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Star className="text-yellow-500" /> Featured Partners
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {vendors.filter(v => v.featured).slice(0, 3).map(vendor => (
+              <div key={vendor.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-bold text-lg">{vendor.name}</h3>
+                  {vendor.verified && (
+                    <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                      <CheckCircle size={12} /> Verified
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{vendor.description}</p>
+                <div className="flex items-center gap-1 mb-3">
+                  {renderStars(vendor.rating || 0)}
+                  <span className="text-sm text-gray-600 ml-1">({vendor.reviews_count})</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {vendor.services?.slice(0, 3).map(s => (
+                    <span key={s} className="text-xs bg-white px-2 py-1 rounded">{s}</span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  {vendor.phone && (
+                    <a href={`tel:${vendor.phone}`} className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700">
+                      <Phone size={14} /> Call
+                    </a>
+                  )}
+                  {vendor.website && (
+                    <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 border py-2 rounded-lg text-sm hover:bg-gray-50">
+                      <Globe size={14} /> Website
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Vendor List */}
-      {!loading && filteredVendors.length > 0 && (
-        <div className="space-y-4">
-          {filteredVendors.map(vendor => {
-            const catInfo = getCategoryInfo(vendor.category)
-            const isExpanded = expandedVendor === vendor.id
-            const commission = vendor.vendor_commissions?.[0]
-
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold">
+          {category === 'all' ? 'All Vendors' : VENDOR_CATEGORIES.find(c => c.id === category)?.name}
+          <span className="text-gray-500 font-normal ml-2">({filteredVendors.length})</span>
+        </h2>
+        
+        {filteredVendors.length === 0 ? (
+          <div className="bg-white rounded-xl border p-8 text-center text-gray-500">
+            <Building2 className="mx-auto mb-3" size={48} />
+            <p>No vendors found matching your criteria</p>
+            <button onClick={() => { setSearch(''); setCategory('all'); setCity(''); }} className="text-blue-600 hover:underline mt-2">
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          filteredVendors.map(vendor => {
+            const CategoryIcon = VENDOR_CATEGORIES.find(c => c.id === vendor.category)?.icon || Building2
             return (
-              <div key={vendor.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                {/* Main Row */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
-                        {catInfo.icon}
+              <div key={vendor.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition-shadow">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className={`p-2 rounded-lg ${VENDOR_CATEGORIES.find(c => c.id === vendor.category)?.color}`}>
+                        <CategoryIcon size={20} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900">{vendor.business_name}</h3>
-                          {vendor.is_preferred && (
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-current" /> Preferred
-                            </span>
-                          )}
-                          {commission && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" /> Commission
-                            </span>
+                          <h3 className="font-bold text-lg">{vendor.name}</h3>
+                          {vendor.verified && (
+                            <CheckCircle className="text-green-600" size={16} />
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">{catInfo.label}</p>
-                        {vendor.contact_name && (
-                          <p className="text-sm text-gray-600 mt-1">{vendor.contact_name}</p>
-                        )}
-                        <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
-                          {vendor.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-4 h-4" /> {vendor.phone}
-                            </span>
-                          )}
-                          {vendor.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-4 h-4" /> {vendor.email}
-                            </span>
-                          )}
-                          {vendor.city && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" /> {vendor.city}, {vendor.state}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-sm text-gray-500">
+                          {VENDOR_CATEGORIES.find(c => c.id === vendor.category)?.name}
+                          {vendor.city && ` • ${vendor.city}, ${vendor.state}`}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => togglePreferred(vendor)}
-                        className={`p-2 rounded-lg ${vendor.is_preferred ? 'text-yellow-600 bg-yellow-50' : 'text-gray-400 hover:bg-gray-100'}`}
-                        title={vendor.is_preferred ? 'Remove from preferred' : 'Mark as preferred'}
-                      >
-                        <Star className={`w-5 h-5 ${vendor.is_preferred ? 'fill-current' : ''}`} />
-                      </button>
-                      <button
-                        onClick={() => setShowCommissionModal(vendor.id)}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-gray-100"
-                        title="Set commission"
-                      >
-                        <DollarSign className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(vendor)}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-gray-100"
-                        title="Edit"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => deleteVendor(vendor.id)}
-                        className="p-2 rounded-lg text-red-400 hover:bg-red-50"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setExpandedVendor(isExpanded ? null : vendor.id)}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-gray-100"
-                      >
-                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                      </button>
+                    
+                    <p className="text-gray-600 text-sm mb-3">{vendor.description}</p>
+                    
+                    <div className="flex items-center gap-4 mb-3">
+                      {vendor.rating && (
+                        <div className="flex items-center gap-1">
+                          {renderStars(vendor.rating)}
+                          <span className="text-sm text-gray-600 ml-1">{vendor.rating} ({vendor.reviews_count} reviews)</span>
+                        </div>
+                      )}
+                      {vendor.years_in_business && (
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          <Clock size={14} /> {vendor.years_in_business} years
+                        </span>
+                      )}
                     </div>
+                    
+                    {vendor.services && (
+                      <div className="flex flex-wrap gap-2">
+                        {vendor.services.map(s => (
+                          <span key={s} className="text-xs bg-gray-100 px-2 py-1 rounded">{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 md:w-48">
+                    {vendor.phone && (
+                      <a href={`tel:${vendor.phone}`} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 justify-center">
+                        <Phone size={16} /> {vendor.phone}
+                      </a>
+                    )}
+                    {vendor.email && (
+                      <a href={`mailto:${vendor.email}`} className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 justify-center">
+                        <Mail size={16} /> Email
+                      </a>
+                    )}
+                    {vendor.website && (
+                      <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 justify-center">
+                        <ExternalLink size={16} /> Website
+                      </a>
+                    )}
                   </div>
                 </div>
-
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="border-t bg-gray-50 p-4">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Left Column - Details */}
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-3">Details</h4>
-                        {vendor.description && (
-                          <p className="text-sm text-gray-600 mb-3">{vendor.description}</p>
-                        )}
-                        <div className="space-y-2 text-sm">
-                          {vendor.website && (
-                            <p><span className="text-gray-500">Website:</span> <a href={vendor.website} target="_blank" className="text-blue-600 hover:underline">{vendor.website}</a></p>
-                          )}
-                          {vendor.license_number && (
-                            <p><span className="text-gray-500">License:</span> {vendor.license_number}</p>
-                          )}
-                          {vendor.years_in_business && (
-                            <p><span className="text-gray-500">Years in Business:</span> {vendor.years_in_business}</p>
-                          )}
-                          {vendor.agent_rating && (
-                            <p><span className="text-gray-500">Your Rating:</span> {'⭐'.repeat(vendor.agent_rating)}</p>
-                          )}
-                        </div>
-
-                        {/* Private Notes */}
-                        {vendor.agent_notes && (
-                          <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <p className="text-xs text-yellow-800 font-medium mb-1">🔒 Private Notes</p>
-                            <p className="text-sm text-yellow-900">{vendor.agent_notes}</p>
-                          </div>
-                        )}
-
-                        {/* Commission Info (Private) */}
-                        {commission && (
-                          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                            <p className="text-xs text-green-800 font-medium mb-1">🔒 Commission Agreement</p>
-                            <p className="text-sm text-green-900">
-                              {commission.commission_type === 'flat' && `$${commission.commission_amount} flat fee`}
-                              {commission.commission_type === 'percentage' && `${commission.commission_amount}% per deal`}
-                              {commission.commission_type === 'per_deal' && `$${commission.commission_amount} per deal`}
-                            </p>
-                            {commission.commission_notes && (
-                              <p className="text-xs text-green-700 mt-1">{commission.commission_notes}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right Column - Services */}
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-3">Services Offered</h4>
-                        {vendor.vendor_services && vendor.vendor_services.length > 0 ? (
-                          <div className="space-y-2">
-                            {vendor.vendor_services.map(service => (
-                              <div key={service.id} className="p-3 bg-white rounded-lg border">
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <p className="font-medium text-gray-900">{service.service_name}</p>
-                                    {service.description && (
-                                      <p className="text-sm text-gray-500">{service.description}</p>
-                                    )}
-                                    <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                                      {service.price_range && <span>💰 {service.price_range}</span>}
-                                      {service.turnaround_time && <span>⏱️ {service.turnaround_time}</span>}
-                                    </div>
-                                    {service.tags && service.tags.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {service.tags.map(tag => (
-                                          <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <button
-                                    onClick={() => deleteService(service.id)}
-                                    className="p-1 text-red-400 hover:bg-red-50 rounded"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500">No services added yet</p>
-                        )}
-
-                        {/* Add Service Form */}
-                        <div className="mt-4 p-3 bg-white rounded-lg border">
-                          <p className="text-sm font-medium text-gray-700 mb-2">Add Service</p>
-                          <div className="space-y-2">
-                            <input
-                              type="text"
-                              placeholder="Service name"
-                              value={serviceForm.service_name}
-                              onChange={(e) => setServiceForm({ ...serviceForm, service_name: e.target.value })}
-                              className="w-full px-3 py-2 border rounded text-sm"
-                            />
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="text"
-                                placeholder="Price range"
-                                value={serviceForm.price_range}
-                                onChange={(e) => setServiceForm({ ...serviceForm, price_range: e.target.value })}
-                                className="px-3 py-2 border rounded text-sm"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Turnaround"
-                                value={serviceForm.turnaround_time}
-                                onChange={(e) => setServiceForm({ ...serviceForm, turnaround_time: e.target.value })}
-                                className="px-3 py-2 border rounded text-sm"
-                              />
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="Tags (comma separated)"
-                              value={serviceForm.tags}
-                              onChange={(e) => setServiceForm({ ...serviceForm, tags: e.target.value })}
-                              className="w-full px-3 py-2 border rounded text-sm"
-                            />
-                            <button
-                              onClick={() => addService(vendor.id)}
-                              className="w-full py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                            >
-                              Add Service
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
 
-      {/* Add/Edit Vendor Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-semibold">{editingVendor ? 'Edit Vendor' : 'Add New Vendor'}</h2>
-              <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
-                  <input
-                    type="text"
-                    value={formData.business_name}
-                    onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  >
-                    {VENDOR_CATEGORIES.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                  <input
-                    type="text"
-                    value={formData.contact_name}
-                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    placeholder="https://"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input
-                  type="text"
-                  value={formData.address_line1}
-                  onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Street address"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>
-                  <input
-                    type="text"
-                    value={formData.zip_code}
-                    onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  rows={3}
-                  placeholder="Brief description of their services..."
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
-                  <input
-                    type="text"
-                    value={formData.license_number}
-                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Years in Business</label>
-                  <input
-                    type="number"
-                    value={formData.years_in_business}
-                    onChange={(e) => setFormData({ ...formData, years_in_business: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating</label>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, agent_rating: rating })}
-                      className={`p-2 rounded ${formData.agent_rating >= rating ? 'text-yellow-500' : 'text-gray-300'}`}
-                    >
-                      <Star className={`w-6 h-6 ${formData.agent_rating >= rating ? 'fill-current' : ''}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Private Notes (only you see this)</label>
-                <textarea
-                  value={formData.agent_notes}
-                  onChange={(e) => setFormData({ ...formData, agent_notes: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  rows={2}
-                  placeholder="Your private notes about this vendor..."
-                />
-              </div>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.is_preferred}
-                  onChange={(e) => setFormData({ ...formData, is_preferred: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300"
-                />
-                <span className="text-sm text-gray-700">Mark as preferred vendor</span>
-              </label>
-            </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-              <button onClick={resetForm} className="px-4 py-2 border rounded-lg hover:bg-gray-100">
-                Cancel
-              </button>
-              <button
-                onClick={saveVendor}
-                disabled={!formData.business_name}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {editingVendor ? 'Save Changes' : 'Add Vendor'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Commission Modal */}
-      {showCommissionModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Commission Agreement</h2>
-              <button onClick={() => setShowCommissionModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-500 bg-yellow-50 p-3 rounded-lg">
-                🔒 This information is private and will never be shown to customers.
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Type</label>
-                <select
-                  value={commissionData.commission_type}
-                  onChange={(e) => setCommissionData({ ...commissionData, commission_type: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="flat">Flat Fee</option>
-                  <option value="percentage">Percentage</option>
-                  <option value="per_deal">Per Deal</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {commissionData.commission_type === 'percentage' ? 'Percentage (%)' : 'Amount ($)'}
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={commissionData.commission_amount}
-                  onChange={(e) => setCommissionData({ ...commissionData, commission_amount: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder={commissionData.commission_type === 'percentage' ? 'e.g., 5' : 'e.g., 250'}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={commissionData.commission_notes}
-                  onChange={(e) => setCommissionData({ ...commissionData, commission_notes: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  rows={2}
-                  placeholder="Details about the agreement..."
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Agreement Date</label>
-                  <input
-                    type="date"
-                    value={commissionData.agreement_date}
-                    onChange={(e) => setCommissionData({ ...commissionData, agreement_date: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expires</label>
-                  <input
-                    type="date"
-                    value={commissionData.agreement_expires}
-                    onChange={(e) => setCommissionData({ ...commissionData, agreement_expires: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-              <button onClick={() => setShowCommissionModal(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">
-                Cancel
-              </button>
-              <button
-                onClick={() => saveCommission(showCommissionModal)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Save Commission
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* CTA */}
+      <div className="mt-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white text-center">
+        <h3 className="text-xl font-bold mb-2">Are You a Service Provider?</h3>
+        <p className="text-blue-100 mb-4">Join our vendor directory and connect with local realtors and homebuyers.</p>
+        <Link href="/dashboard/vendors/add">
+          <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50">
+            List Your Business Free
+          </button>
+        </Link>
+      </div>
     </div>
   )
 }
