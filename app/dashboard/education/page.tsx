@@ -1,87 +1,204 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import {
   GraduationCap, BookOpen, Video, FileText, Calculator, DollarSign,
   Home, Shield, Users, Award, ChevronRight, PlayCircle, Download,
-  CheckCircle, Star, Clock, Target, TrendingUp, Key, Briefcase
+  CheckCircle, Star, Clock, Target, TrendingUp, Key, Briefcase,
+  Lock, Zap, ExternalLink
 } from 'lucide-react'
 
 export const metadata = {
   title: 'Education Center | CR Realtor Platform',
-  description: 'Free real estate education for homebuyers, sellers, investors, and professionals.',
+  description: 'Premium real estate education for realtors and their clients.',
 }
 
 const LEARNING_TRACKS = [
   {
     id: 'first-time-buyer',
     title: 'First-Time Homebuyer Academy',
-    description: 'Everything you need to know to buy your first home with confidence',
+    description: 'Everything your clients need to buy their first home with confidence',
     icon: Home,
     color: 'from-blue-500 to-indigo-600',
     modules: 12,
     duration: '4-6 hours',
     level: 'Beginner',
-    topics: ['Credit Basics', 'Saving for Down Payment', 'Mortgage Types', 'Home Search', 'Making Offers', 'Closing Process'],
+    topics: ['Credit Basics', 'Down Payment', 'Mortgage Types', 'Home Search', 'Offers', 'Closing'],
     href: '/dashboard/education/first-time-buyer'
   },
   {
     id: 'seller-guide',
     title: 'Home Seller Masterclass',
-    description: 'Maximize your home\'s value and navigate the selling process',
+    description: 'Help sellers maximize value and navigate the process',
     icon: DollarSign,
     color: 'from-green-500 to-emerald-600',
     modules: 8,
     duration: '3-4 hours',
     level: 'All Levels',
-    topics: ['Pricing Strategy', 'Staging Tips', 'Marketing Your Home', 'Negotiations', 'Closing Costs'],
+    topics: ['Pricing Strategy', 'Staging', 'Marketing', 'Negotiations', 'Closing Costs'],
     href: '/dashboard/education/seller-guide'
   },
   {
     id: 'investor',
     title: 'Real Estate Investing 101',
-    description: 'Build wealth through strategic property investments',
+    description: 'For clients building wealth through property investments',
     icon: TrendingUp,
     color: 'from-purple-500 to-violet-600',
     modules: 10,
     duration: '5-7 hours',
     level: 'Intermediate',
-    topics: ['Investment Analysis', 'Rental Properties', 'Fix & Flip', '1031 Exchanges', 'Tax Strategies'],
+    topics: ['Analysis', 'Rentals', 'Fix & Flip', '1031 Exchanges', 'Tax Strategy'],
     href: '/dashboard/education/investing'
   },
   {
     id: 'realtor-pro',
     title: 'Realtor Success Program',
-    description: 'Advanced strategies for real estate professionals',
+    description: 'Advanced strategies for your own business growth',
     icon: Award,
     color: 'from-amber-500 to-orange-600',
     modules: 15,
     duration: '8-10 hours',
     level: 'Professional',
-    topics: ['Lead Generation', 'Client Management', 'Listing Presentations', 'Negotiation Scripts', 'Marketing'],
+    topics: ['Lead Gen', 'Client Management', 'Listing Presentations', 'Negotiation', 'Marketing'],
     href: '/dashboard/education/realtor-pro'
   },
 ]
 
 const QUICK_GUIDES = [
-  { title: 'Understanding Credit Scores', icon: Target, time: '10 min', category: 'Financing' },
-  { title: 'Down Payment Options', icon: DollarSign, time: '15 min', category: 'Financing' },
-  { title: 'FHA vs Conventional Loans', icon: FileText, time: '12 min', category: 'Financing' },
-  { title: 'VA Loan Benefits', icon: Shield, time: '8 min', category: 'Financing' },
-  { title: 'Home Inspection Checklist', icon: CheckCircle, time: '10 min', category: 'Buying' },
-  { title: 'Making a Strong Offer', icon: Key, time: '15 min', category: 'Buying' },
-  { title: 'Closing Cost Breakdown', icon: Calculator, time: '12 min', category: 'Buying' },
-  { title: 'Property Tax Basics', icon: Briefcase, time: '8 min', category: 'Ownership' },
+  { title: 'Understanding Credit Scores', icon: Target, time: '10 min' },
+  { title: 'Down Payment Options', icon: DollarSign, time: '15 min' },
+  { title: 'FHA vs Conventional Loans', icon: FileText, time: '12 min' },
+  { title: 'Home Inspection Checklist', icon: CheckCircle, time: '10 min' },
 ]
 
-const FREE_RESOURCES = [
-  { title: 'Homebuyer Checklist (PDF)', type: 'download', icon: Download },
-  { title: 'Budget Worksheet', type: 'download', icon: Download },
-  { title: 'Mortgage Comparison Tool', type: 'tool', icon: Calculator },
-  { title: 'Home Search Criteria Worksheet', type: 'download', icon: Download },
-  { title: 'Closing Cost Calculator', type: 'tool', icon: Calculator },
-  { title: 'First-Time Buyer Video Series', type: 'video', icon: PlayCircle },
-]
+export default async function EducationCenterPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) redirect('/auth/login')
 
-export default function EducationCenterPage() {
+  // Check if user has Education add-on
+  const { data: addon } = await supabase
+    .from('addon_subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .in('addon_id', ['education', 'full-bundle'])
+    .eq('status', 'active')
+    .single()
+
+  const hasAccess = !!addon
+
+  // Check if user has base realtor subscription for discount
+  const { data: realtorSub } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .single()
+
+  const hasRealtorAccount = !!realtorSub
+  const discountPercent = hasRealtorAccount ? 20 : 0
+  const basePrice = 49
+  const finalPrice = Math.round(basePrice * (1 - discountPercent / 100))
+
+  // If no access, show paywall
+  if (!hasAccess) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white text-center mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full mb-4">
+            <GraduationCap size={20} />
+            <span className="font-medium">Premium Add-On</span>
+          </div>
+          <h1 className="text-4xl font-bold mb-4">Education Center</h1>
+          <p className="text-xl text-blue-100 mb-6 max-w-2xl mx-auto">
+            Comprehensive real estate education for you AND your clients. 
+            Share courses, guides, and resources to help everyone succeed.
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
+            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <BookOpen size={18} />
+              <span>45+ Courses</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <Video size={18} />
+              <span>100+ Videos</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <Users size={18} />
+              <span>Share with Clients</span>
+            </div>
+          </div>
+
+          <div className="bg-white/10 rounded-2xl p-6 max-w-md mx-auto mb-6">
+            {hasRealtorAccount && (
+              <div className="text-sm text-green-300 mb-2">
+                ✓ Realtor account discount applied!
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-3">
+              {discountPercent > 0 && (
+                <span className="text-2xl text-white/50 line-through">${basePrice}</span>
+              )}
+              <span className="text-5xl font-bold">${finalPrice}</span>
+              <span className="text-xl text-white/70">/month</span>
+            </div>
+          </div>
+
+          <Link href={`/dashboard/checkout?addon=education&discount=${discountPercent}`}>
+            <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors">
+              Unlock Education Center
+            </button>
+          </Link>
+        </div>
+
+        {/* Preview of what they'll get */}
+        <h2 className="text-2xl font-bold mb-6">What's Included</h2>
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          {LEARNING_TRACKS.map(track => (
+            <div key={track.id} className="bg-white rounded-xl border p-5 opacity-75">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 bg-gradient-to-r ${track.color} rounded-lg text-white`}>
+                  <track.icon size={20} />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{track.title}</h3>
+                  <p className="text-sm text-gray-500">{track.modules} modules • {track.duration}</p>
+                </div>
+                <Lock className="ml-auto text-gray-400" size={18} />
+              </div>
+              <p className="text-sm text-gray-600">{track.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h3 className="font-bold text-amber-800 mb-2">💡 Why Realtors Love This</h3>
+          <ul className="space-y-2 text-amber-900">
+            <li className="flex items-start gap-2">
+              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
+              <span>Share with unlimited clients at no extra cost</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
+              <span>Educated clients make faster, more confident decisions</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
+              <span>Professional courses you don't have to create yourself</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
+              <span>Certificate programs may qualify clients for down payment assistance</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  // Full access view
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Hero Section */}
@@ -89,10 +206,13 @@ export default function EducationCenterPage() {
         <div className="flex items-center gap-3 mb-4">
           <GraduationCap size={40} />
           <h1 className="text-3xl font-bold">Education Center</h1>
+          <span className="ml-auto bg-green-500 text-white text-sm px-3 py-1 rounded-full">
+            ✓ Active
+          </span>
         </div>
         <p className="text-xl text-blue-100 mb-6 max-w-2xl">
-          Free, comprehensive real estate education for everyone. Whether you're buying your first home 
-          or building an investment portfolio, we have the resources to help you succeed.
+          Share these courses with your clients to help them succeed. 
+          Educated clients make better decisions and smoother transactions.
         </p>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
@@ -105,13 +225,31 @@ export default function EducationCenterPage() {
           </div>
           <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
             <FileText size={18} />
-            <span>Free Downloads</span>
+            <span>Checklists</span>
           </div>
           <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-            <Calculator size={18} />
-            <span>Interactive Tools</span>
+            <Users size={18} />
+            <span>Share with Clients</span>
           </div>
         </div>
+      </div>
+
+      {/* Mortgage App Link */}
+      <div className="bg-gray-100 rounded-xl p-4 mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Calculator className="text-blue-600" size={24} />
+          <div>
+            <p className="font-medium">Need Calculators?</p>
+            <p className="text-sm text-gray-600">Mortgage calculators are in the Mortgage Rate Monitor app</p>
+          </div>
+        </div>
+        <a 
+          href="https://mortgage.craudiovizai.com/calculators" 
+          target="_blank"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Open Calculators <ExternalLink size={16} />
+        </a>
       </div>
 
       {/* Learning Tracks */}
@@ -142,11 +280,6 @@ export default function EducationCenterPage() {
                         {topic}
                       </span>
                     ))}
-                    {track.topics.length > 4 && (
-                      <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
-                        +{track.topics.length - 4} more
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center text-blue-600 font-medium group-hover:gap-3 transition-all">
                     Start Learning <ChevronRight size={18} />
@@ -177,95 +310,28 @@ export default function EducationCenterPage() {
                   <Clock size={12} /> {guide.time}
                 </span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">{guide.title}</h3>
-              <span className="text-xs text-gray-500">{guide.category}</span>
+              <h3 className="font-medium text-gray-900">{guide.title}</h3>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Free Resources */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Free Resources & Tools</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FREE_RESOURCES.map(resource => (
-            <div key={resource.title} className="bg-white rounded-xl border p-4 flex items-center gap-4 hover:shadow-lg transition-shadow cursor-pointer">
-              <div className={`p-3 rounded-lg ${
-                resource.type === 'download' ? 'bg-green-50' :
-                resource.type === 'tool' ? 'bg-blue-50' : 'bg-purple-50'
-              }`}>
-                <resource.icon size={24} className={
-                  resource.type === 'download' ? 'text-green-600' :
-                  resource.type === 'tool' ? 'text-blue-600' : 'text-purple-600'
-                } />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">{resource.title}</h3>
-                <span className="text-xs text-gray-500 capitalize">{resource.type}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Video */}
-      <section className="mb-12">
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-            <div className="flex-1">
-              <span className="text-yellow-400 text-sm font-medium">FEATURED VIDEO SERIES</span>
-              <h2 className="text-2xl font-bold mt-2 mb-4">First-Time Homebuyer Bootcamp</h2>
-              <p className="text-gray-300 mb-6">
-                Our most popular course! Learn everything from getting pre-approved to getting your keys. 
-                6 comprehensive videos covering the entire homebuying journey.
-              </p>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <PlayCircle size={18} className="text-yellow-400" />
-                  <span>6 Videos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={18} className="text-yellow-400" />
-                  <span>2.5 Hours</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star size={18} className="text-yellow-400" />
-                  <span>4.9 Rating</span>
-                </div>
-              </div>
-              <button className="bg-yellow-400 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300 flex items-center gap-2">
-                <PlayCircle size={20} /> Watch Free
-              </button>
-            </div>
-            <div className="w-full md:w-80 h-48 bg-gray-700 rounded-xl flex items-center justify-center">
-              <PlayCircle size={64} className="text-white/50" />
-            </div>
+      {/* Resources & Glossary Links */}
+      <section className="grid md:grid-cols-2 gap-6">
+        <Link href="/dashboard/education/resources">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <Download className="text-green-600 mb-3" size={32} />
+            <h3 className="text-xl font-bold mb-2">Checklists & Templates</h3>
+            <p className="text-gray-600">10+ downloadable resources for every stage of the transaction</p>
           </div>
-        </div>
-      </section>
-
-      {/* Certifications */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Earn Certificates</h2>
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-amber-100 rounded-xl">
-              <Award size={32} className="text-amber-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Homebuyer Certificate Program</h3>
-              <p className="text-gray-600 mb-4">
-                Complete our courses and earn certificates that may qualify you for down payment assistance 
-                programs and special financing options. Many lenders and programs require homebuyer education!
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border">HUD Approved Content</span>
-                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border">Florida Housing Eligible</span>
-                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border">Free Certificate</span>
-              </div>
-            </div>
+        </Link>
+        <Link href="/dashboard/education/glossary">
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <BookOpen className="text-purple-600 mb-3" size={32} />
+            <h3 className="text-xl font-bold mb-2">Real Estate Glossary</h3>
+            <p className="text-gray-600">100+ terms explained in plain English for your clients</p>
           </div>
-        </div>
+        </Link>
       </section>
     </div>
   )
