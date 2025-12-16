@@ -1,324 +1,415 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import {
-  FileText,
-  Upload,
-  FolderOpen,
-  Search,
-  Download,
-  Trash2,
-  File,
-  Grid,
-  List,
-  X,
-  Loader2,
-  Star,
-  Clock,
+  FileText, FolderOpen, Download, Upload, Check, Clock,
+  AlertCircle, Search, Filter, Plus, ChevronRight, File,
+  CheckSquare, Square, Users, Home, Calendar, Trash2,
+  Eye, Edit2, Share2, Lock, Unlock, Star
 } from 'lucide-react'
 
 interface Document {
   id: string
   name: string
-  file_type: string
-  file_size: number
+  type: string
   category: string
-  created_at: string
-  starred: boolean
+  status: 'pending' | 'completed' | 'expired' | 'not-started'
+  dueDate?: string
+  completedDate?: string
+  url?: string
+  required: boolean
+  notes?: string
 }
 
-export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [category, setCategory] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showUpload, setShowUpload] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [selectedDocs, setSelectedDocs] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+interface Transaction {
+  id: string
+  propertyAddress: string
+  clientName: string
+  type: 'buyer' | 'seller'
+  status: 'active' | 'pending' | 'closed'
+  closeDate?: string
+  documents: Document[]
+}
 
-  const categories = [
-    { id: 'all', label: 'All Documents' },
-    { id: 'contracts', label: 'Contracts' },
-    { id: 'disclosures', label: 'Disclosures' },
-    { id: 'inspections', label: 'Inspections' },
-    { id: 'appraisals', label: 'Appraisals' },
-    { id: 'title', label: 'Title & Escrow' },
-    { id: 'marketing', label: 'Marketing' },
-    { id: 'other', label: 'Other' },
+const DOCUMENT_TEMPLATES = {
+  buyer: [
+    { name: 'Buyer Representation Agreement', category: 'Agreements', required: true },
+    { name: 'Pre-Approval Letter', category: 'Financing', required: true },
+    { name: 'Proof of Funds', category: 'Financing', required: false },
+    { name: 'Purchase Agreement', category: 'Contracts', required: true },
+    { name: 'Earnest Money Receipt', category: 'Contracts', required: true },
+    { name: 'Home Inspection Report', category: 'Inspections', required: false },
+    { name: 'Pest Inspection Report', category: 'Inspections', required: false },
+    { name: 'Appraisal Report', category: 'Financing', required: true },
+    { name: 'Title Commitment', category: 'Title', required: true },
+    { name: 'Survey', category: 'Title', required: false },
+    { name: 'Homeowners Insurance', category: 'Insurance', required: true },
+    { name: 'Closing Disclosure', category: 'Closing', required: true },
+    { name: 'Final Walkthrough Checklist', category: 'Closing', required: true },
+  ],
+  seller: [
+    { name: 'Listing Agreement', category: 'Agreements', required: true },
+    { name: 'Seller Disclosure', category: 'Disclosures', required: true },
+    { name: 'Lead-Based Paint Disclosure', category: 'Disclosures', required: true },
+    { name: 'HOA Documents', category: 'Disclosures', required: false },
+    { name: 'Property Survey', category: 'Title', required: false },
+    { name: 'Purchase Agreement (Signed)', category: 'Contracts', required: true },
+    { name: 'Inspection Response', category: 'Inspections', required: false },
+    { name: 'Repair Receipts', category: 'Inspections', required: false },
+    { name: 'Title Commitment', category: 'Title', required: true },
+    { name: 'Payoff Statement', category: 'Closing', required: true },
+    { name: 'Closing Disclosure', category: 'Closing', required: true },
+    { name: 'Deed', category: 'Closing', required: true },
   ]
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem('cr_documents')
-    if (stored) setDocuments(JSON.parse(stored))
-    setLoading(false)
-  }, [])
-
-  const saveDocuments = (docs: Document[]) => {
-    localStorage.setItem('cr_documents', JSON.stringify(docs))
-    setDocuments(docs)
-  }
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-    setUploading(true)
-
-    const newDocs: Document[] = Array.from(files).map(file => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      file_type: file.type || 'application/octet-stream',
-      file_size: file.size,
-      category: 'other',
-      created_at: new Date().toISOString(),
-      starred: false,
+const SAMPLE_TRANSACTIONS: Transaction[] = [
+  {
+    id: '1',
+    propertyAddress: '2850 Winkler Ave, Fort Myers, FL',
+    clientName: 'Sarah Johnson',
+    type: 'buyer',
+    status: 'active',
+    closeDate: '2024-12-30',
+    documents: DOCUMENT_TEMPLATES.buyer.map((doc, idx) => ({
+      id: `doc-${idx}`,
+      ...doc,
+      type: 'pdf',
+      status: idx < 5 ? 'completed' : idx < 8 ? 'pending' : 'not-started',
+      dueDate: '2024-12-20',
+      completedDate: idx < 5 ? '2024-12-10' : undefined
     }))
-
-    saveDocuments([...documents, ...newDocs])
-    setUploading(false)
-    setShowUpload(false)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  },
+  {
+    id: '2',
+    propertyAddress: '1420 SE 47th St, Cape Coral, FL',
+    clientName: 'Mike Chen',
+    type: 'seller',
+    status: 'active',
+    closeDate: '2025-01-15',
+    documents: DOCUMENT_TEMPLATES.seller.map((doc, idx) => ({
+      id: `doc-${idx}`,
+      ...doc,
+      type: 'pdf',
+      status: idx < 3 ? 'completed' : idx < 6 ? 'pending' : 'not-started',
+      dueDate: '2025-01-05'
+    }))
   }
+]
 
-  const deleteDocument = (id: string) => {
-    if (!confirm('Delete this document?')) return
-    saveDocuments(documents.filter(d => d.id !== id))
-  }
+export default function DocumentCenterPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(SAMPLE_TRANSACTIONS[0])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterCategory, setFilterCategory] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
 
-  const deleteSelected = () => {
-    if (!confirm('Delete selected documents?')) return
-    saveDocuments(documents.filter(d => !selectedDocs.includes(d.id)))
-    setSelectedDocs([])
-  }
-
-  const toggleStar = (id: string) => {
-    saveDocuments(documents.map(d => d.id === id ? { ...d, starred: !d.starred } : d))
-  }
-
-  const updateCategory = (id: string, newCategory: string) => {
-    saveDocuments(documents.map(d => d.id === id ? { ...d, category: newCategory } : d))
-  }
-
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return { color: 'text-red-600', bg: 'bg-red-100' }
-    if (fileType.includes('image')) return { color: 'text-blue-600', bg: 'bg-blue-100' }
-    return { color: 'text-gray-600', bg: 'bg-gray-100' }
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  const filteredDocuments = documents
-    .filter(doc => category === 'all' || doc.category === category)
-    .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
-
-  const totalSize = documents.reduce((sum, d) => sum + d.file_size, 0)
-
-  if (loading) {
+  const getStatusBadge = (status: Document['status']) => {
+    const styles = {
+      'completed': 'bg-green-100 text-green-800',
+      'pending': 'bg-amber-100 text-amber-800',
+      'expired': 'bg-red-100 text-red-800',
+      'not-started': 'bg-gray-100 text-gray-800'
+    }
+    const labels = {
+      'completed': 'Completed',
+      'pending': 'Pending',
+      'expired': 'Expired',
+      'not-started': 'Not Started'
+    }
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
+        {labels[status]}
+      </span>
     )
   }
 
+  const toggleDocumentStatus = (docId: string) => {
+    if (!selectedTransaction) return
+    
+    setTransactions(prev => prev.map(t => {
+      if (t.id === selectedTransaction.id) {
+        return {
+          ...t,
+          documents: t.documents.map(d => {
+            if (d.id === docId) {
+              const newStatus = d.status === 'completed' ? 'not-started' : 'completed'
+              return {
+                ...d,
+                status: newStatus,
+                completedDate: newStatus === 'completed' ? new Date().toISOString().split('T')[0] : undefined
+              }
+            }
+            return d
+          })
+        }
+      }
+      return t
+    }))
+
+    // Update selected transaction
+    setSelectedTransaction(prev => {
+      if (!prev) return null
+      return {
+        ...prev,
+        documents: prev.documents.map(d => {
+          if (d.id === docId) {
+            const newStatus = d.status === 'completed' ? 'not-started' : 'completed'
+            return {
+              ...d,
+              status: newStatus,
+              completedDate: newStatus === 'completed' ? new Date().toISOString().split('T')[0] : undefined
+            }
+          }
+          return d
+        })
+      }
+    })
+  }
+
+  const filteredDocuments = selectedTransaction?.documents.filter(doc => {
+    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = filterCategory === 'all' || doc.category === filterCategory
+    const matchesStatus = filterStatus === 'all' || doc.status === filterStatus
+    return matchesSearch && matchesCategory && matchesStatus
+  }) || []
+
+  const categories = [...new Set(selectedTransaction?.documents.map(d => d.category) || [])]
+
+  const completedCount = selectedTransaction?.documents.filter(d => d.status === 'completed').length || 0
+  const totalCount = selectedTransaction?.documents.length || 0
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-500">{documents.length} documents • {formatFileSize(totalSize)} total</p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <FolderOpen className="text-blue-600" /> Document Center
+          </h1>
+          <p className="text-gray-600 mt-1">Manage transaction documents and checklists</p>
         </div>
-        <div className="flex gap-2">
-          {selectedDocs.length > 0 && (
-            <button onClick={deleteSelected} className="px-4 py-2 bg-red-100 text-red-600 font-medium rounded-xl hover:bg-red-200">
-              Delete ({selectedDocs.length})
-            </button>
-          )}
-          <button onClick={() => setShowUpload(true)} className="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search documents..."
-            className="w-full pl-10 pr-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100'}`}>
-            <Grid className="w-5 h-5" />
-          </button>
-          <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100'}`}>
-            <List className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setCategory(cat.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-              category === cat.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <Plus size={18} /> New Transaction
+        </button>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          {filteredDocuments.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredDocuments.map(doc => {
-                  const { color, bg } = getFileIcon(doc.file_type)
-                  const isSelected = selectedDocs.includes(doc.id)
-                  return (
-                    <div key={doc.id} className={`bg-white rounded-xl border p-4 hover:shadow-md group relative ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
-                      <div className="absolute top-2 left-2">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => setSelectedDocs(prev => isSelected ? prev.filter(id => id !== doc.id) : [...prev, doc.id])}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600"
-                        />
-                      </div>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className={`w-12 h-12 rounded-lg ${bg} flex items-center justify-center`}>
-                          <File className={`w-6 h-6 ${color}`} />
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => toggleStar(doc.id)} className={`p-1.5 rounded-lg ${doc.starred ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'}`}>
-                            <Star className="w-4 h-4" fill={doc.starred ? 'currentColor' : 'none'} />
-                          </button>
-                          <button onClick={() => deleteDocument(doc.id)} className="p-1.5 hover:bg-red-100 rounded-lg opacity-0 group-hover:opacity-100">
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <h3 className="font-medium text-gray-900 text-sm truncate mb-1">{doc.name}</h3>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{formatFileSize(doc.file_size)}</span>
-                        <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <select
-                        value={doc.category}
-                        onChange={(e) => updateCategory(doc.id, e.target.value)}
-                        className="mt-2 w-full text-xs px-2 py-1 bg-gray-100 border-0 rounded-lg"
-                      >
-                        {categories.filter(c => c.id !== 'all').map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border divide-y">
-                {filteredDocuments.map(doc => {
-                  const { color, bg } = getFileIcon(doc.file_type)
-                  const isSelected = selectedDocs.includes(doc.id)
-                  return (
-                    <div key={doc.id} className={`flex items-center gap-4 p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => setSelectedDocs(prev => isSelected ? prev.filter(id => id !== doc.id) : [...prev, doc.id])}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600"
-                      />
-                      <div className={`w-10 h-10 rounded-lg ${bg} flex items-center justify-center`}>
-                        <File className={`w-5 h-5 ${color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate">{doc.name}</h3>
-                        <p className="text-sm text-gray-500">{formatFileSize(doc.file_size)} • {doc.category}</p>
-                      </div>
-                      <span className="text-sm text-gray-500 hidden sm:block">{new Date(doc.created_at).toLocaleDateString()}</span>
-                      <button onClick={() => toggleStar(doc.id)} className={`p-2 rounded-lg ${doc.starred ? 'text-amber-500' : 'text-gray-300'}`}>
-                        <Star className="w-4 h-4" fill={doc.starred ? 'currentColor' : 'none'} />
-                      </button>
-                      <button onClick={() => deleteDocument(doc.id)} className="p-2 hover:bg-red-100 rounded-lg">
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          ) : (
-            <div className="bg-white rounded-xl border p-12 text-center">
-              <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <h3 className="font-medium text-gray-900 mb-2">No Documents</h3>
-              <p className="text-gray-500 mb-4">{searchQuery ? 'No documents match your search' : 'Upload your first document'}</p>
-              <button onClick={() => setShowUpload(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto">
-                <Upload className="w-4 h-4" />
-                Upload Document
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-            <h3 className="font-semibold mb-2">Storage Used</h3>
-            <div className="h-2 bg-white/20 rounded-full mb-2">
-              <div className="h-full bg-white rounded-full" style={{ width: Math.min((totalSize / (5 * 1024 * 1024 * 1024)) * 100, 100) + '%' }} />
-            </div>
-            <p className="text-sm text-blue-100">{formatFileSize(totalSize)} of 5 GB</p>
-          </div>
-
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Templates</h3>
+        {/* Transaction List */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-white rounded-xl border p-4">
+            <h3 className="font-semibold mb-3">Active Transactions</h3>
             <div className="space-y-2">
-              {['Purchase Agreement', 'Listing Agreement', 'Seller Disclosure', 'Inspection Report'].map(name => (
-                <button key={name} className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 text-left">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-700">{name}</span>
+              {transactions.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTransaction(t)}
+                  className={`w-full text-left p-3 rounded-lg transition-all ${
+                    selectedTransaction?.id === t.id
+                      ? 'bg-blue-50 border border-blue-200'
+                      : 'hover:bg-gray-50 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <span className={`px-2 py-0.5 rounded text-xs ${
+                      t.type === 'buyer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {t.type.charAt(0).toUpperCase() + t.type.slice(1)}
+                    </span>
+                  </div>
+                  <p className="font-medium text-sm truncate">{t.propertyAddress.split(',')[0]}</p>
+                  <p className="text-xs text-gray-500">{t.clientName}</p>
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Progress</span>
+                      <span>{t.documents.filter(d => d.status === 'completed').length}/{t.documents.length}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-full bg-blue-600 rounded-full"
+                        style={{ width: `${(t.documents.filter(d => d.status === 'completed').length / t.documents.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Document List */}
+        <div className="lg:col-span-3">
+          {selectedTransaction ? (
+            <div className="bg-white rounded-xl border overflow-hidden">
+              {/* Transaction Header */}
+              <div className="p-4 border-b bg-gray-50">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h2 className="font-bold text-lg">{selectedTransaction.propertyAddress}</h2>
+                    <p className="text-sm text-gray-600">
+                      {selectedTransaction.clientName} • {selectedTransaction.type.charAt(0).toUpperCase() + selectedTransaction.type.slice(1)} Transaction
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Closing Date</p>
+                    <p className="font-semibold">
+                      {selectedTransaction.closeDate 
+                        ? new Date(selectedTransaction.closeDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'TBD'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">Completion Progress</span>
+                    <span className="text-gray-600">{completedCount} of {totalCount} documents ({progressPercent}%)</span>
+                  </div>
+                  <div className="h-3 bg-gray-200 rounded-full">
+                    <div 
+                      className={`h-full rounded-full transition-all ${
+                        progressPercent === 100 ? 'bg-green-500' : 'bg-blue-600'
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search documents..."
+                      className="w-full pl-9 pr-4 py-1.5 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="px-3 py-1.5 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-3 py-1.5 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="not-started">Not Started</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Document List */}
+              <div className="divide-y max-h-[500px] overflow-y-auto">
+                {categories.map(category => {
+                  const categoryDocs = filteredDocuments.filter(d => d.category === category)
+                  if (categoryDocs.length === 0) return null
+                  
+                  return (
+                    <div key={category}>
+                      <div className="bg-gray-100 px-4 py-2 font-medium text-sm text-gray-700">
+                        {category}
+                      </div>
+                      {categoryDocs.map(doc => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50"
+                        >
+                          <button
+                            onClick={() => toggleDocumentStatus(doc.id)}
+                            className="flex-shrink-0"
+                          >
+                            {doc.status === 'completed' ? (
+                              <CheckSquare className="text-green-600" size={22} />
+                            ) : (
+                              <Square className="text-gray-400" size={22} />
+                            )}
+                          </button>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className={`font-medium text-sm ${doc.status === 'completed' ? 'text-gray-500 line-through' : ''}`}>
+                                {doc.name}
+                              </p>
+                              {doc.required && (
+                                <span className="text-xs text-red-500">*Required</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {doc.status === 'completed' && doc.completedDate
+                                ? `Completed ${new Date(doc.completedDate).toLocaleDateString()}`
+                                : doc.dueDate
+                                  ? `Due ${new Date(doc.dueDate).toLocaleDateString()}`
+                                  : ''}
+                            </p>
+                          </div>
+
+                          {getStatusBadge(doc.status)}
+
+                          <div className="flex gap-1">
+                            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500">
+                              <Upload size={16} />
+                            </button>
+                            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500">
+                              <Eye size={16} />
+                            </button>
+                            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500">
+                              <Download size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {filteredDocuments.length === 0 && (
+                <div className="p-8 text-center text-gray-500">
+                  <FileText className="mx-auto mb-2" size={32} />
+                  <p>No documents match your filters</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl p-12 text-center h-full flex flex-col items-center justify-center">
+              <FolderOpen className="mx-auto mb-4 text-gray-400" size={64} />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">Select a Transaction</h3>
+              <p className="text-gray-500">Choose a transaction to manage documents</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {showUpload && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Upload Documents</h2>
-              <button onClick={() => setShowUpload(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400">
-              <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" id="file-upload" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                {uploading ? <Loader2 className="w-12 h-12 mx-auto mb-4 text-blue-600 animate-spin" /> : <Upload className="w-12 h-12 mx-auto mb-4 text-gray-300" />}
-                <p className="text-gray-600 mb-2">{uploading ? 'Uploading...' : 'Click to upload'}</p>
-                <p className="text-sm text-gray-500">PDF, DOC, XLS, JPG, PNG up to 10MB</p>
-              </label>
-            </div>
-            <button onClick={() => setShowUpload(false)} className="w-full mt-6 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
-          </div>
+      {/* Legend */}
+      <div className="mt-6 bg-gray-50 rounded-xl p-4 flex flex-wrap gap-6 text-sm">
+        <div className="flex items-center gap-2">
+          <CheckSquare className="text-green-600" size={18} />
+          <span>Completed</span>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Square className="text-gray-400" size={18} />
+          <span>Not Started</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-red-500">*</span>
+          <span>Required Document</span>
+        </div>
+      </div>
     </div>
   )
 }
