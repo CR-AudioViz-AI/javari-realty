@@ -1,381 +1,305 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
 import Link from 'next/link'
-import { Search, MapPin, Bed, Bath, Square, TrendingUp, Shield, Zap, Users } from 'lucide-react'
-import { redirect } from 'next/navigation'
+import {
+  Home, Search, TrendingUp, Users, Award, Star, ChevronRight,
+  MapPin, Phone, Mail, Building2, Shield, Clock, CheckCircle,
+  ArrowRight, Play, Sparkles
+} from 'lucide-react'
 
-export default async function HomePage() {
-  const supabase = await createClient()
-  
-  // Get featured properties
-  const { data: featuredProperties } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(6)
-
-  // Get property stats
-  const { count: totalProperties } = await supabase
-    .from('properties')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active')
-
-  const { count: totalRealtors } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'agent')
-    .eq('active', true)
-
-  async function handleSearch(formData: FormData) {
-    'use server'
-    const location = formData.get('location')
-    const propertyType = formData.get('propertyType')
-    const priceMin = formData.get('priceMin')
-    const priceMax = formData.get('priceMax')
-    
-    const params = new URLSearchParams()
-    if (location) params.set('location', location.toString())
-    if (propertyType && propertyType !== 'any') params.set('type', propertyType.toString())
-    if (priceMin) params.set('min', priceMin.toString())
-    if (priceMax) params.set('max', priceMax.toString())
-    
-    redirect(`/search?${params.toString()}`)
+const FEATURED_PROPERTIES = [
+  {
+    id: '1',
+    address: '2850 Winkler Ave',
+    city: 'Fort Myers',
+    price: 425000,
+    beds: 4,
+    baths: 3,
+    sqft: 2400,
+    image: null
+  },
+  {
+    id: '2',
+    address: '1420 SE 47th St',
+    city: 'Cape Coral',
+    price: 389000,
+    beds: 3,
+    baths: 2,
+    sqft: 2100,
+    image: null
+  },
+  {
+    id: '3',
+    address: '3500 Oasis Blvd',
+    city: 'Cape Coral',
+    price: 459000,
+    beds: 4,
+    baths: 2.5,
+    sqft: 2650,
+    image: null
   }
+]
 
+const STATS = [
+  { label: 'Properties Sold', value: '500+', icon: Home },
+  { label: 'Happy Clients', value: '1,200+', icon: Users },
+  { label: 'Years Experience', value: '15+', icon: Award },
+  { label: 'Markets Served', value: '7', icon: MapPin },
+]
+
+const TESTIMONIALS = [
+  {
+    name: 'Sarah Johnson',
+    text: 'Found our dream home in Cape Coral within 2 weeks. The team was incredibly responsive and knowledgeable about the area.',
+    rating: 5
+  },
+  {
+    name: 'Michael Chen',
+    text: 'Sold our house above asking price in just 5 days. The marketing strategy and photography were top-notch.',
+    rating: 5
+  },
+  {
+    name: 'Lisa Rodriguez',
+    text: 'As first-time buyers, we appreciated the patience and guidance throughout the entire process. Highly recommend!',
+    rating: 5
+  }
+]
+
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">CR</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                CR Realtor Platform
-              </span>
-            </Link>
-
-            <div className="hidden md:flex items-center space-x-6">
-              <Link href="/search" className="text-gray-700 hover:text-blue-600 font-medium transition">
-                Search Homes
-              </Link>
-              <Link href="/agents" className="text-gray-700 hover:text-blue-600 font-medium transition">
-                Find Agents
-              </Link>
-              <Link href="/mortgage-calculator" className="text-gray-700 hover:text-blue-600 font-medium transition">
-                Calculators
-              </Link>
-              <Link href="/resources" className="text-gray-700 hover:text-blue-600 font-medium transition">
-                Resources
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Link 
-                href="/auth/login" 
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/auth/signup?role=realtor" 
-                className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all"
-              >
-                Join as Realtor
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section with Search */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 text-white py-20">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              Find Your Dream Home in Florida
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 text-white">
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative max-w-7xl mx-auto px-6 py-24 lg:py-32">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl lg:text-6xl font-bold mb-6">
+              Find Your Perfect Home in{' '}
+              <span className="text-amber-400">Southwest Florida</span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-10">
-              {totalProperties?.toLocaleString() || '1000+'} properties • {totalRealtors || '50+'} expert agents • AI-powered search
+            <p className="text-xl text-blue-100 mb-8">
+              Discover exceptional properties in Fort Myers, Cape Coral, and surrounding areas. 
+              Your dream home is just a search away.
             </p>
-
-            {/* Search Form */}
-            <form action={handleSearch} className="bg-white rounded-2xl shadow-2xl p-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                {/* Location Input */}
-                <div className="md:col-span-5 relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            
+            {/* Search Box */}
+            <div className="bg-white rounded-xl p-4 shadow-2xl">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <MapPin className="absolute left-3 top-3 text-gray-400" size={20} />
                   <input
                     type="text"
-                    name="location"
-                    placeholder="City, neighborhood, or ZIP code"
-                    className="w-full pl-12 pr-4 py-4 text-gray-900 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition"
+                    placeholder="Enter city, ZIP, or address..."
+                    className="w-full pl-10 pr-4 py-3 border rounded-lg text-gray-800"
                   />
                 </div>
-
-                {/* Property Type */}
-                <div className="md:col-span-3">
-                  <select
-                    name="propertyType"
-                    className="w-full px-4 py-4 text-gray-900 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition appearance-none"
-                  >
-                    <option value="any">Any Type</option>
-                    <option value="single_family">Single Family</option>
-                    <option value="condo">Condo</option>
-                    <option value="townhouse">Townhouse</option>
-                    <option value="multi_family">Multi-Family</option>
-                    <option value="land">Land</option>
-                    <option value="commercial">Commercial</option>
-                  </select>
-                </div>
-
-                {/* Price Range */}
-                <div className="md:col-span-2">
-                  <select
-                    name="priceMax"
-                    className="w-full px-4 py-4 text-gray-900 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition appearance-none"
-                  >
-                    <option value="">Any Price</option>
-                    <option value="250000">$250K</option>
-                    <option value="500000">$500K</option>
-                    <option value="750000">$750K</option>
-                    <option value="1000000">$1M</option>
-                    <option value="2000000">$2M+</option>
-                  </select>
-                </div>
-
-                {/* Search Button */}
-                <div className="md:col-span-2">
-                  <button
-                    type="submit"
-                    className="w-full h-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all flex items-center justify-center space-x-2"
-                  >
-                    <Search className="w-5 h-5" />
-                    <span>Search</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Links */}
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                <Link href="/search?type=single_family" className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-                  Single Family Homes
-                </Link>
-                <Link href="/search?type=condo" className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-                  Condos
-                </Link>
-                <Link href="/search?location=Naples" className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-                  Naples
-                </Link>
-                <Link href="/search?location=Fort Myers" className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-                  Fort Myers
-                </Link>
-                <Link href="/search?location=Cape Coral" className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-                  Cape Coral
+                <Link
+                  href="/search"
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Search size={20} />
+                  Search Homes
                 </Link>
               </div>
-            </form>
+            </div>
+
+            {/* Quick Links */}
+            <div className="flex flex-wrap gap-4 mt-6">
+              <Link href="/search?type=sale" className="text-blue-200 hover:text-white flex items-center gap-1">
+                <ChevronRight size={16} /> Homes for Sale
+              </Link>
+              <Link href="/search?waterfront=true" className="text-blue-200 hover:text-white flex items-center gap-1">
+                <ChevronRight size={16} /> Waterfront Properties
+              </Link>
+              <Link href="/search?new=true" className="text-blue-200 hover:text-white flex items-center gap-1">
+                <ChevronRight size={16} /> New Construction
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Platform Benefits */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-blue-600" />
+      {/* Stats Section */}
+      <section className="bg-white py-12 border-b">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {STATS.map((stat, idx) => (
+              <div key={idx} className="text-center">
+                <stat.icon className="mx-auto mb-3 text-blue-600" size={32} />
+                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-gray-500">{stat.label}</p>
               </div>
-              <h3 className="text-xl font-bold mb-2">AI-Powered Search</h3>
-              <p className="text-gray-600">
-                Our Javari AI helps you find the perfect property faster with intelligent recommendations
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Expert Realtors</h3>
-              <p className="text-gray-600">
-                Connect with top-rated local agents who know your market inside and out
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-pink-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Secure & Transparent</h3>
-              <p className="text-gray-600">
-                Complete transparency, no hidden fees, and your data is always protected
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Featured Properties */}
-      {featuredProperties && featuredProperties.length > 0 && (
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-3xl font-bold mb-2">Featured Properties</h2>
-                <p className="text-gray-600">Handpicked listings from trusted realtors</p>
-              </div>
-              <Link 
-                href="/search" 
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                View All
-              </Link>
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Featured Properties</h2>
+              <p className="text-gray-600 mt-2">Hand-picked homes in prime locations</p>
             </div>
+            <Link href="/search" className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              View All <ArrowRight size={18} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredProperties.map((property: any) => (
-                <Link 
-                  key={property.id} 
-                  href={`/properties/${property.id}`}
-                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all group"
-                >
-                  {/* Property Image */}
-                  <div className="relative h-64 bg-gradient-to-br from-blue-100 to-purple-100 overflow-hidden">
-                    {property.photos && property.photos[0] ? (
-                      <img 
-                        src={property.photos[0]} 
-                        alt={property.address}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <MapPin className="w-16 h-16 text-gray-300" />
-                      </div>
-                    )}
-                    <div className="absolute top-4 right-4 px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-full">
-                      {property.status === 'active' ? 'For Sale' : property.status}
-                    </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {FEATURED_PROPERTIES.map(property => (
+              <div key={property.id} className="bg-white rounded-xl border overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                  <Home className="text-blue-300" size={64} />
+                </div>
+                <div className="p-5">
+                  <p className="text-2xl font-bold text-green-600">${property.price.toLocaleString()}</p>
+                  <p className="font-semibold mt-1">{property.address}</p>
+                  <p className="text-sm text-gray-500">{property.city}, FL</p>
+                  <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                    <span>{property.beds} beds</span>
+                    <span>{property.baths} baths</span>
+                    <span>{property.sqft.toLocaleString()} sqft</span>
                   </div>
+                  <Link
+                    href={`/search?property=${property.id}`}
+                    className="mt-4 block w-full bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700"
+                  >
+                    View Details
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                  {/* Property Details */}
-                  <div className="p-6">
-                    <div className="text-2xl font-bold text-blue-600 mb-2">
-                      ${property.price?.toLocaleString()}
-                      {property.listing_type === 'rent' && <span className="text-base text-gray-500">/mo</span>}
-                    </div>
+      {/* Services Section */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">Why Choose Us</h2>
+            <p className="text-gray-600 mt-2">Experience the difference with our premium services</p>
+          </div>
 
-                    <div className="text-gray-900 font-semibold mb-1">{property.address}</div>
-                    <div className="text-gray-600 text-sm mb-4">
-                      {property.city}, {property.state} {property.zip_code}
-                    </div>
-
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      {property.bedrooms && (
-                        <div className="flex items-center space-x-1">
-                          <Bed className="w-4 h-4" />
-                          <span>{property.bedrooms} bed</span>
-                        </div>
-                      )}
-                      {property.bathrooms && (
-                        <div className="flex items-center space-x-1">
-                          <Bath className="w-4 h-4" />
-                          <span>{property.bathrooms} bath</span>
-                        </div>
-                      )}
-                      {property.square_feet && (
-                        <div className="flex items-center space-x-1">
-                          <Square className="w-4 h-4" />
-                          <span>{property.square_feet.toLocaleString()} sqft</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="text-blue-600" size={28} />
+              </div>
+              <h3 className="font-bold text-lg mb-2">Market Expertise</h3>
+              <p className="text-gray-600">Deep knowledge of Southwest Florida real estate trends and neighborhoods</p>
+            </div>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="text-green-600" size={28} />
+              </div>
+              <h3 className="font-bold text-lg mb-2">Trusted Service</h3>
+              <p className="text-gray-600">Transparent, honest guidance throughout your buying or selling journey</p>
+            </div>
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="text-amber-600" size={28} />
+              </div>
+              <h3 className="font-bold text-lg mb-2">Fast Results</h3>
+              <p className="text-gray-600">Average 18 days on market for listings with our proven marketing strategy</p>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* For Realtors CTA */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">Are You a Realtor?</h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join the platform built FOR realtors. AI-powered tools, no lead theft, and complete data ownership.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/auth/signup?role=realtor"
-              className="px-8 py-4 bg-white text-blue-600 rounded-lg font-bold text-lg hover:shadow-2xl transition-all"
-            >
-              Start Free Trial
-            </Link>
-            <Link 
-              href="/for-realtors"
-              className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-bold text-lg hover:bg-white/10 transition-all"
-            >
-              Learn More
-            </Link>
+      {/* Testimonials */}
+      <section className="py-16 bg-blue-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold">What Our Clients Say</h2>
+            <p className="text-blue-200 mt-2">Real stories from real homeowners</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((testimonial, idx) => (
+              <div key={idx} className="bg-white/10 backdrop-blur rounded-xl p-6">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="text-amber-400" size={18} fill="currentColor" />
+                  ))}
+                </div>
+                <p className="text-blue-100 mb-4">{testimonial.text}</p>
+                <p className="font-semibold">{testimonial.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 text-white text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Find Your Dream Home?</h2>
+            <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
+              Whether you are buying, selling, or just exploring, we are here to help you every step of the way.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/search"
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 flex items-center justify-center gap-2"
+              >
+                <Search size={20} /> Search Properties
+              </Link>
+              <Link
+                href="/dashboard"
+                className="bg-blue-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-400 flex items-center justify-center gap-2"
+              >
+                <Building2 size={20} /> Agent Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg"></div>
-                <span className="text-white font-bold">CR Realtor Platform</span>
-              </div>
-              <p className="text-sm">
-                The future of real estate. AI-powered, realtor-first, and built for success.
+              <h3 className="font-bold text-lg mb-4">RealtorPro</h3>
+              <p className="text-gray-400 text-sm">
+                Your trusted partner in Southwest Florida real estate. Powered by CR AudioViz AI.
               </p>
             </div>
-
             <div>
-              <h3 className="text-white font-semibold mb-4">For Buyers</h3>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/search" className="hover:text-white transition">Search Homes</Link></li>
-                <li><Link href="/agents" className="hover:text-white transition">Find an Agent</Link></li>
-                <li><Link href="/mortgage-calculator" className="hover:text-white transition">Mortgage Calculator</Link></li>
-                <li><Link href="/resources/buyers-guide" className="hover:text-white transition">Buyer's Guide</Link></li>
-              </ul>
+              <h4 className="font-semibold mb-4">Quick Links</h4>
+              <div className="space-y-2 text-sm text-gray-400">
+                <Link href="/search" className="block hover:text-white">Search Homes</Link>
+                <Link href="/dashboard" className="block hover:text-white">Agent Dashboard</Link>
+                <Link href="/dashboard/education" className="block hover:text-white">Education Center</Link>
+              </div>
             </div>
-
             <div>
-              <h3 className="text-white font-semibold mb-4">For Realtors</h3>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/for-realtors" className="hover:text-white transition">Why Join Us</Link></li>
-                <li><Link href="/auth/signup?role=realtor" className="hover:text-white transition">Sign Up</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition">Pricing</Link></li>
-                <li><Link href="/features" className="hover:text-white transition">Features</Link></li>
-              </ul>
+              <h4 className="font-semibold mb-4">Areas We Serve</h4>
+              <div className="space-y-2 text-sm text-gray-400">
+                <p>Fort Myers, FL</p>
+                <p>Cape Coral, FL</p>
+                <p>Naples, FL</p>
+                <p>Bonita Springs, FL</p>
+              </div>
             </div>
-
             <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition">Contact</Link></li>
-                <li><Link href="/careers" className="hover:text-white transition">Careers</Link></li>
-                <li><Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link></li>
-              </ul>
+              <h4 className="font-semibold mb-4">Contact</h4>
+              <div className="space-y-2 text-sm text-gray-400">
+                <p className="flex items-center gap-2"><Phone size={14} /> (239) 555-0100</p>
+                <p className="flex items-center gap-2"><Mail size={14} /> info@realtorpro.com</p>
+                <p className="flex items-center gap-2"><MapPin size={14} /> Fort Myers, FL 33916</p>
+              </div>
             </div>
           </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-sm text-center">
-            <p>&copy; 2025 CR AudioViz AI, LLC. All rights reserved. | Fort Myers, Florida</p>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">
+            2024 RealtorPro by CR AudioViz AI. All rights reserved.
           </div>
         </div>
       </footer>
     </div>
   )
 }
-
