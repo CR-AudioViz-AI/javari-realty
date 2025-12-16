@@ -7,7 +7,7 @@ import {
   Settings, HelpCircle, LogOut, ChevronDown, ChevronRight,
   GraduationCap, Bot, Building2, MapPin, TrendingUp, Scale,
   Mail, Share2, QrCode, Calculator, Briefcase, Clock, FolderOpen,
-  Zap, Target, DollarSign, Megaphone, Star
+  Zap, Target, DollarSign, Megaphone, Star, Bell, Gift, Search
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -21,8 +21,18 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Property Search', href: '/search', icon: Search, badge: 'MLS' },
   { name: 'Properties', href: '/dashboard/properties', icon: Home, badge: '9' },
-  { name: 'Clients', href: '/dashboard/pipeline', icon: Users },
+  {
+    name: 'Clients',
+    href: '/dashboard/clients',
+    icon: Users,
+    children: [
+      { name: 'Pipeline', href: '/dashboard/pipeline', icon: Target },
+      { name: 'Referrals', href: '/dashboard/referrals', icon: Gift },
+      { name: 'Follow-Ups', href: '/dashboard/followups', icon: Bell },
+    ]
+  },
   { name: 'Showings', href: '/dashboard/showings', icon: Calendar },
   { name: 'Open Houses', href: '/dashboard/open-houses', icon: Clock },
   { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
@@ -34,6 +44,7 @@ const navigation: NavItem[] = [
       { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
       { name: 'Market Data', href: '/dashboard/analytics/market', icon: TrendingUp },
       { name: 'Property Intel', href: '/dashboard/intelligence', icon: Zap },
+      { name: 'Commissions', href: '/dashboard/commissions', icon: DollarSign },
     ]
   },
   {
@@ -53,7 +64,6 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Net Sheet', href: '/dashboard/calculators/net-sheet', icon: Calculator },
       { name: 'Compare Properties', href: '/dashboard/compare', icon: Scale },
-      { name: 'Mortgage Calculators', href: 'https://mortgage.craudiovizai.com', icon: DollarSign },
     ]
   },
   {
@@ -76,7 +86,7 @@ const bottomNav: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Analytics', 'Marketing', 'Tools', 'Add-Ons'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Clients', 'Analytics', 'Marketing', 'Tools', 'Add-Ons'])
 
   const toggleExpand = (name: string) => {
     setExpandedItems(prev => 
@@ -88,6 +98,7 @@ export default function Sidebar() {
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
+    if (href === '/search') return pathname === '/search'
     return pathname.startsWith(href)
   }
 
