@@ -1,20 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
-  
+  const origin = requestUrl.origin
+
   if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = createClient()
     
-    if (!error) {
-      return NextResponse.redirect(new URL(next, requestUrl.origin))
+    // Exchange code for session
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error && data.user) {
+      // Log OAuth login to central activity system
+      try {
+        await fetch(`${origin}/api/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: data.user.id,
+            action: 'oauth_login',
+            appId: 'realtor-platform',
+            metadata: { 
+              provider: data.user.app_metadata?.provider || 'oauth',
+              email: data.user.email
+            }
+          })
+        })
+      } catch (e) {
+        // Don't block on logging errors
+      }
     }
   }
 
-  // Return to login page with error
-  return NextResponse.redirect(new URL('/auth/login?error=callback_failed', requestUrl.origin))
+  // Redirect to dashboard after OAuth
+  return NextResponse.redirect(`${origin}/dashboard`)
 }
