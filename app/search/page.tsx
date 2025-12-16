@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import {
   Search, MapPin, Home, Bed, Bath, Square, DollarSign,
   Filter, Grid, List, Map, Heart, Share2, ChevronDown,
   SlidersHorizontal, X, Loader2, TrendingUp, Building2,
-  Clock, Eye, ArrowUpDown, Check
+  Clock, Eye, ArrowUpDown, Check, RefreshCw, Wifi, WifiOff,
+  ExternalLink, AlertCircle
 } from 'lucide-react'
 
 interface PropertyListing {
   id: string
+  mlsId: string
   address: string
   city: string
   state: string
@@ -18,185 +21,32 @@ interface PropertyListing {
   beds: number
   baths: number
   sqft: number
-  lotSize?: number
+  lotSize?: string
   yearBuilt?: number
   propertyType: string
-  status: 'for_sale' | 'pending' | 'sold' | 'for_rent'
+  style?: string
+  status: string
   daysOnMarket: number
   photos: string[]
   description?: string
   features: string[]
   lat?: number
   lng?: number
-  mls?: string
-  source: string
+  agent?: { name: string; id: string }
+  office?: string
   pricePerSqft?: number
+  source: string
 }
 
-// Sample data simulating API response
-const SAMPLE_LISTINGS: PropertyListing[] = [
-  {
-    id: '1',
-    address: '2850 Winkler Ave',
-    city: 'Fort Myers',
-    state: 'FL',
-    zip: '33916',
-    price: 425000,
-    beds: 4,
-    baths: 3,
-    sqft: 2400,
-    yearBuilt: 2018,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 14,
-    photos: [],
-    features: ['Pool', 'Updated Kitchen', '2-Car Garage'],
-    source: 'MLS',
-    pricePerSqft: 177
-  },
-  {
-    id: '2',
-    address: '1420 SE 47th St',
-    city: 'Cape Coral',
-    state: 'FL',
-    zip: '33904',
-    price: 389000,
-    beds: 3,
-    baths: 2,
-    sqft: 2100,
-    yearBuilt: 2015,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 28,
-    photos: [],
-    features: ['Gulf Access', 'Boat Dock', 'Open Floor Plan'],
-    source: 'Zillow',
-    pricePerSqft: 185
-  },
-  {
-    id: '3',
-    address: '3500 Oasis Blvd',
-    city: 'Cape Coral',
-    state: 'FL',
-    zip: '33914',
-    price: 459000,
-    beds: 4,
-    baths: 2.5,
-    sqft: 2650,
-    yearBuilt: 2020,
-    propertyType: 'Single Family',
-    status: 'pending',
-    daysOnMarket: 7,
-    photos: [],
-    features: ['Pool', 'Smart Home', 'Impact Windows', 'Solar'],
-    source: 'Realtor.com',
-    pricePerSqft: 173
-  },
-  {
-    id: '4',
-    address: '8901 Cypress Lake Dr',
-    city: 'Fort Myers',
-    state: 'FL',
-    zip: '33919',
-    price: 675000,
-    beds: 5,
-    baths: 4,
-    sqft: 3200,
-    yearBuilt: 2021,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 5,
-    photos: [],
-    features: ['Pool', 'Lake View', '3-Car Garage', 'Gourmet Kitchen'],
-    source: 'MLS',
-    pricePerSqft: 211
-  },
-  {
-    id: '5',
-    address: '15620 Laguna Hills Dr',
-    city: 'Fort Myers',
-    state: 'FL',
-    zip: '33908',
-    price: 525000,
-    beds: 4,
-    baths: 3,
-    sqft: 2800,
-    yearBuilt: 2019,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 21,
-    photos: [],
-    features: ['Pool', 'Screened Lanai', 'Tile Throughout'],
-    source: 'Redfin',
-    pricePerSqft: 188
-  },
-  {
-    id: '6',
-    address: '4521 Del Prado Blvd S',
-    city: 'Cape Coral',
-    state: 'FL',
-    zip: '33904',
-    price: 299000,
-    beds: 3,
-    baths: 2,
-    sqft: 1650,
-    yearBuilt: 2010,
-    propertyType: 'Condo',
-    status: 'for_sale',
-    daysOnMarket: 35,
-    photos: [],
-    features: ['Community Pool', 'Fitness Center', 'Updated'],
-    source: 'Zillow',
-    pricePerSqft: 181
-  },
-  {
-    id: '7',
-    address: '1850 NE Pine Island Rd',
-    city: 'Cape Coral',
-    state: 'FL',
-    zip: '33909',
-    price: 849000,
-    beds: 5,
-    baths: 4.5,
-    sqft: 4100,
-    yearBuilt: 2022,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 3,
-    photos: [],
-    features: ['Gulf Access', 'Pool', 'Dock', 'Smart Home', 'Solar'],
-    source: 'MLS',
-    pricePerSqft: 207
-  },
-  {
-    id: '8',
-    address: '12780 Kenwood Ln',
-    city: 'Fort Myers',
-    state: 'FL',
-    zip: '33913',
-    price: 375000,
-    beds: 3,
-    baths: 2,
-    sqft: 1900,
-    yearBuilt: 2016,
-    propertyType: 'Single Family',
-    status: 'for_sale',
-    daysOnMarket: 18,
-    photos: [],
-    features: ['Community Pool', 'Clubhouse', 'Gated'],
-    source: 'Realtor.com',
-    pricePerSqft: 197
-  }
-]
-
-const PROPERTY_TYPES = ['All Types', 'Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land']
+const PROPERTY_TYPES = ['All Types', 'Residential', 'Condo', 'Townhouse', 'Land', 'Multi-Family']
 const PRICE_RANGES = [
-  { label: 'Any Price', min: 0, max: Infinity },
+  { label: 'Any Price', min: 0, max: 0 },
   { label: 'Under $300K', min: 0, max: 300000 },
   { label: '$300K - $500K', min: 300000, max: 500000 },
   { label: '$500K - $750K', min: 500000, max: 750000 },
   { label: '$750K - $1M', min: 750000, max: 1000000 },
-  { label: 'Over $1M', min: 1000000, max: Infinity },
+  { label: '$1M - $2M', min: 1000000, max: 2000000 },
+  { label: 'Over $2M', min: 2000000, max: 0 },
 ]
 const BED_OPTIONS = ['Any', '1+', '2+', '3+', '4+', '5+']
 const BATH_OPTIONS = ['Any', '1+', '2+', '3+', '4+']
@@ -211,10 +61,13 @@ const SORT_OPTIONS = [
 export default function PropertySearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [listings, setListings] = useState<PropertyListing[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [favorites, setFavorites] = useState<string[]>([])
+  const [selectedListing, setSelectedListing] = useState<PropertyListing | null>(null)
+  const [apiSource, setApiSource] = useState<string>('')
   
   // Filters
   const [propertyType, setPropertyType] = useState('All Types')
@@ -222,63 +75,61 @@ export default function PropertySearchPage() {
   const [minBeds, setMinBeds] = useState('Any')
   const [minBaths, setMinBaths] = useState('Any')
   const [sortBy, setSortBy] = useState('newest')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'for_sale' | 'pending' | 'sold'>('for_sale')
+  const [statusFilter, setStatusFilter] = useState<string>('active')
 
-  // Simulate API search
-  const searchProperties = async () => {
+  // Fetch listings from API
+  const fetchListings = async () => {
     setLoading(true)
+    setError(null)
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    let results = [...SAMPLE_LISTINGS]
-    
-    // Apply filters
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      results = results.filter(p => 
-        p.city.toLowerCase().includes(query) ||
-        p.address.toLowerCase().includes(query) ||
-        p.zip.includes(query)
-      )
+    try {
+      const params = new URLSearchParams({
+        limit: '24',
+        status: statusFilter === 'all' ? '' : statusFilter,
+      })
+      
+      if (priceRange.min > 0) params.set('minprice', String(priceRange.min))
+      if (priceRange.max > 0) params.set('maxprice', String(priceRange.max))
+      if (minBeds !== 'Any') params.set('minbeds', minBeds.replace('+', ''))
+      if (minBaths !== 'Any') params.set('minbaths', minBaths.replace('+', ''))
+      if (propertyType !== 'All Types') params.set('type', propertyType.toLowerCase())
+      if (searchQuery) params.set('q', searchQuery)
+      
+      const response = await fetch(`/api/listings?${params.toString()}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        let results = data.listings
+        
+        // Client-side sorting
+        switch (sortBy) {
+          case 'price_asc': results.sort((a: PropertyListing, b: PropertyListing) => a.price - b.price); break
+          case 'price_desc': results.sort((a: PropertyListing, b: PropertyListing) => b.price - a.price); break
+          case 'beds': results.sort((a: PropertyListing, b: PropertyListing) => b.beds - a.beds); break
+          case 'sqft': results.sort((a: PropertyListing, b: PropertyListing) => b.sqft - a.sqft); break
+          default: results.sort((a: PropertyListing, b: PropertyListing) => a.daysOnMarket - b.daysOnMarket)
+        }
+        
+        setListings(results)
+        setApiSource(data.source || 'API')
+      } else {
+        setError(data.error || 'Failed to load listings')
+      }
+    } catch (err) {
+      setError('Failed to connect to listings API')
+      console.error('Fetch error:', err)
+    } finally {
+      setLoading(false)
     }
-    
-    if (propertyType !== 'All Types') {
-      results = results.filter(p => p.propertyType === propertyType)
-    }
-    
-    results = results.filter(p => p.price >= priceRange.min && p.price <= priceRange.max)
-    
-    if (minBeds !== 'Any') {
-      const beds = parseInt(minBeds)
-      results = results.filter(p => p.beds >= beds)
-    }
-    
-    if (minBaths !== 'Any') {
-      const baths = parseInt(minBaths)
-      results = results.filter(p => p.baths >= baths)
-    }
-    
-    if (statusFilter !== 'all') {
-      results = results.filter(p => p.status === statusFilter)
-    }
-    
-    // Sort
-    switch (sortBy) {
-      case 'price_asc': results.sort((a, b) => a.price - b.price); break
-      case 'price_desc': results.sort((a, b) => b.price - a.price); break
-      case 'beds': results.sort((a, b) => b.beds - a.beds); break
-      case 'sqft': results.sort((a, b) => b.sqft - a.sqft); break
-      default: results.sort((a, b) => a.daysOnMarket - b.daysOnMarket)
-    }
-    
-    setListings(results)
-    setLoading(false)
   }
 
   useEffect(() => {
-    searchProperties()
+    fetchListings()
   }, [propertyType, priceRange, minBeds, minBaths, sortBy, statusFilter])
+
+  const handleSearch = () => {
+    fetchListings()
+  }
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => 
@@ -286,22 +137,16 @@ export default function PropertySearchPage() {
     )
   }
 
-  const getStatusBadge = (status: PropertyListing['status']) => {
-    const styles = {
-      for_sale: 'bg-green-100 text-green-800',
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      active: 'bg-green-100 text-green-800',
       pending: 'bg-amber-100 text-amber-800',
       sold: 'bg-blue-100 text-blue-800',
-      for_rent: 'bg-purple-100 text-purple-800'
-    }
-    const labels = {
-      for_sale: 'For Sale',
-      pending: 'Pending',
-      sold: 'Sold',
-      for_rent: 'For Rent'
+      closed: 'bg-gray-100 text-gray-800',
     }
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status.toLowerCase()] || styles.active}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     )
   }
@@ -312,7 +157,10 @@ export default function PropertySearchPage() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-4 flex items-center gap-3">
-            <Search /> Find Your Dream Home
+            <Search /> Property Search
+            <span className="text-sm font-normal bg-white/20 px-2 py-1 rounded ml-2">
+              Live MLS Data
+            </span>
           </h1>
           
           <div className="bg-white rounded-xl p-4 shadow-lg">
@@ -323,9 +171,9 @@ export default function PropertySearchPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by city, ZIP, or address..."
+                  placeholder="Search by city, ZIP, address, or MLS#..."
                   className="w-full pl-10 pr-4 py-3 border rounded-lg"
-                  onKeyPress={(e) => e.key === 'Enter' && searchProperties()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               
@@ -339,10 +187,11 @@ export default function PropertySearchPage() {
               </button>
               
               <button
-                onClick={searchProperties}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                onClick={handleSearch}
+                disabled={loading}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
               >
-                <Search size={20} />
+                {loading ? <Loader2 size={20} className="animate-spin" /> : <Search size={20} />}
                 Search
               </button>
             </div>
@@ -406,13 +255,12 @@ export default function PropertySearchPage() {
                   <label className="block text-sm text-gray-600 mb-1">Status</label>
                   <select
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg"
                   >
-                    <option value="all">All</option>
-                    <option value="for_sale">For Sale</option>
+                    <option value="active">Active</option>
                     <option value="pending">Pending</option>
-                    <option value="sold">Sold</option>
+                    <option value="all">All Status</option>
                   </select>
                 </div>
               </div>
@@ -426,15 +274,39 @@ export default function PropertySearchPage() {
         {/* Results Header */}
         <div className="flex flex-wrap justify-between items-center mb-6">
           <div>
-            <h2 className="text-xl font-bold">
-              {loading ? 'Searching...' : `${listings.length} Properties Found`}
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  {listings.length} Properties Found
+                  <Wifi className="text-green-500" size={18} />
+                </>
+              )}
             </h2>
-            <p className="text-sm text-gray-500">
-              {searchQuery ? `Results for "${searchQuery}"` : 'Southwest Florida'}
+            <p className="text-sm text-gray-500 flex items-center gap-2">
+              {apiSource && (
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                  {apiSource}
+                </span>
+              )}
+              {searchQuery ? `Results for "${searchQuery}"` : 'All available listings'}
             </p>
           </div>
           
           <div className="flex items-center gap-4">
+            <button
+              onClick={fetchListings}
+              disabled={loading}
+              className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              title="Refresh listings"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
+            
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Sort:</span>
               <select
@@ -461,33 +333,57 @@ export default function PropertySearchPage() {
               >
                 <List size={18} />
               </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`p-2 ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'bg-white'}`}
-              >
-                <Map size={18} />
-              </button>
             </div>
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="text-red-500" size={24} />
+              <div>
+                <p className="font-semibold text-red-800">Error Loading Listings</p>
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+              <button
+                onClick={fetchListings}
+                className="ml-auto bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-blue-600" size={48} />
+            <div className="text-center">
+              <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+              <p className="text-gray-600">Fetching live MLS listings...</p>
+            </div>
           </div>
         )}
 
         {/* Grid View */}
-        {!loading && viewMode === 'grid' && (
+        {!loading && !error && viewMode === 'grid' && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
               <div key={listing.id} className="bg-white rounded-xl border overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Image */}
                 <div className="relative h-48 bg-gray-200">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Home className="text-gray-400" size={48} />
-                  </div>
+                  {listing.photos && listing.photos.length > 0 ? (
+                    <img
+                      src={listing.photos[0]}
+                      alt={listing.address}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Home className="text-gray-400" size={48} />
+                    </div>
+                  )}
                   <div className="absolute top-3 left-3">
                     {getStatusBadge(listing.status)}
                   </div>
@@ -507,16 +403,22 @@ export default function PropertySearchPage() {
                   <div className="absolute bottom-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
                     {listing.daysOnMarket} days on market
                   </div>
-                  <div className="absolute bottom-3 right-3 bg-white/90 text-gray-700 px-2 py-1 rounded text-xs">
-                    {listing.source}
-                  </div>
+                  {listing.photos && listing.photos.length > 1 && (
+                    <div className="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                      +{listing.photos.length - 1} photos
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
                 <div className="p-4">
-                  <p className="text-2xl font-bold text-green-600">${listing.price.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">${listing.pricePerSqft}/sqft</p>
-                  <p className="font-semibold mt-2">{listing.address}</p>
+                  <div className="flex justify-between items-start">
+                    <p className="text-2xl font-bold text-green-600">${listing.price.toLocaleString()}</p>
+                    {listing.pricePerSqft && (
+                      <span className="text-xs text-gray-500">${listing.pricePerSqft}/sqft</span>
+                    )}
+                  </div>
+                  <p className="font-semibold mt-1 truncate">{listing.address}</p>
                   <p className="text-sm text-gray-500">{listing.city}, {listing.state} {listing.zip}</p>
                   
                   <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
@@ -531,13 +433,23 @@ export default function PropertySearchPage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {listing.features.slice(0, 3).map(f => (
-                      <span key={f} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{f}</span>
-                    ))}
+                  {listing.features && listing.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {listing.features.slice(0, 2).map((f, idx) => (
+                        <span key={idx} className="text-xs bg-gray-100 px-2 py-0.5 rounded truncate max-w-24">{f}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-gray-400">
+                    <span>MLS# {listing.mlsId}</span>
+                    <span>{listing.source}</span>
                   </div>
 
-                  <button className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => setSelectedListing(listing)}
+                    className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                  >
                     <Eye size={16} /> View Details
                   </button>
                 </div>
@@ -547,13 +459,19 @@ export default function PropertySearchPage() {
         )}
 
         {/* List View */}
-        {!loading && viewMode === 'list' && (
+        {!loading && !error && viewMode === 'list' && (
           <div className="space-y-4">
             {listings.map(listing => (
               <div key={listing.id} className="bg-white rounded-xl border p-4 hover:shadow-lg transition-shadow">
                 <div className="flex gap-4">
-                  <div className="w-48 h-32 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Home className="text-gray-400" size={32} />
+                  <div className="w-48 h-32 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
+                    {listing.photos && listing.photos.length > 0 ? (
+                      <img src={listing.photos[0]} alt={listing.address} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Home className="text-gray-400" size={32} />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
@@ -572,9 +490,6 @@ export default function PropertySearchPage() {
                         >
                           <Heart size={18} fill={favorites.includes(listing.id) ? 'currentColor' : 'none'} />
                         </button>
-                        <button className="p-2 rounded-lg border">
-                          <Share2 size={18} />
-                        </button>
                       </div>
                     </div>
                     
@@ -582,17 +497,18 @@ export default function PropertySearchPage() {
                       <span className="flex items-center gap-1"><Bed size={16} /> {listing.beds} beds</span>
                       <span className="flex items-center gap-1"><Bath size={16} /> {listing.baths} baths</span>
                       <span className="flex items-center gap-1"><Square size={16} /> {listing.sqft.toLocaleString()} sqft</span>
-                      <span className="text-gray-500">${listing.pricePerSqft}/sqft</span>
+                      {listing.pricePerSqft && <span className="text-gray-500">${listing.pricePerSqft}/sqft</span>}
                       <span className="text-gray-500">{listing.daysOnMarket} days</span>
                     </div>
 
                     <div className="flex items-center justify-between mt-3">
-                      <div className="flex gap-1">
-                        {listing.features.map(f => (
-                          <span key={f} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{f}</span>
-                        ))}
-                      </div>
-                      <span className="text-xs text-gray-400">via {listing.source}</span>
+                      <span className="text-xs text-gray-400">MLS# {listing.mlsId}</span>
+                      <button 
+                        onClick={() => setSelectedListing(listing)}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View Details →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -601,50 +517,153 @@ export default function PropertySearchPage() {
           </div>
         )}
 
-        {/* Map View Placeholder */}
-        {!loading && viewMode === 'map' && (
-          <div className="bg-white rounded-xl border p-6">
-            <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <Map className="mx-auto mb-4 text-gray-400" size={64} />
-                <p className="text-gray-600 font-medium">Interactive Map View</p>
-                <p className="text-sm text-gray-500">Map integration with property markers</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* No Results */}
-        {!loading && listings.length === 0 && (
+        {!loading && !error && listings.length === 0 && (
           <div className="bg-white rounded-xl border p-12 text-center">
             <Home className="mx-auto mb-4 text-gray-400" size={64} />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No Properties Found</h3>
-            <p className="text-gray-500">Try adjusting your search criteria</p>
+            <p className="text-gray-500 mb-4">Try adjusting your search criteria</p>
+            <button
+              onClick={() => {
+                setPropertyType('All Types')
+                setPriceRange(PRICE_RANGES[0])
+                setMinBeds('Any')
+                setMinBaths('Any')
+                setSearchQuery('')
+                fetchListings()
+              }}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              Reset all filters
+            </button>
           </div>
         )}
 
         {/* API Info */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-bold text-blue-800 mb-3">🔌 API Integration Ready</h3>
-          <p className="text-sm text-blue-700 mb-4">
-            This search is powered by sample data. Connect to real MLS feeds with these free-tier APIs:
-          </p>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-3">
-              <p className="font-semibold text-sm">RapidAPI - Realtor</p>
-              <p className="text-xs text-gray-500">100 req/month FREE</p>
-            </div>
-            <div className="bg-white rounded-lg p-3">
-              <p className="font-semibold text-sm">RapidAPI - Zillow</p>
-              <p className="text-xs text-gray-500">Free tier available</p>
-            </div>
-            <div className="bg-white rounded-lg p-3">
-              <p className="font-semibold text-sm">Apify MLS Scraper</p>
-              <p className="text-xs text-gray-500">Free trial</p>
+        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <Wifi className="text-blue-600 flex-shrink-0" size={24} />
+            <div>
+              <h3 className="font-bold text-blue-800 mb-2">Live MLS Integration</h3>
+              <p className="text-sm text-blue-700 mb-3">
+                This search is powered by SimplyRETS API providing real MLS listing data format. 
+                Demo data is displayed from the free tier.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <span className="bg-white px-3 py-1 rounded-lg text-xs text-gray-600 border">
+                  Real-time updates
+                </span>
+                <span className="bg-white px-3 py-1 rounded-lg text-xs text-gray-600 border">
+                  MLS-standard data
+                </span>
+                <span className="bg-white px-3 py-1 rounded-lg text-xs text-gray-600 border">
+                  Property photos
+                </span>
+                <span className="bg-white px-3 py-1 rounded-lg text-xs text-gray-600 border">
+                  Agent info
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Property Detail Modal */}
+      {selectedListing && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedListing(null)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Modal Header Image */}
+            <div className="relative h-64 bg-gray-200">
+              {selectedListing.photos && selectedListing.photos.length > 0 ? (
+                <img src={selectedListing.photos[0]} alt={selectedListing.address} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Home className="text-gray-400" size={64} />
+                </div>
+              )}
+              <button 
+                onClick={() => setSelectedListing(null)}
+                className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg"
+              >
+                <X size={20} />
+              </button>
+              <div className="absolute bottom-4 left-4">
+                {getStatusBadge(selectedListing.status)}
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-3xl font-bold text-green-600">${selectedListing.price.toLocaleString()}</p>
+                  <p className="text-xl font-semibold mt-1">{selectedListing.address}</p>
+                  <p className="text-gray-500">{selectedListing.city}, {selectedListing.state} {selectedListing.zip}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="p-2 border rounded-lg hover:bg-gray-50">
+                    <Heart size={20} />
+                  </button>
+                  <button className="p-2 border rounded-lg hover:bg-gray-50">
+                    <Share2 size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 py-4 border-y">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedListing.beds}</p>
+                  <p className="text-sm text-gray-500">Bedrooms</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedListing.baths}</p>
+                  <p className="text-sm text-gray-500">Bathrooms</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedListing.sqft.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">Sq Ft</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedListing.yearBuilt || 'N/A'}</p>
+                  <p className="text-sm text-gray-500">Year Built</p>
+                </div>
+              </div>
+
+              {selectedListing.description && (
+                <div className="mt-4">
+                  <h3 className="font-bold mb-2">Description</h3>
+                  <p className="text-gray-600 text-sm">{selectedListing.description}</p>
+                </div>
+              )}
+
+              {selectedListing.features && selectedListing.features.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-bold mb-2">Features</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedListing.features.map((f, idx) => (
+                      <span key={idx} className="bg-gray-100 px-3 py-1 rounded-lg text-sm">{f}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 pt-4 border-t flex justify-between items-center text-sm text-gray-500">
+                <span>MLS# {selectedListing.mlsId}</span>
+                <span>{selectedListing.daysOnMarket} days on market</span>
+                <span>Source: {selectedListing.source}</span>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
+                  Schedule Tour
+                </button>
+                <button className="flex-1 border-2 border-blue-600 text-blue-600 py-3 rounded-lg hover:bg-blue-50 font-semibold">
+                  Contact Agent
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
