@@ -1,167 +1,310 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import {
-  Bot, Lock, Zap, CheckCircle, MessageSquare, Users, 
-  Code, Star, ArrowRight
-} from 'lucide-react'
-import AIAssistantClient from './client'
+'use client'
 
-export const metadata = {
-  title: 'AI Assistant | CR Realtor Platform',
-  description: 'AI-powered real estate assistant for you and your clients',
+import { useState, useRef, useEffect } from 'react'
+import {
+  Bot, Send, Loader2, User, Sparkles, MessageSquare,
+  Home, DollarSign, TrendingUp, FileText, Calendar,
+  HelpCircle, Lightbulb, ChevronRight, Copy, Check,
+  RefreshCw, Trash2, Clock
+} from 'lucide-react'
+
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
 }
 
-export default async function AIAssistantPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) redirect('/auth/login')
+const QUICK_PROMPTS = [
+  { icon: Home, label: 'Listing description', prompt: 'Write a compelling listing description for a 4-bed, 3-bath pool home in Cape Coral' },
+  { icon: DollarSign, label: 'Price analysis', prompt: 'What factors should I consider when pricing a waterfront property?' },
+  { icon: TrendingUp, label: 'Market trends', prompt: 'What are the current market trends in Southwest Florida real estate?' },
+  { icon: FileText, label: 'Email template', prompt: 'Write a follow-up email for a buyer who viewed a property yesterday' },
+  { icon: Calendar, label: 'Open house tips', prompt: 'Give me tips for hosting a successful open house' },
+  { icon: MessageSquare, label: 'Objection handling', prompt: 'How should I respond when a buyer says the price is too high?' },
+]
 
-  // Check if user has AI Assistant add-on
-  const { data: addon } = await supabase
-    .from('addon_subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .in('addon_id', ['ai-assistant', 'full-bundle'])
-    .eq('status', 'active')
-    .single()
+const SAMPLE_RESPONSES: Record<string, string> = {
+  'listing': `🏠 **Stunning Cape Coral Pool Home - Your Tropical Paradise Awaits!**
 
-  const hasAccess = !!addon
+Welcome to this beautifully designed 4-bedroom, 3-bathroom residence that perfectly blends modern luxury with Florida living. 
 
-  // Check for realtor subscription discount
-  const { data: realtorSub } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
+**Key Features:**
+• Sparkling pool with extended lanai - perfect for entertaining
+• Open-concept floor plan with soaring ceilings
+• Gourmet kitchen with granite counters & stainless appliances
+• Split bedroom layout for privacy
+• Hurricane impact windows throughout
+• Attached 2-car garage
 
-  const hasRealtorAccount = !!realtorSub
-  const discountPercent = hasRealtorAccount ? 20 : 0
-  const basePrice = 49
-  const finalPrice = Math.round(basePrice * (1 - discountPercent / 100))
+Located in a prime Cape Coral neighborhood with easy access to shopping, dining, and Gulf beaches. This home is move-in ready and waiting for its new owners!
 
-  if (!hasAccess) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl p-8 text-white text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full mb-4">
-            <Bot size={20} />
-            <span className="font-medium">Premium Add-On</span>
-          </div>
-          <h1 className="text-4xl font-bold mb-4">AI Assistant Pro</h1>
-          <p className="text-xl text-cyan-100 mb-6 max-w-2xl mx-auto">
-            24/7 AI-powered assistant that answers your clients' real estate questions 
-            with expert knowledge. Embed on your website or share directly.
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-              <MessageSquare size={18} />
-              <span>Instant Answers</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-              <Users size={18} />
-              <span>Client Access</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-              <Code size={18} />
-              <span>Embeddable</span>
-            </div>
-          </div>
+**Price:** Contact for details | **MLS#:** Coming Soon`,
 
-          <div className="bg-white/10 rounded-2xl p-6 max-w-md mx-auto mb-6">
-            {hasRealtorAccount && (
-              <div className="text-sm text-green-300 mb-2">
-                ✓ Realtor account discount applied!
-              </div>
-            )}
-            <div className="flex items-center justify-center gap-3">
-              {discountPercent > 0 && (
-                <span className="text-2xl text-white/50 line-through">${basePrice}</span>
-              )}
-              <span className="text-5xl font-bold">${finalPrice}</span>
-              <span className="text-xl text-white/70">/month</span>
-            </div>
-          </div>
+  'price': `**Key Factors for Pricing Waterfront Properties:**
 
-          <Link href={`/dashboard/checkout?addon=ai-assistant&discount=${discountPercent}`}>
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors">
-              Unlock AI Assistant
-            </button>
-          </Link>
-        </div>
+1. **Water Access Type**
+   - Direct Gulf access (highest premium)
+   - Sailboat water vs. powerboat only
+   - Canal width and bridge restrictions
 
-        {/* Features */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl border p-6">
-            <div className="p-3 bg-cyan-50 rounded-lg w-fit mb-4">
-              <MessageSquare className="text-cyan-600" size={24} />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Expert Knowledge Base</h3>
-            <p className="text-gray-600">
-              Answers questions about buying, selling, mortgages, legal terms, 
-              market conditions, and more with accurate, helpful information.
-            </p>
-          </div>
-          <div className="bg-white rounded-xl border p-6">
-            <div className="p-3 bg-cyan-50 rounded-lg w-fit mb-4">
-              <Users className="text-cyan-600" size={24} />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Share With Clients</h3>
-            <p className="text-gray-600">
-              Give clients access to instant answers 24/7. They get help 
-              even when you're unavailable, improving their experience.
-            </p>
-          </div>
-          <div className="bg-white rounded-xl border p-6">
-            <div className="p-3 bg-cyan-50 rounded-lg w-fit mb-4">
-              <Code className="text-cyan-600" size={24} />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Embed on Your Website</h3>
-            <p className="text-gray-600">
-              Add the assistant to your personal website with a simple code snippet. 
-              Branded with your name and contact info.
-            </p>
-          </div>
-          <div className="bg-white rounded-xl border p-6">
-            <div className="p-3 bg-cyan-50 rounded-lg w-fit mb-4">
-              <Star className="text-cyan-600" size={24} />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Always Learning</h3>
-            <p className="text-gray-600">
-              The AI is continuously updated with the latest real estate 
-              knowledge, market trends, and best practices.
-            </p>
-          </div>
-        </div>
+2. **Waterfront Features**
+   - Dock condition and size
+   - Boat lift capacity
+   - Seawall condition (concrete vs. riprap)
 
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-          <h3 className="font-bold text-amber-800 mb-2">💡 Why Realtors Love This</h3>
-          <ul className="space-y-2 text-amber-900">
-            <li className="flex items-start gap-2">
-              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
-              <span>Reduces repetitive questions from clients</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
-              <span>Clients get instant help when you're busy or after hours</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
-              <span>Professional, consistent answers every time</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle size={18} className="text-amber-600 mt-0.5" />
-              <span>Makes your website more valuable and engaging</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    )
+3. **View Quality**
+   - Wide water views command 15-25% premium
+   - Sunset exposure is highly desirable
+
+4. **Comparable Sales**
+   - Look at similar waterfront sales within 6 months
+   - Adjust for dock, lift, and access differences
+
+5. **Market Conditions**
+   - Current inventory levels
+   - Days on market for similar properties
+   - Seasonal demand patterns
+
+Would you like me to analyze a specific property?`,
+
+  'default': `I'm your AI real estate assistant! I can help you with:
+
+• **Listing Descriptions** - Compelling property write-ups
+• **Market Analysis** - Trends and pricing insights
+• **Email Templates** - Follow-ups, newsletters, updates
+• **Negotiation Tips** - Handling objections professionally
+• **Marketing Ideas** - Social media, open houses, ads
+• **Transaction Support** - Checklists and timelines
+
+What would you like help with today?`
+}
+
+export default function AIAssistantPage() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: SAMPLE_RESPONSES['default'],
+      timestamp: new Date()
+    }
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Full access - render the actual assistant
-  return <AIAssistantClient />
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+    setLoading(true)
+
+    // Simulate AI response
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    let response = SAMPLE_RESPONSES['default']
+    const lowerInput = input.toLowerCase()
+    
+    if (lowerInput.includes('listing') || lowerInput.includes('description')) {
+      response = SAMPLE_RESPONSES['listing']
+    } else if (lowerInput.includes('price') || lowerInput.includes('waterfront')) {
+      response = SAMPLE_RESPONSES['price']
+    }
+
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: response,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, assistantMessage])
+    setLoading(false)
+  }
+
+  const handleQuickPrompt = (prompt: string) => {
+    setInput(prompt)
+  }
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const clearChat = () => {
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: SAMPLE_RESPONSES['default'],
+      timestamp: new Date()
+    }])
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)]">
+      {/* Sidebar */}
+      <div className="w-80 bg-white border-r p-4 hidden lg:block">
+        <div className="mb-6">
+          <h2 className="font-bold text-lg flex items-center gap-2 mb-2">
+            <Sparkles className="text-amber-500" size={20} />
+            Quick Prompts
+          </h2>
+          <p className="text-sm text-gray-500">Click to use these starter prompts</p>
+        </div>
+
+        <div className="space-y-2">
+          {QUICK_PROMPTS.map((prompt, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleQuickPrompt(prompt.prompt)}
+              className="w-full text-left p-3 rounded-lg border hover:bg-blue-50 hover:border-blue-200 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <prompt.icon className="text-gray-400 group-hover:text-blue-500" size={18} />
+                <span className="text-sm font-medium">{prompt.label}</span>
+                <ChevronRight className="ml-auto text-gray-300 group-hover:text-blue-500" size={16} />
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <h3 className="font-semibold text-amber-800 flex items-center gap-2 mb-2">
+            <Lightbulb size={16} />
+            Pro Tip
+          </h3>
+          <p className="text-sm text-amber-700">
+            Be specific in your prompts! Include property details, target audience, and tone preferences for better results.
+          </p>
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Bot className="text-white" size={20} />
+            </div>
+            <div>
+              <h1 className="font-bold">AI Real Estate Assistant</h1>
+              <p className="text-sm text-green-600 flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Online
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={clearChat}
+            className="text-gray-500 hover:text-red-500 p-2 rounded-lg hover:bg-gray-100"
+            title="Clear chat"
+          >
+            <Trash2 size={20} />
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {messages.map(message => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}
+            >
+              {message.role === 'assistant' && (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="text-white" size={16} />
+                </div>
+              )}
+              
+              <div className={`max-w-2xl ${message.role === 'user' ? 'order-first' : ''}`}>
+                <div className={`rounded-2xl px-4 py-3 ${
+                  message.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                    : 'bg-white border rounded-tl-sm'
+                }`}>
+                  <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                </div>
+                <div className={`flex items-center gap-2 mt-1 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                  <span className="text-xs text-gray-400">
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {message.role === 'assistant' && (
+                    <button
+                      onClick={() => copyToClipboard(message.content, message.id)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      {copied === message.id ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {message.role === 'user' && (
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="text-gray-500" size={16} />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Bot className="text-white" size={16} />
+              </div>
+              <div className="bg-white border rounded-2xl rounded-tl-sm px-4 py-3">
+                <Loader2 className="animate-spin text-gray-400" size={20} />
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="bg-white border-t p-4">
+          <div className="max-w-4xl mx-auto flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Ask me anything about real estate..."
+              className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loading}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || loading}
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+            </button>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-2">
+            AI responses are for assistance only. Always verify important information.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
 }
