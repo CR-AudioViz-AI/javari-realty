@@ -1,320 +1,650 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { 
-  Search, MapPin, Bed, Bath, Square, DollarSign, Home, 
-  Heart, Share2, SlidersHorizontal, X, Sparkles, 
-  ChevronDown, Map, List, Grid, Star, Trees, AlertCircle
-} from 'lucide-react';
+import { useState, useEffect } from 'react'
+import {
+  Search, MapPin, Home, Bed, Bath, Square, DollarSign,
+  Filter, Grid, List, Map, Heart, Share2, ChevronDown,
+  SlidersHorizontal, X, Loader2, TrendingUp, Building2,
+  Clock, Eye, ArrowUpDown, Check
+} from 'lucide-react'
 
-interface Property {
-  id: string;
-  address: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
-  square_feet: number;
-  property_type: string;
-  status: string;
-  images?: string[];
-  days_on_market?: number;
-  price_per_sqft?: number;
+interface PropertyListing {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  price: number
+  beds: number
+  baths: number
+  sqft: number
+  lotSize?: number
+  yearBuilt?: number
+  propertyType: string
+  status: 'for_sale' | 'pending' | 'sold' | 'for_rent'
+  daysOnMarket: number
+  photos: string[]
+  description?: string
+  features: string[]
+  lat?: number
+  lng?: number
+  mls?: string
+  source: string
+  pricePerSqft?: number
 }
 
-interface SearchFilters {
-  query: string;
-  cities: string[];
-  minPrice: number | null;
-  maxPrice: number | null;
-  minBeds: number | null;
-  minBaths: number | null;
-  minSqft: number | null;
-  maxSqft: number | null;
-  propertyTypes: string[];
-  sortBy: 'price_asc' | 'price_desc' | 'newest' | 'sqft' | 'beds';
-}
+// Sample data simulating API response
+const SAMPLE_LISTINGS: PropertyListing[] = [
+  {
+    id: '1',
+    address: '2850 Winkler Ave',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33916',
+    price: 425000,
+    beds: 4,
+    baths: 3,
+    sqft: 2400,
+    yearBuilt: 2018,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 14,
+    photos: [],
+    features: ['Pool', 'Updated Kitchen', '2-Car Garage'],
+    source: 'MLS',
+    pricePerSqft: 177
+  },
+  {
+    id: '2',
+    address: '1420 SE 47th St',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33904',
+    price: 389000,
+    beds: 3,
+    baths: 2,
+    sqft: 2100,
+    yearBuilt: 2015,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 28,
+    photos: [],
+    features: ['Gulf Access', 'Boat Dock', 'Open Floor Plan'],
+    source: 'Zillow',
+    pricePerSqft: 185
+  },
+  {
+    id: '3',
+    address: '3500 Oasis Blvd',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33914',
+    price: 459000,
+    beds: 4,
+    baths: 2.5,
+    sqft: 2650,
+    yearBuilt: 2020,
+    propertyType: 'Single Family',
+    status: 'pending',
+    daysOnMarket: 7,
+    photos: [],
+    features: ['Pool', 'Smart Home', 'Impact Windows', 'Solar'],
+    source: 'Realtor.com',
+    pricePerSqft: 173
+  },
+  {
+    id: '4',
+    address: '8901 Cypress Lake Dr',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33919',
+    price: 675000,
+    beds: 5,
+    baths: 4,
+    sqft: 3200,
+    yearBuilt: 2021,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 5,
+    photos: [],
+    features: ['Pool', 'Lake View', '3-Car Garage', 'Gourmet Kitchen'],
+    source: 'MLS',
+    pricePerSqft: 211
+  },
+  {
+    id: '5',
+    address: '15620 Laguna Hills Dr',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33908',
+    price: 525000,
+    beds: 4,
+    baths: 3,
+    sqft: 2800,
+    yearBuilt: 2019,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 21,
+    photos: [],
+    features: ['Pool', 'Screened Lanai', 'Tile Throughout'],
+    source: 'Redfin',
+    pricePerSqft: 188
+  },
+  {
+    id: '6',
+    address: '4521 Del Prado Blvd S',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33904',
+    price: 299000,
+    beds: 3,
+    baths: 2,
+    sqft: 1650,
+    yearBuilt: 2010,
+    propertyType: 'Condo',
+    status: 'for_sale',
+    daysOnMarket: 35,
+    photos: [],
+    features: ['Community Pool', 'Fitness Center', 'Updated'],
+    source: 'Zillow',
+    pricePerSqft: 181
+  },
+  {
+    id: '7',
+    address: '1850 NE Pine Island Rd',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33909',
+    price: 849000,
+    beds: 5,
+    baths: 4.5,
+    sqft: 4100,
+    yearBuilt: 2022,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 3,
+    photos: [],
+    features: ['Gulf Access', 'Pool', 'Dock', 'Smart Home', 'Solar'],
+    source: 'MLS',
+    pricePerSqft: 207
+  },
+  {
+    id: '8',
+    address: '12780 Kenwood Ln',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33913',
+    price: 375000,
+    beds: 3,
+    baths: 2,
+    sqft: 1900,
+    yearBuilt: 2016,
+    propertyType: 'Single Family',
+    status: 'for_sale',
+    daysOnMarket: 18,
+    photos: [],
+    features: ['Community Pool', 'Clubhouse', 'Gated'],
+    source: 'Realtor.com',
+    pricePerSqft: 197
+  }
+]
 
-const PROPERTY_TYPES = [
-  { value: 'single_family', label: 'Single Family', icon: '🏠' },
-  { value: 'condo', label: 'Condo', icon: '🏢' },
-  { value: 'townhouse', label: 'Townhouse', icon: '🏘️' },
-  { value: 'land', label: 'Land', icon: '🌳' },
-];
+const PROPERTY_TYPES = ['All Types', 'Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land']
+const PRICE_RANGES = [
+  { label: 'Any Price', min: 0, max: Infinity },
+  { label: 'Under $300K', min: 0, max: 300000 },
+  { label: '$300K - $500K', min: 300000, max: 500000 },
+  { label: '$500K - $750K', min: 500000, max: 750000 },
+  { label: '$750K - $1M', min: 750000, max: 1000000 },
+  { label: 'Over $1M', min: 1000000, max: Infinity },
+]
+const BED_OPTIONS = ['Any', '1+', '2+', '3+', '4+', '5+']
+const BATH_OPTIONS = ['Any', '1+', '2+', '3+', '4+']
+const SORT_OPTIONS = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Price: Low to High', value: 'price_asc' },
+  { label: 'Price: High to Low', value: 'price_desc' },
+  { label: 'Beds', value: 'beds' },
+  { label: 'Sqft', value: 'sqft' },
+]
 
-const AI_SEARCH_EXAMPLES = [
-  "3 bedroom house under $500k with pool",
-  "Waterfront condo near downtown",
-  "Family home with good schools nearby",
-  "Modern kitchen, open floor plan",
-];
-
-export default function SearchPage() {
-  const supabase = createClient();
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
-  const [showFilters, setShowFilters] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [aiProcessing, setAiProcessing] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState('');
+export default function PropertySearchPage() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [listings, setListings] = useState<PropertyListing[]>([])
+  const [loading, setLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid')
+  const [showFilters, setShowFilters] = useState(false)
+  const [favorites, setFavorites] = useState<string[]>([])
   
-  const [filters, setFilters] = useState<SearchFilters>({
-    query: '',
-    cities: [],
-    minPrice: null,
-    maxPrice: null,
-    minBeds: null,
-    minBaths: null,
-    minSqft: null,
-    maxSqft: null,
-    propertyTypes: [],
-    sortBy: 'newest',
-  });
+  // Filters
+  const [propertyType, setPropertyType] = useState('All Types')
+  const [priceRange, setPriceRange] = useState(PRICE_RANGES[0])
+  const [minBeds, setMinBeds] = useState('Any')
+  const [minBaths, setMinBaths] = useState('Any')
+  const [sortBy, setSortBy] = useState('newest')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'for_sale' | 'pending' | 'sold'>('for_sale')
 
-  const processAISearch = async (query: string) => {
-    if (!query.trim()) return;
-    setAiProcessing(true);
-    setAiSuggestion('');
-    try {
-      const response = await fetch('/api/search/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setFilters(prev => ({ ...prev, ...data.filters, query }));
-        if (data.suggestion) setAiSuggestion(data.suggestion);
-      }
-    } catch (error) {
-      console.error('AI search error:', error);
-    } finally {
-      setAiProcessing(false);
+  // Simulate API search
+  const searchProperties = async () => {
+    setLoading(true)
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    let results = [...SAMPLE_LISTINGS]
+    
+    // Apply filters
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      results = results.filter(p => 
+        p.city.toLowerCase().includes(query) ||
+        p.address.toLowerCase().includes(query) ||
+        p.zip.includes(query)
+      )
     }
-  };
-
-  const fetchProperties = useCallback(async () => {
-    setLoading(true);
-    try {
-      let query = supabase.from('properties').select('*', { count: 'exact' }).eq('status', 'active');
-      if (filters.minPrice) query = query.gte('price', filters.minPrice);
-      if (filters.maxPrice) query = query.lte('price', filters.maxPrice);
-      if (filters.minBeds) query = query.gte('bedrooms', filters.minBeds);
-      if (filters.minBaths) query = query.gte('bathrooms', filters.minBaths);
-      if (filters.minSqft) query = query.gte('square_feet', filters.minSqft);
-      if (filters.maxSqft) query = query.lte('square_feet', filters.maxSqft);
-      if (filters.propertyTypes.length > 0) query = query.in('property_type', filters.propertyTypes);
-      
-      switch (filters.sortBy) {
-        case 'price_asc': query = query.order('price', { ascending: true }); break;
-        case 'price_desc': query = query.order('price', { ascending: false }); break;
-        case 'newest': query = query.order('created_at', { ascending: false }); break;
-        case 'sqft': query = query.order('square_feet', { ascending: false }); break;
-        case 'beds': query = query.order('bedrooms', { ascending: false }); break;
-      }
-
-      const { data, count, error } = await query.limit(50);
-      if (error) throw error;
-      const propertiesWithCalc = (data || []).map(p => ({
-        ...p,
-        price_per_sqft: p.square_feet ? Math.round(p.price / p.square_feet) : null,
-      }));
-      setProperties(propertiesWithCalc);
-      setTotalCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching properties:', error);
-    } finally {
-      setLoading(false);
+    
+    if (propertyType !== 'All Types') {
+      results = results.filter(p => p.propertyType === propertyType)
     }
-  }, [filters, supabase]);
+    
+    results = results.filter(p => p.price >= priceRange.min && p.price <= priceRange.max)
+    
+    if (minBeds !== 'Any') {
+      const beds = parseInt(minBeds)
+      results = results.filter(p => p.beds >= beds)
+    }
+    
+    if (minBaths !== 'Any') {
+      const baths = parseInt(minBaths)
+      results = results.filter(p => p.baths >= baths)
+    }
+    
+    if (statusFilter !== 'all') {
+      results = results.filter(p => p.status === statusFilter)
+    }
+    
+    // Sort
+    switch (sortBy) {
+      case 'price_asc': results.sort((a, b) => a.price - b.price); break
+      case 'price_desc': results.sort((a, b) => b.price - a.price); break
+      case 'beds': results.sort((a, b) => b.beds - a.beds); break
+      case 'sqft': results.sort((a, b) => b.sqft - a.sqft); break
+      default: results.sort((a, b) => a.daysOnMarket - b.daysOnMarket)
+    }
+    
+    setListings(results)
+    setLoading(false)
+  }
 
-  useEffect(() => { fetchProperties(); }, [fetchProperties]);
+  useEffect(() => {
+    searchProperties()
+  }, [propertyType, priceRange, minBeds, minBaths, sortBy, statusFilter])
 
-  const toggleFavorite = (propertyId: string) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(propertyId)) newFavorites.delete(propertyId);
-      else newFavorites.add(propertyId);
-      return newFavorites;
-    });
-  };
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => 
+      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+    )
+  }
 
-  const clearFilters = () => {
-    setFilters({ query: '', cities: [], minPrice: null, maxPrice: null, minBeds: null, minBaths: null, minSqft: null, maxSqft: null, propertyTypes: [], sortBy: 'newest' });
-    setAiSuggestion('');
-  };
+  const getStatusBadge = (status: PropertyListing['status']) => {
+    const styles = {
+      for_sale: 'bg-green-100 text-green-800',
+      pending: 'bg-amber-100 text-amber-800',
+      sold: 'bg-blue-100 text-blue-800',
+      for_rent: 'bg-purple-100 text-purple-800'
+    }
+    const labels = {
+      for_sale: 'For Sale',
+      pending: 'Pending',
+      sold: 'Sold',
+      for_rent: 'For Rent'
+    }
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
+        {labels[status]}
+      </span>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-12 px-4">
+      {/* Header Search */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 text-center">Find Your Perfect Home</h1>
-          <p className="text-blue-200 text-center mb-8">AI-powered search • {totalCount.toLocaleString()} properties</p>
-          <div className="relative max-w-3xl mx-auto">
-            <div className="flex items-center bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="flex-1 flex items-center">
-                <Sparkles className="w-5 h-5 text-blue-500 ml-4" />
+          <h1 className="text-3xl font-bold text-white mb-4 flex items-center gap-3">
+            <Search /> Find Your Dream Home
+          </h1>
+          
+          <div className="bg-white rounded-xl p-4 shadow-lg">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <MapPin className="absolute left-3 top-3 text-gray-400" size={20} />
                 <input
                   type="text"
-                  value={filters.query}
-                  onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === 'Enter') processAISearch(filters.query); }}
-                  placeholder="Try: '3 bed house under $500k with pool'"
-                  className="flex-1 px-4 py-4 text-gray-800 text-lg focus:outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by city, ZIP, or address..."
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg"
+                  onKeyPress={(e) => e.key === 'Enter' && searchProperties()}
                 />
-                {filters.query && (
-                  <button onClick={clearFilters} className="p-2 hover:bg-gray-100 rounded-full mr-2">
-                    <X className="w-5 h-5 text-gray-400" />
-                  </button>
-                )}
               </div>
-              <button onClick={() => processAISearch(filters.query)} disabled={aiProcessing}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 font-semibold disabled:bg-blue-400">
-                {aiProcessing ? 'Searching...' : 'Search'}
+              
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-gray-50"
+              >
+                <SlidersHorizontal size={20} />
+                Filters
+                {showFilters && <X size={16} />}
+              </button>
+              
+              <button
+                onClick={searchProperties}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Search size={20} />
+                Search
               </button>
             </div>
-            {aiSuggestion && (
-              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-blue-800 text-sm flex items-start gap-2">
-                <Sparkles className="w-4 h-4 mt-0.5" /><span>{aiSuggestion}</span>
-              </div>
-            )}
-            {!filters.query && (
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {AI_SEARCH_EXAMPLES.map((example, i) => (
-                  <button key={i} onClick={() => { setFilters(prev => ({ ...prev, query: example })); processAISearch(example); }}
-                    className="bg-white/20 hover:bg-white/30 text-white text-sm px-3 py-1.5 rounded-full">{example}</button>
-                ))}
+
+            {/* Expanded Filters */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Property Type</label>
+                  <select
+                    value={propertyType}
+                    onChange={(e) => setPropertyType(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    {PROPERTY_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Price Range</label>
+                  <select
+                    value={priceRange.label}
+                    onChange={(e) => setPriceRange(PRICE_RANGES.find(p => p.label === e.target.value) || PRICE_RANGES[0])}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    {PRICE_RANGES.map(range => (
+                      <option key={range.label} value={range.label}>{range.label}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Bedrooms</label>
+                  <select
+                    value={minBeds}
+                    onChange={(e) => setMinBeds(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    {BED_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Bathrooms</label>
+                  <select
+                    value={minBaths}
+                    onChange={(e) => setMinBaths(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    {BATH_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="all">All</option>
+                    <option value="for_sale">For Sale</option>
+                    <option value="pending">Pending</option>
+                    <option value="sold">Sold</option>
+                  </select>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
-              <SlidersHorizontal className="w-4 h-4" /><span>Filters</span>
-            </button>
-            {(filters.minPrice || filters.maxPrice || filters.minBeds || filters.propertyTypes.length > 0) && (
-              <button onClick={clearFilters} className="flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium">
-                <X className="w-4 h-4" />Clear
+      {/* Results */}
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Results Header */}
+        <div className="flex flex-wrap justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-bold">
+              {loading ? 'Searching...' : `${listings.length} Properties Found`}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {searchQuery ? `Results for "${searchQuery}"` : 'Southwest Florida'}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1.5 border rounded-lg text-sm"
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex border rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+              >
+                <Grid size={18} />
               </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}><Grid className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}><List className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('map')} className={`p-2 rounded ${viewMode === 'map' ? 'bg-white shadow' : ''}`}><Map className="w-4 h-4" /></button>
-            </div>
-            <select value={filters.sortBy} onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as SearchFilters['sortBy'] }))}
-              className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium">
-              <option value="newest">Newest</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="sqft">Largest</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="bg-white border-b shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Min" value={filters.minPrice || ''} onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value ? Number(e.target.value) : null }))} className="w-full px-3 py-2 border rounded-lg text-sm" />
-                <input type="number" placeholder="Max" value={filters.maxPrice || ''} onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : null }))} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
-              <div className="flex gap-1">
-                {[null, 1, 2, 3, 4, 5].map((num) => (
-                  <button key={num ?? 'any'} onClick={() => setFilters(prev => ({ ...prev, minBeds: num }))}
-                    className={`flex-1 py-2 text-sm rounded-lg border ${filters.minBeds === num ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50'}`}>
-                    {num ?? 'Any'}{num && '+'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-              <div className="flex gap-1">
-                {[null, 1, 2, 3, 4].map((num) => (
-                  <button key={num ?? 'any'} onClick={() => setFilters(prev => ({ ...prev, minBaths: num }))}
-                    className={`flex-1 py-2 text-sm rounded-lg border ${filters.minBaths === num ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50'}`}>
-                    {num ?? 'Any'}{num && '+'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Square Feet</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Min" value={filters.minSqft || ''} onChange={(e) => setFilters(prev => ({ ...prev, minSqft: e.target.value ? Number(e.target.value) : null }))} className="w-full px-3 py-2 border rounded-lg text-sm" />
-                <input type="number" placeholder="Max" value={filters.maxSqft || ''} onChange={(e) => setFilters(prev => ({ ...prev, maxSqft: e.target.value ? Number(e.target.value) : null }))} className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`p-2 ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+              >
+                <Map size={18} />
+              </button>
             </div>
           </div>
         </div>
-      )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <p className="text-gray-600 mb-4"><span className="font-semibold text-gray-900">{totalCount.toLocaleString()}</span> properties found</p>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="animate-spin text-blue-600" size={48} />
           </div>
-        ) : properties.length === 0 ? (
-          <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
-            <button onClick={clearFilters} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Clear Filters</button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {properties.map((property) => (
-              <a key={property.id} href={`/property/${property.id}`} className="block bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow overflow-hidden group">
-                <div className="relative aspect-[4/3] overflow-hidden bg-gray-200">
-                  {property.images?.[0] ? (
-                    <img src={property.images[0]} alt={property.address} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center"><Home className="w-12 h-12 text-gray-400" /></div>
-                  )}
-                  {property.days_on_market && property.days_on_market <= 3 && (
-                    <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded">New</span>
-                  )}
-                  <button onClick={(e) => { e.preventDefault(); toggleFavorite(property.id); }}
-                    className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white">
-                    <Heart className={`w-5 h-5 ${favorites.has(property.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-                  </button>
-                  <div className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg">
-                    <span className="text-lg font-bold text-gray-900">${property.price.toLocaleString()}</span>
+        )}
+
+        {/* Grid View */}
+        {!loading && viewMode === 'grid' && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {listings.map(listing => (
+              <div key={listing.id} className="bg-white rounded-xl border overflow-hidden hover:shadow-lg transition-shadow">
+                {/* Image */}
+                <div className="relative h-48 bg-gray-200">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Home className="text-gray-400" size={48} />
+                  </div>
+                  <div className="absolute top-3 left-3">
+                    {getStatusBadge(listing.status)}
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-1">
+                    <button 
+                      onClick={() => toggleFavorite(listing.id)}
+                      className={`p-1.5 rounded-full shadow ${
+                        favorites.includes(listing.id) ? 'bg-red-500 text-white' : 'bg-white'
+                      }`}
+                    >
+                      <Heart size={16} fill={favorites.includes(listing.id) ? 'currentColor' : 'none'} />
+                    </button>
+                    <button className="p-1.5 bg-white rounded-full shadow">
+                      <Share2 size={16} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                    {listing.daysOnMarket} days on market
+                  </div>
+                  <div className="absolute bottom-3 right-3 bg-white/90 text-gray-700 px-2 py-1 rounded text-xs">
+                    {listing.source}
                   </div>
                 </div>
+
+                {/* Content */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 truncate">{property.address}</h3>
-                  <p className="text-gray-600 text-sm truncate">{property.city}, {property.state} {property.zip_code}</p>
+                  <p className="text-2xl font-bold text-green-600">${listing.price.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">${listing.pricePerSqft}/sqft</p>
+                  <p className="font-semibold mt-2">{listing.address}</p>
+                  <p className="text-sm text-gray-500">{listing.city}, {listing.state} {listing.zip}</p>
+                  
                   <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
-                    <span className="flex items-center gap-1"><Bed className="w-4 h-4" />{property.bedrooms} bed</span>
-                    <span className="flex items-center gap-1"><Bath className="w-4 h-4" />{property.bathrooms} bath</span>
-                    <span className="flex items-center gap-1"><Square className="w-4 h-4" />{property.square_feet?.toLocaleString()} sqft</span>
+                    <span className="flex items-center gap-1">
+                      <Bed size={16} /> {listing.beds}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Bath size={16} /> {listing.baths}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Square size={16} /> {listing.sqft.toLocaleString()}
+                    </span>
                   </div>
-                  {property.price_per_sqft && <p className="text-xs text-gray-500 mt-2">${property.price_per_sqft}/sqft</p>}
+
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {listing.features.slice(0, 3).map(f => (
+                      <span key={f} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{f}</span>
+                    ))}
+                  </div>
+
+                  <button className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
+                    <Eye size={16} /> View Details
+                  </button>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         )}
+
+        {/* List View */}
+        {!loading && viewMode === 'list' && (
+          <div className="space-y-4">
+            {listings.map(listing => (
+              <div key={listing.id} className="bg-white rounded-xl border p-4 hover:shadow-lg transition-shadow">
+                <div className="flex gap-4">
+                  <div className="w-48 h-32 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Home className="text-gray-400" size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-2xl font-bold text-green-600">${listing.price.toLocaleString()}</p>
+                          {getStatusBadge(listing.status)}
+                        </div>
+                        <p className="font-semibold">{listing.address}</p>
+                        <p className="text-sm text-gray-500">{listing.city}, {listing.state} {listing.zip}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => toggleFavorite(listing.id)}
+                          className={`p-2 rounded-lg border ${favorites.includes(listing.id) ? 'bg-red-50 border-red-200 text-red-500' : ''}`}
+                        >
+                          <Heart size={18} fill={favorites.includes(listing.id) ? 'currentColor' : 'none'} />
+                        </button>
+                        <button className="p-2 rounded-lg border">
+                          <Share2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 mt-3 text-sm">
+                      <span className="flex items-center gap-1"><Bed size={16} /> {listing.beds} beds</span>
+                      <span className="flex items-center gap-1"><Bath size={16} /> {listing.baths} baths</span>
+                      <span className="flex items-center gap-1"><Square size={16} /> {listing.sqft.toLocaleString()} sqft</span>
+                      <span className="text-gray-500">${listing.pricePerSqft}/sqft</span>
+                      <span className="text-gray-500">{listing.daysOnMarket} days</span>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex gap-1">
+                        {listing.features.map(f => (
+                          <span key={f} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{f}</span>
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-400">via {listing.source}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Map View Placeholder */}
+        {!loading && viewMode === 'map' && (
+          <div className="bg-white rounded-xl border p-6">
+            <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <Map className="mx-auto mb-4 text-gray-400" size={64} />
+                <p className="text-gray-600 font-medium">Interactive Map View</p>
+                <p className="text-sm text-gray-500">Map integration with property markers</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Results */}
+        {!loading && listings.length === 0 && (
+          <div className="bg-white rounded-xl border p-12 text-center">
+            <Home className="mx-auto mb-4 text-gray-400" size={64} />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Properties Found</h3>
+            <p className="text-gray-500">Try adjusting your search criteria</p>
+          </div>
+        )}
+
+        {/* API Info */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="font-bold text-blue-800 mb-3">🔌 API Integration Ready</h3>
+          <p className="text-sm text-blue-700 mb-4">
+            This search is powered by sample data. Connect to real MLS feeds with these free-tier APIs:
+          </p>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-3">
+              <p className="font-semibold text-sm">RapidAPI - Realtor</p>
+              <p className="text-xs text-gray-500">100 req/month FREE</p>
+            </div>
+            <div className="bg-white rounded-lg p-3">
+              <p className="font-semibold text-sm">RapidAPI - Zillow</p>
+              <p className="text-xs text-gray-500">Free tier available</p>
+            </div>
+            <div className="bg-white rounded-lg p-3">
+              <p className="font-semibold text-sm">Apify MLS Scraper</p>
+              <p className="text-xs text-gray-500">Free trial</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  );
+  )
 }
