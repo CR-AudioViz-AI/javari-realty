@@ -1,418 +1,405 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Plus,
-  Building2,
-  MapPin,
-  Eye,
-  Edit,
-  Home,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  DollarSign,
+  Home, Plus, Search, Filter, Grid, List, MapPin, Bed, Bath,
+  Square, DollarSign, Eye, Edit2, Trash2, MoreVertical, Heart,
+  TrendingUp, Calendar, Clock, Share2, Image as ImageIcon
 } from 'lucide-react'
 
-export default async function PropertiesPage({
-  searchParams,
-}: {
-  searchParams: { status?: string; search?: string }
-}) {
-  const supabase = await createClient()
+interface Property {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  price: number
+  beds: number
+  baths: number
+  sqft: number
+  status: 'active' | 'pending' | 'sold' | 'off-market'
+  type: string
+  yearBuilt: number
+  listDate: string
+  daysOnMarket: number
+  description?: string
+  features: string[]
+  images: string[]
+  mls?: string
+}
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/auth/login')
+const SAMPLE_PROPERTIES: Property[] = [
+  {
+    id: '1',
+    address: '2850 Winkler Ave',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33916',
+    price: 425000,
+    beds: 4,
+    baths: 3,
+    sqft: 2400,
+    status: 'active',
+    type: 'Single Family',
+    yearBuilt: 2018,
+    listDate: '2024-12-01',
+    daysOnMarket: 14,
+    features: ['Pool', 'Updated Kitchen', '2-Car Garage', 'Hurricane Shutters'],
+    images: [],
+    mls: 'MLS123456'
+  },
+  {
+    id: '2',
+    address: '1420 SE 47th St',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33904',
+    price: 389000,
+    beds: 3,
+    baths: 2,
+    sqft: 2100,
+    status: 'active',
+    type: 'Single Family',
+    yearBuilt: 2015,
+    listDate: '2024-11-15',
+    daysOnMarket: 30,
+    features: ['Gulf Access', 'Boat Dock', 'Open Floor Plan'],
+    images: [],
+    mls: 'MLS123457'
+  },
+  {
+    id: '3',
+    address: '3500 Oasis Blvd',
+    city: 'Cape Coral',
+    state: 'FL',
+    zip: '33914',
+    price: 459000,
+    beds: 4,
+    baths: 2.5,
+    sqft: 2650,
+    status: 'pending',
+    type: 'Single Family',
+    yearBuilt: 2020,
+    listDate: '2024-12-05',
+    daysOnMarket: 10,
+    features: ['Pool', 'Smart Home', 'Impact Windows', 'Solar Panels'],
+    images: [],
+    mls: 'MLS123458'
+  },
+  {
+    id: '4',
+    address: '8901 Cypress Lake Dr',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33919',
+    price: 675000,
+    beds: 5,
+    baths: 4,
+    sqft: 3200,
+    status: 'active',
+    type: 'Single Family',
+    yearBuilt: 2021,
+    listDate: '2024-12-10',
+    daysOnMarket: 5,
+    features: ['Pool', 'Lake View', '3-Car Garage', 'Gourmet Kitchen'],
+    images: [],
+    mls: 'MLS123459'
+  },
+  {
+    id: '5',
+    address: '15620 Laguna Hills Dr',
+    city: 'Fort Myers',
+    state: 'FL',
+    zip: '33908',
+    price: 525000,
+    beds: 4,
+    baths: 3,
+    sqft: 2800,
+    status: 'sold',
+    type: 'Single Family',
+    yearBuilt: 2019,
+    listDate: '2024-10-01',
+    daysOnMarket: 45,
+    features: ['Pool', 'Screened Lanai', 'Tile Throughout'],
+    images: [],
+    mls: 'MLS123460'
   }
+]
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*, organizations(*)')
-    .eq('id', user.id)
-    .single()
+export default function PropertiesPage() {
+  const [properties, setProperties] = useState<Property[]>(SAMPLE_PROPERTIES)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<string>('newest')
 
-  if (!profile) {
-    redirect('/auth/login')
-  }
+  const filteredProperties = properties
+    .filter(p => {
+      const matchesSearch = 
+        p.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.mls?.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = filterStatus === 'all' || p.status === filterStatus
+      return matchesSearch && matchesStatus
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'price-high': return b.price - a.price
+        case 'price-low': return a.price - b.price
+        case 'newest': return new Date(b.listDate).getTime() - new Date(a.listDate).getTime()
+        case 'oldest': return new Date(a.listDate).getTime() - new Date(b.listDate).getTime()
+        default: return 0
+      }
+    })
 
-  const isAdmin = profile.role === 'admin' || profile.is_admin
-
-  // Get team member IDs for organization-wide view
-  let teamMemberIds: string[] = [user.id]
-  let teamProfiles: Record<string, { first_name: string; last_name: string }> = {}
-  
-  if (profile.organization_id) {
-    const { data: team } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name')
-      .eq('organization_id', profile.organization_id)
-    
-    if (team) {
-      teamMemberIds = team.map(m => m.id)
-      team.forEach(m => {
-        teamProfiles[m.id] = { first_name: m.first_name, last_name: m.last_name }
-      })
+  const getStatusBadge = (status: Property['status']) => {
+    const styles = {
+      active: 'bg-green-100 text-green-800',
+      pending: 'bg-amber-100 text-amber-800',
+      sold: 'bg-blue-100 text-blue-800',
+      'off-market': 'bg-gray-100 text-gray-800'
     }
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
+      </span>
+    )
   }
 
-  // Build properties query - NO foreign key join (FK doesn't exist in DB)
-  let propertiesQuery = supabase
-    .from('properties')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  // Admin sees ALL, team members see organization properties
-  if (!isAdmin) {
-    propertiesQuery = propertiesQuery.in('listing_agent_id', teamMemberIds)
-  }
-
-  // Apply status filter from URL
-  const statusFilter = searchParams.status
-  if (statusFilter && statusFilter !== 'all') {
-    propertiesQuery = propertiesQuery.eq('status', statusFilter)
-  }
-
-  const { data: properties, error } = await propertiesQuery
-
-  if (error) {
-    console.error('Properties query error:', error)
-  }
-
-  // If admin, fetch ALL agent profiles for display
-  if (isAdmin && properties && properties.length > 0) {
-    const agentIds = [...new Set(properties.map(p => p.listing_agent_id).filter(Boolean))]
-    const { data: agents } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name')
-      .in('id', agentIds)
-    
-    if (agents) {
-      agents.forEach(a => {
-        teamProfiles[a.id] = { first_name: a.first_name, last_name: a.last_name }
-      })
-    }
-  }
-
-  const formatPrice = (price: number) => {
-    if (price >= 1000000) return `$${(price / 1000000).toFixed(2)}M`
-    return `$${(price / 1000).toFixed(0)}K`
-  }
-
-  // Calculate stats
-  const allProperties = properties || []
-  const totalVolume = allProperties.reduce((sum, p) => sum + (p.price || 0), 0)
-  const activeCount = allProperties.filter(p => p.status === 'active').length
-  const pendingCount = allProperties.filter(p => p.status === 'pending').length
-  const soldCount = allProperties.filter(p => p.status === 'sold').length
+  const totalValue = properties.reduce((sum, p) => sum + p.price, 0)
+  const activeCount = properties.filter(p => p.status === 'active').length
+  const pendingCount = properties.filter(p => p.status === 'pending').length
+  const soldCount = properties.filter(p => p.status === 'sold').length
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Properties</h1>
-          <p className="text-gray-500">
-            {allProperties.length} listings • {formatPrice(totalVolume)} total value
-            {isAdmin && (
-              <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                Admin View
-              </span>
-            )}
-          </p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Home className="text-blue-600" /> Properties
+          </h1>
+          <p className="text-gray-600 mt-1">Manage your listings and portfolio</p>
         </div>
-        <Link
-          href="/dashboard/properties/new"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/20"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Listing
-        </Link>
+        
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <Plus size={18} /> Add Listing
+        </button>
       </div>
 
-      {/* Quick Stats - Clickable */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href="/dashboard/properties?status=all"
-          className={`bg-white rounded-xl border p-4 hover:shadow-md transition cursor-pointer ${
-            !statusFilter || statusFilter === 'all' ? 'ring-2 ring-blue-500' : ''
-          }`}
-        >
-          <div className="flex items-center justify-between">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Home className="text-blue-600" size={20} />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Total Listings</p>
-              <p className="text-2xl font-bold text-gray-900">{allProperties.length}</p>
-            </div>
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-gray-600" />
+              <p className="text-2xl font-bold">{properties.length}</p>
             </div>
           </div>
-        </Link>
-
-        <Link
-          href="/dashboard/properties?status=active"
-          className={`bg-white rounded-xl border p-4 hover:shadow-md transition cursor-pointer ${
-            statusFilter === 'active' ? 'ring-2 ring-emerald-500' : ''
-          }`}
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <TrendingUp className="text-green-600" size={20} />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Active</p>
-              <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
-            </div>
-            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <p className="text-2xl font-bold">{activeCount}</p>
             </div>
           </div>
-        </Link>
-
-        <Link
-          href="/dashboard/properties?status=pending"
-          className={`bg-white rounded-xl border p-4 hover:shadow-md transition cursor-pointer ${
-            statusFilter === 'pending' ? 'ring-2 ring-amber-500' : ''
-          }`}
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Clock className="text-amber-600" size={20} />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Pending</p>
-              <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
-            </div>
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-amber-600" />
+              <p className="text-2xl font-bold">{pendingCount}</p>
             </div>
           </div>
-        </Link>
-
-        <Link
-          href="/dashboard/properties?status=sold"
-          className={`bg-white rounded-xl border p-4 hover:shadow-md transition cursor-pointer ${
-            statusFilter === 'sold' ? 'ring-2 ring-blue-500' : ''
-          }`}
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <DollarSign className="text-purple-600" size={20} />
+            </div>
             <div>
-              <p className="text-sm text-gray-500">Sold</p>
-              <p className="text-2xl font-bold text-blue-600">{soldCount}</p>
+              <p className="text-sm text-gray-500">Portfolio Value</p>
+              <p className="text-2xl font-bold">${(totalValue / 1000000).toFixed(1)}M</p>
             </div>
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Portfolio Value Card */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-100 text-sm">Total Portfolio Value</p>
-            <p className="text-3xl font-bold">{formatPrice(totalVolume)}</p>
-            <p className="text-blue-200 text-sm mt-1">
-              Avg. {allProperties.length > 0 ? formatPrice(totalVolume / allProperties.length) : '$0'} per listing
-            </p>
-          </div>
-          <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
-            <TrendingUp className="w-8 h-8 text-white" />
           </div>
         </div>
       </div>
 
-      {/* Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href="/dashboard/properties?status=all"
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-            !statusFilter || statusFilter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          All ({allProperties.length})
-        </Link>
-        <Link
-          href="/dashboard/properties?status=active"
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-            statusFilter === 'active'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Active ({activeCount})
-        </Link>
-        <Link
-          href="/dashboard/properties?status=pending"
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-            statusFilter === 'pending'
-              ? 'bg-amber-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Pending ({pendingCount})
-        </Link>
-        <Link
-          href="/dashboard/properties?status=sold"
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-            statusFilter === 'sold'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Sold ({soldCount})
-        </Link>
+      {/* Filters */}
+      <div className="bg-white rounded-xl border p-4 mb-6">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by address, city, or MLS#..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            />
+          </div>
+          
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border rounded-lg"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="sold">Sold</option>
+            <option value="off-market">Off Market</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 border rounded-lg"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="price-low">Price: Low to High</option>
+          </select>
+
+          <div className="flex border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+            >
+              <Grid size={20} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+            >
+              <List size={20} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Properties Grid */}
-      {allProperties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allProperties.map((property) => {
-            const agent = teamProfiles[property.listing_agent_id]
-            const isMyListing = property.listing_agent_id === user.id
-            
-            return (
-              <div
-                key={property.id}
-                className="bg-white rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 group"
-              >
-                {/* Image */}
-                <div className="relative aspect-[4/3] bg-gray-100">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                      <Home className="w-12 h-12 text-gray-300" />
-                    </div>
-                  )}
-                  
-                  {/* Status Badge */}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      property.status === 'active' ? 'bg-emerald-500 text-white' :
-                      property.status === 'pending' ? 'bg-amber-500 text-white' :
-                      property.status === 'sold' ? 'bg-blue-500 text-white' :
-                      'bg-gray-500 text-white'
-                    }`}>
-                      {property.status?.charAt(0).toUpperCase() + property.status?.slice(1)}
-                    </span>
-                    {property.featured && (
-                      <span className="px-2.5 py-1 bg-amber-400 text-amber-900 rounded-full text-xs font-semibold">
-                        Featured
-                      </span>
-                    )}
-                  </div>
-
-                  {/* My Listing Badge */}
-                  {isMyListing && (
-                    <div className="absolute top-3 right-3">
-                      <span className="px-2.5 py-1 bg-blue-600 text-white rounded-full text-xs font-semibold">
-                        My Listing
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Quick Actions */}
-                  <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <Link
-                      href={`/properties/${property.id}`}
-                      className="p-2 bg-white rounded-lg shadow hover:bg-gray-100 transition"
-                      title="View Property"
-                    >
-                      <Eye className="w-4 h-4 text-gray-600" />
-                    </Link>
-                    <Link
-                      href={`/dashboard/properties/${property.id}/edit`}
-                      className="p-2 bg-white rounded-lg shadow hover:bg-gray-100 transition"
-                      title="Edit Property"
-                    >
-                      <Edit className="w-4 h-4 text-gray-600" />
-                    </Link>
-                  </div>
+      {/* Properties Grid/List */}
+      {viewMode === 'grid' ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProperties.map(property => (
+            <div key={property.id} className="bg-white rounded-xl border overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Image */}
+              <div className="relative h-48 bg-gray-200">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ImageIcon className="text-gray-400" size={48} />
                 </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Link href={`/properties/${property.id}`} className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition line-clamp-1">
-                        {property.title}
-                      </h3>
-                    </Link>
-                    <p className="text-lg font-bold text-emerald-600 whitespace-nowrap">
-                      {formatPrice(property.price)}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="truncate">{property.address || `${property.city}, ${property.state}`}</span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                    {property.bedrooms && (
-                      <span>{property.bedrooms} bed</span>
-                    )}
-                    {property.bathrooms && (
-                      <span>{property.bathrooms} bath</span>
-                    )}
-                    {property.square_feet && (
-                      <span>{property.square_feet.toLocaleString()} sqft</span>
-                    )}
-                  </div>
-
-                  {/* Agent Info */}
-                  {agent && (
-                    <div className="pt-3 border-t flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-medium">
-                        {agent.first_name?.[0]}{agent.last_name?.[0]}
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {agent.first_name} {agent.last_name}
-                        {isMyListing && <span className="text-blue-600 ml-1">(You)</span>}
-                      </span>
-                    </div>
-                  )}
+                <div className="absolute top-3 left-3">
+                  {getStatusBadge(property.status)}
+                </div>
+                <div className="absolute top-3 right-3 flex gap-1">
+                  <button className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100">
+                    <Heart size={16} />
+                  </button>
+                  <button className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100">
+                    <Share2 size={16} />
+                  </button>
+                </div>
+                <div className="absolute bottom-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                  {property.daysOnMarket} days on market
                 </div>
               </div>
-            )
-          })}
+
+              {/* Content */}
+              <div className="p-4">
+                <p className="text-2xl font-bold text-green-600">${property.price.toLocaleString()}</p>
+                <p className="font-semibold mt-1">{property.address}</p>
+                <p className="text-sm text-gray-500">{property.city}, {property.state} {property.zip}</p>
+                
+                <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <Bed size={16} /> {property.beds}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Bath size={16} /> {property.baths}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Square size={16} /> {property.sqft.toLocaleString()}
+                  </span>
+                </div>
+
+                {property.mls && (
+                  <p className="text-xs text-gray-400 mt-2">{property.mls}</p>
+                )}
+
+                <div className="flex gap-2 mt-4 pt-4 border-t">
+                  <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm flex items-center justify-center gap-1">
+                    <Eye size={16} /> View
+                  </button>
+                  <button className="px-3 py-2 border rounded-lg hover:bg-gray-50">
+                    <Edit2 size={16} />
+                  </button>
+                  <button className="px-3 py-2 border rounded-lg hover:bg-gray-50 text-red-500">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {statusFilter && statusFilter !== 'all' 
-              ? `No ${statusFilter} Properties`
-              : 'No Properties Yet'
-            }
-          </h3>
-          <p className="text-gray-500 mb-6">
-            {statusFilter && statusFilter !== 'all'
-              ? `There are no ${statusFilter} listings.`
-              : 'Add your first listing to get started.'
-            }
-          </p>
-          {(!statusFilter || statusFilter === 'all') ? (
-            <Link
-              href="/dashboard/properties/new"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Listing
-            </Link>
-          ) : (
-            <Link
-              href="/dashboard/properties"
-              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-            >
-              View All Properties
-            </Link>
-          )}
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-4 font-medium">Property</th>
+                <th className="text-left py-3 px-4 font-medium">Price</th>
+                <th className="text-left py-3 px-4 font-medium">Details</th>
+                <th className="text-left py-3 px-4 font-medium">Status</th>
+                <th className="text-left py-3 px-4 font-medium">DOM</th>
+                <th className="text-left py-3 px-4 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filteredProperties.map(property => (
+                <tr key={property.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    <p className="font-medium">{property.address}</p>
+                    <p className="text-sm text-gray-500">{property.city}, {property.state}</p>
+                  </td>
+                  <td className="py-3 px-4 font-semibold text-green-600">
+                    ${property.price.toLocaleString()}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {property.beds}bd / {property.baths}ba / {property.sqft.toLocaleString()} sqft
+                  </td>
+                  <td className="py-3 px-4">{getStatusBadge(property.status)}</td>
+                  <td className="py-3 px-4 text-sm">{property.daysOnMarket} days</td>
+                  <td className="py-3 px-4">
+                    <div className="flex gap-1">
+                      <button className="p-1.5 hover:bg-gray-100 rounded"><Eye size={16} /></button>
+                      <button className="p-1.5 hover:bg-gray-100 rounded"><Edit2 size={16} /></button>
+                      <button className="p-1.5 hover:bg-gray-100 rounded text-red-500"><Trash2 size={16} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {filteredProperties.length === 0 && (
+        <div className="bg-gray-50 rounded-xl p-12 text-center">
+          <Home className="mx-auto mb-4 text-gray-400" size={48} />
+          <h3 className="text-lg font-semibold text-gray-700">No properties found</h3>
+          <p className="text-gray-500">Try adjusting your search or filters</p>
         </div>
       )}
     </div>
