@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import dynamic from 'next/dynamic'
+import dynamicImport from 'next/dynamic'
 import {
   MapPin, School, ShoppingBag, Coffee, Utensils, Hospital, 
   Building2, Trees, Bus, Train, Car, Bike, Footprints,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 // Dynamic import for map (SSR issues)
-const PropertyMap = dynamic(() => import('@/components/maps/PropertyMap'), { 
+const PropertyMap = dynamicImport(() => import('@/components/maps/PropertyMap'), { 
   ssr: false,
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-xl" />
 })
