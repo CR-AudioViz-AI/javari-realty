@@ -62,7 +62,10 @@ const TEMPLATES = {
       "Another successful closing! 🔑\n\nI'm thrilled to have helped my clients find their dream home in {city}.\n\nThe current market presents unique opportunities for both buyers and sellers. If you're considering a move, I'd be happy to discuss your options.\n\n#RealEstate #JustSold #ClientSuccess",
     ]
   }
-}
+} as const
+
+type Platform = keyof typeof TEMPLATES
+type PlatformTemplates = typeof TEMPLATES[Platform]
 
 const HOME_BUYING_TIPS = [
   "Get pre-approved BEFORE you start house hunting. It shows sellers you're serious and helps you know your budget!",
@@ -75,7 +78,7 @@ const HOME_BUYING_TIPS = [
 ]
 
 export default function SocialMediaGeneratorPage() {
-  const [platform, setPlatform] = useState<'instagram' | 'facebook' | 'twitter' | 'linkedin'>('instagram')
+  const [platform, setPlatform] = useState<Platform>('instagram')
   const [contentType, setContentType] = useState('newListing')
   const [property, setProperty] = useState<PropertyData>({
     address: '2850 Winkler Ave, Fort Myers, FL',
@@ -97,7 +100,10 @@ export default function SocialMediaGeneratorPage() {
   }
 
   const generateContent = () => {
-    const templates = TEMPLATES[platform]?.[contentType as keyof typeof templates]
+    // Fixed: Proper typing without circular reference
+    const platformTemplates = TEMPLATES[platform] as Record<string, string[]>
+    const templates = platformTemplates?.[contentType]
+    
     if (!templates || templates.length === 0) {
       setGeneratedContent('No template available for this combination.')
       return
@@ -139,7 +145,7 @@ export default function SocialMediaGeneratorPage() {
     { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'from-blue-700 to-blue-800' },
   ]
 
-  const CONTENT_TYPES: Record<string, {id: string, name: string, icon: any}[]> = {
+  const CONTENT_TYPES: Record<string, {id: string, name: string, icon: React.ComponentType<{ size?: number }>}[]> = {
     instagram: [
       { id: 'newListing', name: 'New Listing', icon: Home },
       { id: 'openHouse', name: 'Open House', icon: Calendar },
@@ -182,7 +188,7 @@ export default function SocialMediaGeneratorPage() {
                 <button
                   key={p.id}
                   onClick={() => {
-                    setPlatform(p.id as any)
+                    setPlatform(p.id as Platform)
                     setContentType(CONTENT_TYPES[p.id][0].id)
                   }}
                   className={`p-4 rounded-xl border-2 transition-all ${
@@ -347,7 +353,7 @@ export default function SocialMediaGeneratorPage() {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <Share2 className="mx-auto mb-4" size={48} />
-                <p>Fill in the details and click "Generate Content"</p>
+                <p>Fill in the details and click &quot;Generate Content&quot;</p>
               </div>
             )}
 
