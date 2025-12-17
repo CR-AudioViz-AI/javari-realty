@@ -1,5 +1,8 @@
 'use client'
 
+// Force dynamic rendering - uses useSearchParams
+export const dynamic = 'force-dynamic'
+
 // =====================================================
 // CR REALTOR PLATFORM - EMAIL SETTINGS PAGE
 // Path: app/dashboard/settings/email/page.tsx
