@@ -4,6 +4,8 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Allow useSearchParams() in client components without Suspense boundary
+    missingSuspenseWithCSRBailout: false,
   },
   images: {
     domains: ['kteobfyferrukqeolofj.supabase.co'],
