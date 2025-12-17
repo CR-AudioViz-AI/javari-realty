@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import {
-  Share2, Image, Copy, Check, Download, RefreshCw,
+  Share2, Copy, Check, RefreshCw,
   Instagram, Facebook, Twitter, Linkedin, Home, DollarSign,
-  MapPin, Bed, Bath, Square, Calendar, Sparkles, Wand2,
-  Hash, AtSign, FileText, Eye, Clock, TrendingUp
+  Calendar, Sparkles, Wand2,
+  Hash, FileText, Eye, Clock, TrendingUp
 } from 'lucide-react'
 
 interface PropertyData {
@@ -19,7 +19,8 @@ interface PropertyData {
   status: string
 }
 
-const TEMPLATES = {
+// Type-safe templates without as const
+const TEMPLATES: Record<string, Record<string, string[]>> = {
   instagram: {
     newListing: [
       "✨ Just Listed! ✨\n\n📍 {address}\n💰 ${price}\n🛏️ {beds} Beds | 🛁 {baths} Baths | 📐 {sqft} sq ft\n\n{features}\n\nSchedule your private showing today! 🏠\n\n#JustListed #RealEstate #NewListing #HomeForSale #{city}Homes #DreamHome #HouseHunting",
@@ -62,10 +63,7 @@ const TEMPLATES = {
       "Another successful closing! 🔑\n\nI'm thrilled to have helped my clients find their dream home in {city}.\n\nThe current market presents unique opportunities for both buyers and sellers. If you're considering a move, I'd be happy to discuss your options.\n\n#RealEstate #JustSold #ClientSuccess",
     ]
   }
-} as const
-
-type Platform = keyof typeof TEMPLATES
-type PlatformTemplates = typeof TEMPLATES[Platform]
+}
 
 const HOME_BUYING_TIPS = [
   "Get pre-approved BEFORE you start house hunting. It shows sellers you're serious and helps you know your budget!",
@@ -77,8 +75,10 @@ const HOME_BUYING_TIPS = [
   "Don't make big purchases (car, furniture) before closing. It can affect your loan approval!",
 ]
 
+type PlatformKey = 'instagram' | 'facebook' | 'twitter' | 'linkedin'
+
 export default function SocialMediaGeneratorPage() {
-  const [platform, setPlatform] = useState<Platform>('instagram')
+  const [platform, setPlatform] = useState<PlatformKey>('instagram')
   const [contentType, setContentType] = useState('newListing')
   const [property, setProperty] = useState<PropertyData>({
     address: '2850 Winkler Ave, Fort Myers, FL',
@@ -100,8 +100,7 @@ export default function SocialMediaGeneratorPage() {
   }
 
   const generateContent = () => {
-    // Fixed: Proper typing without circular reference
-    const platformTemplates = TEMPLATES[platform] as Record<string, string[]>
+    const platformTemplates = TEMPLATES[platform]
     const templates = platformTemplates?.[contentType]
     
     if (!templates || templates.length === 0) {
@@ -112,7 +111,7 @@ export default function SocialMediaGeneratorPage() {
     const template = templates[Math.floor(Math.random() * templates.length)]
     const city = getCity(property.address)
     
-    let content = template
+    const content = template
       .replace(/{address}/g, property.address)
       .replace(/{price}/g, property.price.toLocaleString())
       .replace(/{beds}/g, property.beds.toString())
@@ -139,13 +138,13 @@ export default function SocialMediaGeneratorPage() {
   }
 
   const PLATFORM_OPTIONS = [
-    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'from-pink-500 to-purple-600' },
-    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'from-blue-600 to-blue-700' },
-    { id: 'twitter', name: 'X / Twitter', icon: Twitter, color: 'from-gray-800 to-black' },
-    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'from-blue-700 to-blue-800' },
+    { id: 'instagram' as PlatformKey, name: 'Instagram', icon: Instagram, color: 'from-pink-500 to-purple-600' },
+    { id: 'facebook' as PlatformKey, name: 'Facebook', icon: Facebook, color: 'from-blue-600 to-blue-700' },
+    { id: 'twitter' as PlatformKey, name: 'X / Twitter', icon: Twitter, color: 'from-gray-800 to-black' },
+    { id: 'linkedin' as PlatformKey, name: 'LinkedIn', icon: Linkedin, color: 'from-blue-700 to-blue-800' },
   ]
 
-  const CONTENT_TYPES: Record<string, {id: string, name: string, icon: React.ComponentType<{ size?: number }>}[]> = {
+  const CONTENT_TYPES: Record<PlatformKey, {id: string, name: string, icon: React.ComponentType<{ size?: number }>}[]> = {
     instagram: [
       { id: 'newListing', name: 'New Listing', icon: Home },
       { id: 'openHouse', name: 'Open House', icon: Calendar },
@@ -188,7 +187,7 @@ export default function SocialMediaGeneratorPage() {
                 <button
                   key={p.id}
                   onClick={() => {
-                    setPlatform(p.id as Platform)
+                    setPlatform(p.id)
                     setContentType(CONTENT_TYPES[p.id][0].id)
                   }}
                   className={`p-4 rounded-xl border-2 transition-all ${
