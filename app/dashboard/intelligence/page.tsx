@@ -1,9 +1,6 @@
 'use client'
 
-// Force dynamic rendering - uses useSearchParams
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import dynamicImport from 'next/dynamic'
 import {
@@ -60,7 +57,8 @@ interface WalkScore {
   transit: number
 }
 
-export default function PropertyIntelligencePage() {
+
+function PropertyIntelligenceContent() {
   const searchParams = useSearchParams()
   const propertyId = searchParams.get('id')
   const [address, setAddress] = useState(searchParams.get('address') || '2850 Winkler Ave, Fort Myers, FL')
@@ -678,5 +676,28 @@ export default function PropertyIntelligencePage() {
         </>
       )}
     </div>
+  )
+}
+
+// Loading fallback component
+function IntelligenceLoading() {
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 text-blue-600" size={48} />
+          <p className="text-gray-600">Loading property intelligence...</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function PropertyIntelligencePage() {
+  return (
+    <Suspense fallback={<IntelligenceLoading />}>
+      <PropertyIntelligenceContent />
+    </Suspense>
   )
 }
