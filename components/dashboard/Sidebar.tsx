@@ -62,6 +62,7 @@ const navigation: NavItem[] = [
     href: '/dashboard/tools',
     icon: Briefcase,
     children: [
+      { name: 'Mortgage Tools', href: '/dashboard/mortgage', icon: Building2, badge: 'NEW' },
       { name: 'Net Sheet', href: '/dashboard/calculators/net-sheet', icon: Calculator },
       { name: 'Compare Properties', href: '/dashboard/compare', icon: Scale },
     ]
