@@ -5,7 +5,8 @@ import {
   Share2, Copy, Check, RefreshCw,
   Instagram, Facebook, Twitter, Linkedin, Home, DollarSign,
   Calendar, Sparkles, Wand2,
-  Hash, FileText, Eye, Clock, TrendingUp
+  Hash, FileText, Eye, Clock, TrendingUp,
+  LucideIcon
 } from 'lucide-react'
 
 interface PropertyData {
@@ -19,7 +20,7 @@ interface PropertyData {
   status: string
 }
 
-// Type-safe templates without as const
+// Type-safe templates
 const TEMPLATES: Record<string, Record<string, string[]>> = {
   instagram: {
     newListing: [
@@ -76,6 +77,12 @@ const HOME_BUYING_TIPS = [
 ]
 
 type PlatformKey = 'instagram' | 'facebook' | 'twitter' | 'linkedin'
+
+interface ContentTypeItem {
+  id: string
+  name: string
+  icon: LucideIcon
+}
 
 export default function SocialMediaGeneratorPage() {
   const [platform, setPlatform] = useState<PlatformKey>('instagram')
@@ -144,7 +151,7 @@ export default function SocialMediaGeneratorPage() {
     { id: 'linkedin' as PlatformKey, name: 'LinkedIn', icon: Linkedin, color: 'from-blue-700 to-blue-800' },
   ]
 
-  const CONTENT_TYPES: Record<PlatformKey, {id: string, name: string, icon: React.ComponentType<{ size?: number }>}[]> = {
+  const CONTENT_TYPES: Record<PlatformKey, ContentTypeItem[]> = {
     instagram: [
       { id: 'newListing', name: 'New Listing', icon: Home },
       { id: 'openHouse', name: 'Open House', icon: Calendar },
@@ -207,20 +214,23 @@ export default function SocialMediaGeneratorPage() {
           <div className="bg-white rounded-xl border p-6">
             <h2 className="font-bold mb-4">2. Content Type</h2>
             <div className="flex flex-wrap gap-2">
-              {CONTENT_TYPES[platform]?.map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => setContentType(type.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                    contentType === type.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  }`}
-                >
-                  <type.icon size={16} />
-                  {type.name}
-                </button>
-              ))}
+              {CONTENT_TYPES[platform]?.map(type => {
+                const Icon = type.icon
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => setContentType(type.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                      contentType === type.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {type.name}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
