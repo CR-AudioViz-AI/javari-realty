@@ -1,15 +1,12 @@
 'use client'
 
-// Force dynamic rendering - uses useSearchParams
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
   CreditCard, Check, Shield, ArrowLeft, Zap, Lock,
-  GraduationCap, Target, Building2, Share2, Bot, Sparkles
+  GraduationCap, Target, Building2, Share2, Bot, Sparkles, Loader2
 } from 'lucide-react'
 
 const ADDONS = {
@@ -110,7 +107,7 @@ const ADDONS = {
   },
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -287,5 +284,26 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading fallback component
+function CheckoutLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="animate-spin mx-auto mb-4 text-blue-600" size={48} />
+        <p className="text-gray-600">Loading checkout...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <CheckoutContent />
+    </Suspense>
   )
 }
