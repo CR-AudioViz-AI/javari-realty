@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import {
   Home, Plus, Search, Filter, Grid, List, MapPin, Bed, Bath,
   Square, DollarSign, Eye, Edit2, Trash2, MoreVertical, Heart,
@@ -41,7 +41,7 @@ export default function PropertiesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   useEffect(() => {
     async function fetchProperties() {
