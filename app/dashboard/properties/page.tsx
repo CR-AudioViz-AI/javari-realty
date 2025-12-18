@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -41,46 +41,46 @@ export default function PropertiesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  const supabase = createClient()
+  const fetchProperties = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const supabase = createClient()
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        setError('Please log in to view your properties')
+        setLoading(false)
+        return
+      }
+
+      // Fetch properties for this agent
+      const { data, error: fetchError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('agent_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) {
+        console.error('Error fetching properties:', fetchError)
+        setError('Failed to load properties')
+      } else {
+        setProperties(data || [])
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    async function fetchProperties() {
-      setLoading(true)
-      setError(null)
-      
-      try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
-        
-        if (!user) {
-          setError('Please log in to view your properties')
-          setLoading(false)
-          return
-        }
-
-        // Fetch properties for this agent
-        const { data, error: fetchError } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('agent_id', user.id)
-          .order('created_at', { ascending: false })
-
-        if (fetchError) {
-          console.error('Error fetching properties:', fetchError)
-          setError('Failed to load properties')
-        } else {
-          setProperties(data || [])
-        }
-      } catch (err) {
-        console.error('Unexpected error:', err)
-        setError('An unexpected error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchProperties()
-  }, [supabase])
+  }, [fetchProperties])
 
   // Calculate days on market
   const getDaysOnMarket = (listedDate: string | null, createdAt: string) => {
@@ -137,7 +137,7 @@ export default function PropertiesPage() {
           </div>
           <p className="text-red-600 mb-4">{error}</p>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => fetchProperties()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Try Again
