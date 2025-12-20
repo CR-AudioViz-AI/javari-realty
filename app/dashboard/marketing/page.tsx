@@ -3,309 +3,276 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  Mail, Send, FileText, Image, BarChart3, Users, Calendar,
-  Plus, Search, Filter, Eye, Edit, Trash2, CheckCircle,
-  Clock, TrendingUp, Share2, Facebook, Instagram, Linkedin
+  Mail, MessageSquare, Facebook, Instagram, Megaphone,
+  BarChart3, Send, Clock, CheckCircle, AlertCircle,
+  Plus, TrendingUp, Users, Eye, MousePointer, DollarSign
 } from 'lucide-react'
 
 const CAMPAIGNS = [
   {
-    id: 1,
+    id: '1',
     name: 'New Listing Alert - Naples Luxury',
-    type: 'Email',
-    status: 'Active',
+    type: 'email',
+    status: 'active',
     sent: 1250,
-    opened: 423,
-    clicked: 89,
+    opened: 485,
+    clicked: 127,
+    leads: 8,
     date: '2024-12-18'
   },
   {
-    id: 2,
+    id: '2',
     name: 'Cape Coral Gulf Access Homes',
-    type: 'Email',
-    status: 'Scheduled',
-    sent: 0,
-    opened: 0,
-    clicked: 0,
-    date: '2024-12-22'
-  },
-  {
-    id: 3,
-    name: 'Holiday Market Update',
-    type: 'Newsletter',
-    status: 'Draft',
-    sent: 0,
-    opened: 0,
-    clicked: 0,
-    date: null
-  },
-  {
-    id: 4,
-    name: 'First-Time Buyer Webinar',
-    type: 'Email',
-    status: 'Completed',
+    type: 'email',
+    status: 'active',
     sent: 890,
     opened: 312,
-    clicked: 67,
+    clicked: 89,
+    leads: 5,
+    date: '2024-12-15'
+  },
+  {
+    id: '3',
+    name: 'Holiday Home Buying Tips',
+    type: 'social',
+    status: 'completed',
+    sent: 0,
+    opened: 0,
+    clicked: 0,
+    leads: 12,
+    reach: 4500,
+    engagement: 234,
     date: '2024-12-10'
+  },
+  {
+    id: '4',
+    name: 'First-Time Buyer Webinar',
+    type: 'email',
+    status: 'scheduled',
+    sent: 0,
+    opened: 0,
+    clicked: 0,
+    leads: 0,
+    scheduledFor: '2024-12-22',
+    date: '2024-12-19'
   }
 ]
 
-const TEMPLATES = [
-  { id: 1, name: 'New Listing', category: 'Property', uses: 45 },
-  { id: 2, name: 'Just Sold', category: 'Property', uses: 32 },
-  { id: 3, name: 'Open House Invite', category: 'Event', uses: 28 },
-  { id: 4, name: 'Market Report', category: 'Newsletter', uses: 12 },
-  { id: 5, name: 'Price Reduction', category: 'Property', uses: 19 },
-  { id: 6, name: 'Holiday Greeting', category: 'Seasonal', uses: 8 }
+const QUICK_STATS = [
+  { label: 'Email Subscribers', value: '3,247', change: '+124 this month', icon: Mail, color: 'text-blue-600' },
+  { label: 'Social Followers', value: '8,912', change: '+287 this month', icon: Users, color: 'text-purple-600' },
+  { label: 'Avg Open Rate', value: '38.7%', change: '+2.3% vs last month', icon: Eye, color: 'text-green-600' },
+  { label: 'Leads Generated', value: '47', change: 'This month', icon: TrendingUp, color: 'text-orange-600' }
 ]
 
-const SOCIAL_POSTS = [
-  { id: 1, platform: 'Facebook', content: 'Just listed! Beautiful 4BR in Naples...', scheduled: '2024-12-20 10:00 AM', status: 'Scheduled' },
-  { id: 2, platform: 'Instagram', content: 'Gulf access dream home in Cape Coral 🌴', scheduled: '2024-12-20 2:00 PM', status: 'Scheduled' },
-  { id: 3, platform: 'LinkedIn', content: 'SW Florida market update for December...', scheduled: '2024-12-21 9:00 AM', status: 'Draft' }
+const TEMPLATES = [
+  { id: '1', name: 'New Listing Announcement', type: 'email', uses: 45 },
+  { id: '2', name: 'Open House Invitation', type: 'email', uses: 32 },
+  { id: '3', name: 'Market Update', type: 'email', uses: 28 },
+  { id: '4', name: 'Just Sold!', type: 'social', uses: 56 },
+  { id: '5', name: 'Price Reduction Alert', type: 'email', uses: 19 }
 ]
 
 export default function MarketingPage() {
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'social'>('campaigns')
-
-  const openRate = Math.round((CAMPAIGNS.filter(c => c.sent > 0).reduce((a, b) => a + b.opened, 0) / CAMPAIGNS.filter(c => c.sent > 0).reduce((a, b) => a + b.sent, 0)) * 100)
-  const clickRate = Math.round((CAMPAIGNS.filter(c => c.opened > 0).reduce((a, b) => a + b.clicked, 0) / CAMPAIGNS.filter(c => c.opened > 0).reduce((a, b) => a + b.opened, 0)) * 100)
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'analytics'>('campaigns')
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b px-6 py-4">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Marketing Hub</h1>
-            <p className="text-gray-500">Manage campaigns, templates, and social media</p>
+            <p className="text-gray-500">Manage campaigns, templates, and track performance</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus className="w-5 h-5" />
-            New Campaign
-          </button>
+          <div className="flex items-center gap-4">
+            <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
+              <BarChart3 className="w-5 h-5" />
+              Reports
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <Plus className="w-5 h-5" />
+              New Campaign
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Mail className="w-5 h-5 text-blue-600" />
+      {/* Quick Stats */}
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {QUICK_STATS.map((stat, i) => (
+            <div key={i} className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 bg-gray-50 rounded-lg`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
               </div>
-              <span className="text-gray-500">Total Sent</span>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
+              <div className="text-gray-500 text-sm">{stat.label}</div>
+              <div className="text-green-600 text-sm mt-1">{stat.change}</div>
             </div>
-            <div className="text-3xl font-bold">2,140</div>
-            <div className="text-sm text-green-600">+12% vs last month</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Eye className="w-5 h-5 text-green-600" />
-              </div>
-              <span className="text-gray-500">Open Rate</span>
-            </div>
-            <div className="text-3xl font-bold">{openRate}%</div>
-            <div className="text-sm text-green-600">Above industry avg</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
-              </div>
-              <span className="text-gray-500">Click Rate</span>
-            </div>
-            <div className="text-3xl font-bold">{clickRate}%</div>
-            <div className="text-sm text-gray-500">Industry avg: 2.5%</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Users className="w-5 h-5 text-orange-600" />
-              </div>
-              <span className="text-gray-500">Subscribers</span>
-            </div>
-            <div className="text-3xl font-bold">1,847</div>
-            <div className="text-sm text-green-600">+89 this month</div>
-          </div>
+          ))}
         </div>
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab('campaigns')}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'campaigns' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
-          >
-            <Mail className="w-4 h-4 inline mr-2" />
-            Campaigns
-          </button>
-          <button
-            onClick={() => setActiveTab('templates')}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'templates' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
-          >
-            <FileText className="w-4 h-4 inline mr-2" />
-            Templates
-          </button>
-          <button
-            onClick={() => setActiveTab('social')}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'social' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
-          >
-            <Share2 className="w-4 h-4 inline mr-2" />
-            Social Media
-          </button>
+          {[
+            { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
+            { id: 'templates', label: 'Templates', icon: Mail },
+            { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <tab.icon className="w-5 h-5" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Campaigns Tab */}
         {activeTab === 'campaigns' && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Campaign</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Type</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Status</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Sent</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Opened</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Clicked</th>
-                  <th className="text-left px-6 py-4 font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {CAMPAIGNS.map((campaign) => (
-                  <tr key={campaign.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium">{campaign.name}</td>
-                    <td className="px-6 py-4 text-gray-500">{campaign.type}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        campaign.status === 'Active' ? 'bg-green-100 text-green-700' :
-                        campaign.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' :
-                        campaign.status === 'Completed' ? 'bg-gray-100 text-gray-700' :
-                        'bg-yellow-100 text-yellow-700'
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b">
+              <h2 className="text-lg font-semibold">Recent Campaigns</h2>
+            </div>
+            <div className="divide-y">
+              {CAMPAIGNS.map(campaign => (
+                <div key={campaign.id} className="p-6 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-lg ${
+                        campaign.type === 'email' ? 'bg-blue-50' : 'bg-purple-50'
                       }`}>
-                        {campaign.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">{campaign.sent.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-gray-500">{campaign.opened.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-gray-500">{campaign.clicked.toLocaleString()}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button className="p-1 hover:bg-gray-100 rounded">
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        </button>
-                        <button className="p-1 hover:bg-gray-100 rounded">
-                          <Edit className="w-4 h-4 text-gray-400" />
-                        </button>
+                        {campaign.type === 'email' ? (
+                          <Mail className={`w-6 h-6 ${campaign.type === 'email' ? 'text-blue-600' : 'text-purple-600'}`} />
+                        ) : (
+                          <Facebook className="w-6 h-6 text-purple-600" />
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div>
+                        <h3 className="font-medium text-lg">{campaign.name}</h3>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                          <span className={`flex items-center gap-1 ${
+                            campaign.status === 'active' ? 'text-green-600' :
+                            campaign.status === 'scheduled' ? 'text-yellow-600' :
+                            'text-gray-500'
+                          }`}>
+                            {campaign.status === 'active' && <CheckCircle className="w-4 h-4" />}
+                            {campaign.status === 'scheduled' && <Clock className="w-4 h-4" />}
+                            {campaign.status === 'completed' && <CheckCircle className="w-4 h-4" />}
+                            {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                          </span>
+                          <span>{campaign.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-8 text-center">
+                      {campaign.type === 'email' ? (
+                        <>
+                          <div>
+                            <div className="text-xl font-semibold">{campaign.sent.toLocaleString()}</div>
+                            <div className="text-sm text-gray-500">Sent</div>
+                          </div>
+                          <div>
+                            <div className="text-xl font-semibold">{campaign.opened}</div>
+                            <div className="text-sm text-gray-500">Opened</div>
+                          </div>
+                          <div>
+                            <div className="text-xl font-semibold">{campaign.clicked}</div>
+                            <div className="text-sm text-gray-500">Clicked</div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <div className="text-xl font-semibold">{campaign.reach?.toLocaleString()}</div>
+                            <div className="text-sm text-gray-500">Reach</div>
+                          </div>
+                          <div>
+                            <div className="text-xl font-semibold">{campaign.engagement}</div>
+                            <div className="text-sm text-gray-500">Engagement</div>
+                          </div>
+                        </>
+                      )}
+                      <div>
+                        <div className="text-xl font-semibold text-green-600">{campaign.leads}</div>
+                        <div className="text-sm text-gray-500">Leads</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Templates Tab */}
         {activeTab === 'templates' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TEMPLATES.map((template) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TEMPLATES.map(template => (
               <div key={template.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <FileText className="w-6 h-6 text-blue-600" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`p-2 rounded-lg ${template.type === 'email' ? 'bg-blue-50' : 'bg-purple-50'}`}>
+                    {template.type === 'email' ? (
+                      <Mail className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <Instagram className="w-5 h-5 text-purple-600" />
+                    )}
                   </div>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                    {template.category}
-                  </span>
+                  <span className="text-sm text-gray-500 capitalize">{template.type}</span>
                 </div>
-                <h3 className="font-semibold mb-1">{template.name}</h3>
-                <p className="text-sm text-gray-500 mb-4">Used {template.uses} times</p>
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2 border rounded-lg hover:bg-gray-50 text-sm">
-                    Preview
-                  </button>
-                  <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                <h3 className="font-semibold mb-2">{template.name}</h3>
+                <p className="text-sm text-gray-500">Used {template.uses} times</p>
+                <div className="mt-4 flex gap-2">
+                  <button className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100">
                     Use Template
+                  </button>
+                  <button className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50">
+                    Edit
                   </button>
                 </div>
               </div>
             ))}
-            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer hover:border-gray-300">
-              <Plus className="w-8 h-8 mb-2" />
-              <span>Create Template</span>
+            <div className="bg-gray-100 rounded-xl p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center hover:border-blue-400 cursor-pointer">
+              <Plus className="w-8 h-8 text-gray-400 mb-2" />
+              <span className="text-gray-600 font-medium">Create Template</span>
             </div>
           </div>
         )}
 
-        {/* Social Media Tab */}
-        {activeTab === 'social' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <Facebook className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <div className="font-semibold">Facebook</div>
-                    <div className="text-sm text-gray-500">2,450 followers</div>
-                  </div>
-                </div>
-                <button className="w-full py-2 border rounded-lg hover:bg-gray-50">
-                  Schedule Post
-                </button>
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-semibold mb-6">Campaign Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600">2,140</div>
+                <div className="text-gray-600">Total Emails Sent</div>
+                <div className="text-sm text-green-600 mt-1">+15% vs last month</div>
               </div>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <Instagram className="w-8 h-8 text-pink-600" />
-                  <div>
-                    <div className="font-semibold">Instagram</div>
-                    <div className="text-sm text-gray-500">1,890 followers</div>
-                  </div>
-                </div>
-                <button className="w-full py-2 border rounded-lg hover:bg-gray-50">
-                  Schedule Post
-                </button>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="text-3xl font-bold text-green-600">38.7%</div>
+                <div className="text-gray-600">Average Open Rate</div>
+                <div className="text-sm text-green-600 mt-1">Industry avg: 21%</div>
               </div>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <Linkedin className="w-8 h-8 text-blue-700" />
-                  <div>
-                    <div className="font-semibold">LinkedIn</div>
-                    <div className="text-sm text-gray-500">560 connections</div>
-                  </div>
-                </div>
-                <button className="w-full py-2 border rounded-lg hover:bg-gray-50">
-                  Schedule Post
-                </button>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="text-3xl font-bold text-purple-600">$12,450</div>
+                <div className="text-gray-600">Est. Commission from Leads</div>
+                <div className="text-sm text-gray-500 mt-1">Based on 25 qualified leads</div>
               </div>
             </div>
-
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="p-6 border-b">
-                <h3 className="font-semibold">Scheduled Posts</h3>
-              </div>
-              <div className="divide-y">
-                {SOCIAL_POSTS.map((post) => (
-                  <div key={post.id} className="p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {post.platform === 'Facebook' && <Facebook className="w-6 h-6 text-blue-600" />}
-                      {post.platform === 'Instagram' && <Instagram className="w-6 h-6 text-pink-600" />}
-                      {post.platform === 'LinkedIn' && <Linkedin className="w-6 h-6 text-blue-700" />}
-                      <div>
-                        <div className="font-medium">{post.content}</div>
-                        <div className="text-sm text-gray-500">{post.scheduled}</div>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      post.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {post.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div className="text-center py-12 text-gray-500">
+              <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p>Detailed analytics charts coming soon</p>
+              <p className="text-sm">Connect Google Analytics for advanced insights</p>
             </div>
           </div>
         )}
