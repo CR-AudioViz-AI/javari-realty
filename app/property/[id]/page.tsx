@@ -44,23 +44,22 @@ interface Property {
   }
 }
 
-// Agent info - Tony Harvey's actual information
+// Agent info - Tony Harvey's actual information (photo from Zillow profile)
 const DEFAULT_LISTING_AGENT = {
   name: 'Tony Harvey',
-  brokerage: 'Premiere Plus Realty',
+  brokerage: 'MVP Realty', // Updated per Zillow - was Premiere Plus Realty
   phone: '(239) 777-0155',
   email: 'tonyharvey@listorbuyrealestate.com',
-  // Professional placeholder - TODO: Replace with Tony's actual headshot
-  photo: '/images/agents/tony-harvey.jpg'
+  photo: '/images/agents/tony-harvey.jpg' // Real photo from Zillow profile
 }
 
-// Fallback if no agent photo available - use initials avatar
+// Get agent photo URL with fallback to initials avatar
 const getAgentPhotoUrl = (photo: string, name: string) => {
-  if (photo && !photo.includes('unsplash')) {
+  // Use the provided photo if it exists and is a local path or valid URL
+  if (photo && (photo.startsWith('/') || photo.startsWith('http'))) {
     return photo
   }
-  // Use UI Avatars API for a professional placeholder with initials
-  const initials = name.split(' ').map(n => n[0]).join('')
+  // Fallback to UI Avatars API for initials
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=200&background=1e40af&color=fff&bold=true`
 }
 
