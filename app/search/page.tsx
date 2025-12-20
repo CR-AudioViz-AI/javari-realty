@@ -1,45 +1,42 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Search, MapPin, Bed, Bath, Square, Heart, Grid, List, Map,
-  SlidersHorizontal, ChevronDown, Home, DollarSign, X, Info
+  Search, MapPin, Bed, Bath, Square, Heart, Grid, List,
+  SlidersHorizontal, ChevronDown, Home, DollarSign, X, Info,
+  Loader2, AlertCircle, RefreshCw
 } from 'lucide-react'
 
-// Sample nationwide properties - in production, comes from MLS API
-const ALL_PROPERTIES = [
-  // Florida
-  { id: '1', address: '2850 Winkler Ave', city: 'Fort Myers', state: 'FL', zip: '33916', price: 425000, beds: 4, baths: 3, sqft: 2400, yearBuilt: 2018, status: 'Active', daysOnMarket: 12, photo: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '2', address: '1540 SW 52nd Terrace', city: 'Cape Coral', state: 'FL', zip: '33914', price: 389000, beds: 3, baths: 2, sqft: 1850, yearBuilt: 2015, status: 'Active', daysOnMarket: 8, photo: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '3', address: '8745 Coastline Ct', city: 'Naples', state: 'FL', zip: '34108', price: 1250000, beds: 4, baths: 3.5, sqft: 3200, yearBuilt: 2020, status: 'Active', daysOnMarket: 21, photo: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '4', address: '2100 Gulf Shore Blvd', city: 'Naples', state: 'FL', zip: '34102', price: 2150000, beds: 5, baths: 5.5, sqft: 4500, yearBuilt: 2021, status: 'Active', daysOnMarket: 5, photo: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '5', address: '456 Estero Blvd', city: 'Bonita Springs', state: 'FL', zip: '34134', price: 549000, beds: 4, baths: 3, sqft: 2100, yearBuilt: 2017, status: 'Active', daysOnMarket: 14, photo: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '6', address: '789 Marco Island Dr', city: 'Marco Island', state: 'FL', zip: '34145', price: 895000, beds: 3, baths: 3, sqft: 2000, yearBuilt: 2019, status: 'Pending', daysOnMarket: 45, photo: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop', propertyType: 'Condo' },
-  // California
-  { id: '10', address: '1234 Ocean View Dr', city: 'San Diego', state: 'CA', zip: '92101', price: 1850000, beds: 4, baths: 3, sqft: 2800, yearBuilt: 2019, status: 'Active', daysOnMarket: 15, photo: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '11', address: '456 Sunset Blvd', city: 'Los Angeles', state: 'CA', zip: '90028', price: 2450000, beds: 5, baths: 4, sqft: 3500, yearBuilt: 2021, status: 'Active', daysOnMarket: 7, photo: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '12', address: '789 Marina Way', city: 'San Francisco', state: 'CA', zip: '94105', price: 1650000, beds: 2, baths: 2, sqft: 1400, yearBuilt: 2018, status: 'Active', daysOnMarket: 22, photo: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop', propertyType: 'Condo' },
-  // Texas
-  { id: '20', address: '789 Ranch Road', city: 'Austin', state: 'TX', zip: '78701', price: 625000, beds: 4, baths: 2.5, sqft: 2600, yearBuilt: 2020, status: 'Active', daysOnMarket: 18, photo: 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '21', address: '321 Main St', city: 'Houston', state: 'TX', zip: '77002', price: 485000, beds: 3, baths: 2, sqft: 2100, yearBuilt: 2018, status: 'Active', daysOnMarket: 12, photo: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop', propertyType: 'Townhouse' },
-  { id: '22', address: '555 Oak Lawn Ave', city: 'Dallas', state: 'TX', zip: '75201', price: 725000, beds: 4, baths: 3, sqft: 2800, yearBuilt: 2019, status: 'Active', daysOnMarket: 9, photo: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  // New York
-  { id: '30', address: '100 Park Ave Unit 25A', city: 'New York', state: 'NY', zip: '10017', price: 3200000, beds: 3, baths: 2.5, sqft: 1800, yearBuilt: 2015, status: 'Active', daysOnMarket: 30, photo: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop', propertyType: 'Condo' },
-  // Colorado
-  { id: '40', address: '555 Mountain View Rd', city: 'Denver', state: 'CO', zip: '80202', price: 725000, beds: 4, baths: 3, sqft: 2400, yearBuilt: 2019, status: 'Active', daysOnMarket: 9, photo: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  // Arizona
-  { id: '50', address: '777 Desert Rose Ln', city: 'Phoenix', state: 'AZ', zip: '85001', price: 475000, beds: 4, baths: 2, sqft: 2200, yearBuilt: 2020, status: 'Active', daysOnMarket: 14, photo: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  // Washington
-  { id: '60', address: '888 Rainy St', city: 'Seattle', state: 'WA', zip: '98101', price: 895000, beds: 3, baths: 2.5, sqft: 1900, yearBuilt: 2018, status: 'Active', daysOnMarket: 11, photo: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop', propertyType: 'Townhouse' },
-  // Georgia
-  { id: '70', address: '999 Peachtree Ave', city: 'Atlanta', state: 'GA', zip: '30301', price: 545000, beds: 4, baths: 3, sqft: 2500, yearBuilt: 2017, status: 'Active', daysOnMarket: 16, photo: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  // More Florida
-  { id: '7', address: '123 Lehigh Dr', city: 'Lehigh Acres', state: 'FL', zip: '33936', price: 285000, beds: 3, baths: 2, sqft: 1500, yearBuilt: 2016, status: 'Active', daysOnMarket: 28, photo: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '8', address: '456 Golden Gate Pkwy', city: 'Golden Gate', state: 'FL', zip: '34116', price: 475000, beds: 4, baths: 2, sqft: 2000, yearBuilt: 2018, status: 'Active', daysOnMarket: 19, photo: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-  { id: '9', address: '789 Coconut Rd', city: 'Estero', state: 'FL', zip: '33928', price: 725000, beds: 4, baths: 3, sqft: 2700, yearBuilt: 2019, status: 'Active', daysOnMarket: 10, photo: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop', propertyType: 'Single Family' },
-]
+interface Property {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  price: number
+  beds: number
+  baths: number
+  sqft: number
+  yearBuilt?: number
+  status: string
+  daysOnMarket?: number
+  photos: string[]
+  propertyType: string
+  source: string
+  mlsNumber?: string
+  description?: string
+  lotSize?: string
+  pool?: boolean
+  waterfront?: boolean
+  listingAgent?: {
+    name: string
+    phone?: string
+    email?: string
+    brokerage?: string
+  }
+}
 
 const US_STATES = [
   { code: '', name: 'All States' },
@@ -72,59 +69,122 @@ const PRICE_RANGES = [
   { label: '$2M+', min: 2000000, max: 0 }
 ]
 
+// Fallback placeholder image
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'
+
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedState, setSelectedState] = useState('')
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 })
   const [beds, setBeds] = useState(0)
+  const [baths, setBaths] = useState(0)
   const [propertyType, setPropertyType] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
-  const [showDataNotice, setShowDataNotice] = useState(true)
+  
+  // API state
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [searched, setSearched] = useState(false)
+  const [apiSources, setApiSources] = useState<string[]>([])
+  const [totalResults, setTotalResults] = useState(0)
 
-  // Filter properties
-  const filteredProperties = ALL_PROPERTIES.filter(p => {
-    // Search query (city, state, zip, address)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      const matchesSearch = 
-        p.city.toLowerCase().includes(query) ||
-        p.state.toLowerCase().includes(query) ||
-        p.zip.includes(query) ||
-        p.address.toLowerCase().includes(query)
-      if (!matchesSearch) return false
+  // Parse search query for city/state/zip
+  const parseSearchQuery = (query: string) => {
+    const trimmed = query.trim()
+    
+    // Check if it's a zip code (5 digits)
+    if (/^\d{5}$/.test(trimmed)) {
+      return { zip: trimmed }
     }
     
-    // State filter
-    if (selectedState && p.state !== selectedState) return false
-    
-    // Price filter
-    if (priceRange.min > 0 && p.price < priceRange.min) return false
-    if (priceRange.max > 0 && p.price > priceRange.max) return false
-    
-    // Beds filter
-    if (beds > 0 && p.beds < beds) return false
-    
-    // Property type filter
-    if (propertyType && p.propertyType !== propertyType) return false
-    
-    return true
-  })
-
-  // Sort properties
-  const sortedProperties = [...filteredProperties].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low': return a.price - b.price
-      case 'price-high': return b.price - a.price
-      case 'beds': return b.beds - a.beds
-      case 'sqft': return b.sqft - a.sqft
-      case 'newest': return a.daysOnMarket - b.daysOnMarket
-      default: return 0
+    // Check for "City, State" format
+    const cityStateMatch = trimmed.match(/^([^,]+),\s*([A-Za-z]{2})$/i)
+    if (cityStateMatch) {
+      return { 
+        city: cityStateMatch[1].trim(), 
+        state: cityStateMatch[2].toUpperCase() 
+      }
     }
-  })
+    
+    // Check for just state code
+    const stateCode = US_STATES.find(s => 
+      s.code.toLowerCase() === trimmed.toLowerCase() ||
+      s.name.toLowerCase() === trimmed.toLowerCase()
+    )
+    if (stateCode && stateCode.code) {
+      return { state: stateCode.code }
+    }
+    
+    // Default to city search
+    return { city: trimmed }
+  }
 
+  // Search properties from MLS API
+  const searchProperties = useCallback(async () => {
+    if (!searchQuery.trim() && !selectedState) {
+      setError('Please enter a city, state, or ZIP code to search')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSearched(true)
+
+    try {
+      const params = new URLSearchParams()
+      
+      // Parse the search query
+      const parsed = parseSearchQuery(searchQuery)
+      if (parsed.city) params.append('city', parsed.city)
+      if (parsed.state) params.append('state', parsed.state)
+      if (parsed.zip) params.append('zip', parsed.zip)
+      
+      // Override with selected state if set
+      if (selectedState) params.append('state', selectedState)
+      
+      // Add filters
+      if (priceRange.min > 0) params.append('minPrice', priceRange.min.toString())
+      if (priceRange.max > 0) params.append('maxPrice', priceRange.max.toString())
+      if (beds > 0) params.append('beds', beds.toString())
+      if (baths > 0) params.append('baths', baths.toString())
+      
+      params.append('limit', '50')
+
+      const response = await fetch(`/api/mls/search?${params.toString()}`)
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        setProperties([])
+      } else {
+        setProperties(data.properties || [])
+        setTotalResults(data.total || 0)
+        setApiSources(data.sources?.queried || [])
+        
+        if (data.properties?.length === 0) {
+          setError('No properties found for this location. Try a different search.')
+        }
+      }
+    } catch (err) {
+      console.error('Search error:', err)
+      setError('Failed to search properties. Please try again.')
+      setProperties([])
+    } finally {
+      setLoading(false)
+    }
+  }, [searchQuery, selectedState, priceRange, beds, baths])
+
+  // Handle search on enter key
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      searchProperties()
+    }
+  }
+
+  // Toggle favorite
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
       const newFavs = new Set(prev)
@@ -137,6 +197,7 @@ export default function SearchPage() {
     })
   }
 
+  // Format price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -145,247 +206,357 @@ export default function SearchPage() {
     }).format(price)
   }
 
+  // Get property image
+  const getPropertyImage = (property: Property) => {
+    if (property.photos && property.photos.length > 0 && property.photos[0]) {
+      return property.photos[0]
+    }
+    return PLACEHOLDER_IMAGE
+  }
+
+  // Filter properties by type if selected
+  const filteredProperties = propertyType 
+    ? properties.filter(p => p.propertyType?.toLowerCase().includes(propertyType.toLowerCase()))
+    : properties
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Search */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Find Your Dream Home</h1>
-          <p className="text-blue-100 mb-6">Search properties across the United States</p>
+          <h1 className="text-4xl font-bold mb-2">Find Your Dream Home</h1>
+          <p className="text-blue-100 mb-8">Search properties across the United States</p>
           
           {/* Search Bar */}
-          <div className="bg-white rounded-xl p-4 shadow-lg">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by city, state, or ZIP code..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <select
-                value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
-                className="px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {US_STATES.map(state => (
-                  <option key={state.code} value={state.code}>{state.name}</option>
-                ))}
-              </select>
-              
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-3 border rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                <SlidersHorizontal className="w-5 h-5" />
-                Filters
-              </button>
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by city, state, or ZIP code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+              />
             </div>
             
-            {/* Expanded Filters */}
-            {showFilters && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Price Range</label>
-                  <select
-                    onChange={(e) => {
-                      const range = PRICE_RANGES[parseInt(e.target.value)]
-                      setPriceRange({ min: range.min, max: range.max })
-                    }}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900"
-                  >
-                    {PRICE_RANGES.map((range, idx) => (
-                      <option key={idx} value={idx}>{range.label}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Bedrooms</label>
-                  <select
-                    value={beds}
-                    onChange={(e) => setBeds(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900"
-                  >
-                    <option value={0}>Any</option>
-                    <option value={1}>1+</option>
-                    <option value={2}>2+</option>
-                    <option value={3}>3+</option>
-                    <option value={4}>4+</option>
-                    <option value={5}>5+</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Property Type</label>
-                  <select
-                    value={propertyType}
-                    onChange={(e) => setPropertyType(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900"
-                  >
-                    <option value="">All Types</option>
-                    <option value="Single Family">Single Family</option>
-                    <option value="Condo">Condo</option>
-                    <option value="Townhouse">Townhouse</option>
-                    <option value="Multi-Family">Multi-Family</option>
-                    <option value="Land">Land</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Sort By</label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900"
-                  >
-                    <option value="newest">Newest</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="beds">Most Bedrooms</option>
-                    <option value="sqft">Largest</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Demo Data Notice */}
-      {showDataNotice && (
-        <div className="bg-yellow-50 border-b border-yellow-100">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <Info className="w-5 h-5" />
-              <span className="text-sm">
-                <strong>Demo Mode:</strong> Showing sample data. For real MLS data like Zillow, an IDX license or API subscription is required.
-              </span>
-            </div>
-            <button onClick={() => setShowDataNotice(false)} className="text-yellow-600 hover:text-yellow-800">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold">
-              {sortedProperties.length} Properties Found
-              {searchQuery && ` for "${searchQuery}"`}
-              {selectedState && ` in ${US_STATES.find(s => s.code === selectedState)?.name}`}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
+            <select
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-800 bg-white"
+            >
+              {US_STATES.map(state => (
+                <option key={state.code} value={state.code}>{state.name}</option>
+              ))}
+            </select>
+            
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
             >
-              <Grid className="w-5 h-5" />
+              <SlidersHorizontal className="w-5 h-5" />
+              Filters
             </button>
+            
             <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+              onClick={searchProperties}
+              disabled={loading}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center gap-2 font-medium"
             >
-              <List className="w-5 h-5" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <Search className="w-5 h-5" />
+                  Search
+                </>
+              )}
             </button>
           </div>
-        </div>
 
-        {/* Property Grid/List */}
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-          : 'space-y-4'
-        }>
-          {sortedProperties.map(property => (
-            <Link 
-              key={property.id} 
-              href={`/property/${property.id}`}
-              className={`bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow ${
-                viewMode === 'list' ? 'flex' : ''
-              }`}
-            >
-              <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : 'h-48'}`}>
-                <Image
-                  src={property.photo}
-                  alt={property.address}
-                  fill
-                  className="object-cover"
-                />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    toggleFavorite(property.id)
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="bg-white rounded-lg shadow-lg p-4 mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+                <select
+                  value={`${priceRange.min}-${priceRange.max}`}
+                  onChange={(e) => {
+                    const [min, max] = e.target.value.split('-').map(Number)
+                    setPriceRange({ min, max })
                   }}
-                  className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-transform"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-800"
                 >
-                  <Heart className={`w-5 h-5 ${favorites.has(property.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-                </button>
-                <div className="absolute top-3 left-3">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    property.status === 'Active' ? 'bg-green-500 text-white' :
-                    property.status === 'Pending' ? 'bg-yellow-500 text-white' :
-                    'bg-gray-500 text-white'
-                  }`}>
-                    {property.status}
-                  </span>
-                </div>
+                  {PRICE_RANGES.map((range, i) => (
+                    <option key={i} value={`${range.min}-${range.max}`}>{range.label}</option>
+                  ))}
+                </select>
               </div>
               
-              <div className="p-4 flex-1">
-                <div className="text-2xl font-bold text-blue-600 mb-1">
-                  {formatPrice(property.price)}
-                </div>
-                <div className="flex items-center gap-4 text-gray-600 text-sm mb-2">
-                  <span className="flex items-center gap-1">
-                    <Bed className="w-4 h-4" /> {property.beds} bd
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Bath className="w-4 h-4" /> {property.baths} ba
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Square className="w-4 h-4" /> {property.sqft.toLocaleString()} sqft
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  {property.address}, {property.city}, {property.state} {property.zip}
-                </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm text-gray-400">
-                  <span>{property.propertyType}</span>
-                  <span>{property.daysOnMarket} days on market</span>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
+                <select
+                  value={beds}
+                  onChange={(e) => setBeds(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-800"
+                >
+                  <option value={0}>Any</option>
+                  <option value={1}>1+</option>
+                  <option value={2}>2+</option>
+                  <option value={3}>3+</option>
+                  <option value={4}>4+</option>
+                  <option value={5}>5+</option>
+                </select>
               </div>
-            </Link>
-          ))}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+                <select
+                  value={baths}
+                  onChange={(e) => setBaths(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-800"
+                >
+                  <option value={0}>Any</option>
+                  <option value={1}>1+</option>
+                  <option value={2}>2+</option>
+                  <option value={3}>3+</option>
+                  <option value={4}>4+</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-800"
+                >
+                  <option value="">All Types</option>
+                  <option value="single">Single Family</option>
+                  <option value="condo">Condo</option>
+                  <option value="townhouse">Townhouse</option>
+                  <option value="multi">Multi-Family</option>
+                  <option value="land">Land</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
+      </header>
 
-        {sortedProperties.length === 0 && (
-          <div className="text-center py-16">
-            <Home className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-600 mb-2">No properties found</h3>
-            <p className="text-gray-400">Try adjusting your search criteria</p>
+      {/* Results Section */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* API Sources Banner */}
+        {searched && apiSources.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5 text-green-600" />
+            <span className="text-green-800 text-sm">
+              <strong>Live MLS Data</strong> from: {apiSources.join(', ')}
+            </span>
           </div>
         )}
-      </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm">
-          © 2025 CR AudioViz AI, LLC. All rights reserved.
-          <div className="mt-2">
-            Powered by CR Realtor Platform • Data deemed reliable but not guaranteed
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-center gap-3">
+            <AlertCircle className="w-6 h-6 text-red-500" />
+            <div>
+              <p className="text-red-800 font-medium">{error}</p>
+              <p className="text-red-600 text-sm">Try searching for a specific city like "Naples, FL" or a ZIP code like "33901"</p>
+            </div>
           </div>
-        </div>
-      </footer>
+        )}
+
+        {/* Results Header */}
+        {searched && !loading && (
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                {totalResults} {totalResults === 1 ? 'Property' : 'Properties'} Found
+              </h2>
+              {searchQuery && (
+                <p className="text-gray-500">Results for "{searchQuery}"</p>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <button
+                onClick={searchProperties}
+                className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+              
+              <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-white text-gray-600'}`}
+                >
+                  <Grid className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-white text-gray-600'}`}
+                >
+                  <List className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+            <p className="text-gray-600 text-lg">Searching multiple MLS sources...</p>
+            <p className="text-gray-400 text-sm">This may take a moment</p>
+          </div>
+        )}
+
+        {/* Initial State - No Search Yet */}
+        {!searched && !loading && (
+          <div className="text-center py-20">
+            <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-gray-600 mb-2">Search for Properties</h3>
+            <p className="text-gray-400">Enter a city, state, or ZIP code to find available homes</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <button 
+                onClick={() => { setSearchQuery('Naples, FL'); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 text-sm"
+              >
+                Naples, FL
+              </button>
+              <button 
+                onClick={() => { setSearchQuery('Cape Coral, FL'); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 text-sm"
+              >
+                Cape Coral, FL
+              </button>
+              <button 
+                onClick={() => { setSearchQuery('Fort Myers, FL'); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 text-sm"
+              >
+                Fort Myers, FL
+              </button>
+              <button 
+                onClick={() => { setSearchQuery('Austin, TX'); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 text-sm"
+              >
+                Austin, TX
+              </button>
+              <button 
+                onClick={() => { setSearchQuery('Denver, CO'); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 text-sm"
+              >
+                Denver, CO
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Property Grid */}
+        {!loading && filteredProperties.length > 0 && (
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+            : 'flex flex-col gap-4'
+          }>
+            {filteredProperties.map((property) => (
+              <Link
+                key={property.id}
+                href={`/property/${property.id}`}
+                className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow ${
+                  viewMode === 'list' ? 'flex' : ''
+                }`}
+              >
+                {/* Property Image */}
+                <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : 'aspect-[4/3]'}`}>
+                  <Image
+                    src={getPropertyImage(property)}
+                    alt={property.address}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute top-3 left-3">
+                    <span className={`px-2 py-1 text-xs font-medium rounded ${
+                      property.status?.toLowerCase() === 'active' || property.status === 'for_sale'
+                        ? 'bg-green-500 text-white'
+                        : property.status?.toLowerCase() === 'pending'
+                        ? 'bg-yellow-500 text-white'
+                        : 'bg-gray-500 text-white'
+                    }`}>
+                      {property.status === 'for_sale' ? 'Active' : property.status || 'Active'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      toggleFavorite(property.id)
+                    }}
+                    className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                  >
+                    <Heart className={`w-5 h-5 ${favorites.has(property.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                  </button>
+                </div>
+
+                {/* Property Info */}
+                <div className="p-4 flex-1">
+                  <div className="text-2xl font-bold text-green-600 mb-1">
+                    {formatPrice(property.price)}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-gray-600 text-sm mb-2">
+                    <span className="flex items-center gap-1">
+                      <Bed className="w-4 h-4" />
+                      {property.beds} bd
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Bath className="w-4 h-4" />
+                      {property.baths} ba
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Square className="w-4 h-4" />
+                      {property.sqft?.toLocaleString()} sqft
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-start gap-1 text-gray-500 text-sm mb-2">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>{property.address}, {property.city}, {property.state} {property.zip}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">{property.propertyType || 'Single Family'}</span>
+                    {property.daysOnMarket && (
+                      <span className="text-gray-400">{property.daysOnMarket} days on market</span>
+                    )}
+                  </div>
+                  
+                  {/* Source Badge */}
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-400">Source: {property.source}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* No Results */}
+        {searched && !loading && filteredProperties.length === 0 && !error && (
+          <div className="text-center py-20">
+            <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-gray-600 mb-2">No Properties Found</h3>
+            <p className="text-gray-400">Try adjusting your search criteria or searching a different location</p>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
