@@ -2,322 +2,280 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import {
-  ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Home,
-  DollarSign,
-  MessageSquare,
-  Save,
-  Loader2,
-} from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, DollarSign, MapPin, FileText, Save, Loader2 } from 'lucide-react'
 
-export default function NewLeadPage() {
+const AREAS = ['Naples', 'Fort Myers', 'Cape Coral', 'Bonita Springs', 'Marco Island', 'Estero', 'Lehigh Acres', 'Golden Gate Estates']
+const BUDGETS = ['Under $300K', '$300K-$400K', '$400K-$500K', '$500K-$750K', '$750K-$1M', '$1M-$2M', '$2M+']
+const SOURCES = ['Website', 'Referral', 'Zillow', 'Realtor.com', 'Open House', 'Social Media', 'Cold Call', 'Other']
+const PROPERTY_TYPES = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Any']
+
+export default function AddLeadPage() {
   const router = useRouter()
-  const supabase = createClient()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
+  const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
-    full_name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    source: 'website',
-    status: 'new',
-    property_interest: '',
-    budget_min: '',
-    budget_max: '',
-    preferred_locations: '',
+    area: '',
+    budget: '',
+    propertyType: '',
+    source: '',
+    timeline: '',
     notes: '',
+    preApproved: false
   })
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
+    setSaving(true)
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // In production, this would save to Supabase
+    console.log('New lead:', formData)
+    
+    setSaving(false)
+    router.push('/dashboard/crm')
+  }
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { error: insertError } = await supabase
-        .from('realtor_leads')
-        .insert({
-          agent_id: user.id,
-          full_name: formData.full_name,
-          email: formData.email || null,
-          phone: formData.phone || null,
-          source: formData.source,
-          status: formData.status,
-          property_interest: formData.property_interest || null,
-          budget_min: formData.budget_min ? parseFloat(formData.budget_min) : null,
-          budget_max: formData.budget_max ? parseFloat(formData.budget_max) : null,
-          preferred_locations: formData.preferred_locations ? formData.preferred_locations.split(',').map(s => s.trim()) : [],
-          notes: formData.notes || null,
-        })
-
-      if (insertError) {
-        throw insertError
-      }
-
-      router.push('/dashboard/leads')
-      router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Failed to create lead')
-    } finally {
-      setLoading(false)
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }))
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/dashboard/leads"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Leads
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Add New Lead</h1>
-        <p className="text-gray-600 mt-2">Capture a new potential client</p>
+      <div className="bg-white border-b px-6 py-4">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
+          <Link href="/dashboard/crm" className="p-2 hover:bg-gray-100 rounded-lg">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Add New Lead</h1>
+            <p className="text-gray-500">Enter client information to add them to your pipeline</p>
+          </div>
+        </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Contact Information */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <User className="w-5 h-5 text-blue-600" />
-            Contact Information
-          </h2>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="John Smith"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Mail className="w-4 h-4 inline mr-1" />
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="john@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Phone className="w-4 h-4 inline mr-1" />
-                Phone
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="(239) 555-0123"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Lead Details */}
-        <div className="space-y-4 pt-4 border-t">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Home className="w-5 h-5 text-blue-600" />
-            Lead Details
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Source
-              </label>
-              <select
-                name="source"
-                value={formData.source}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="website">Website</option>
-                <option value="referral">Referral</option>
-                <option value="social_media">Social Media</option>
-                <option value="open_house">Open House</option>
-                <option value="cold_call">Cold Call</option>
-                <option value="advertisement">Advertisement</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="new">New</option>
-                <option value="contacted">Contacted</option>
-                <option value="qualified">Qualified</option>
-                <option value="showing_scheduled">Showing Scheduled</option>
-                <option value="offer_made">Offer Made</option>
-                <option value="closed">Closed</option>
-                <option value="lost">Lost</option>
-              </select>
+      <div className="max-w-3xl mx-auto p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Contact Information */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-600" />
+              Contact Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Smith"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="john@email.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="(239) 555-0123"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Property Interest
-            </label>
-            <input
-              type="text"
-              name="property_interest"
-              value={formData.property_interest}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Single family home, 3+ bedrooms"
-            />
-          </div>
-        </div>
-
-        {/* Budget */}
-        <div className="space-y-4 pt-4 border-t">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-blue-600" />
-            Budget Range
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Minimum Budget
-              </label>
-              <input
-                type="number"
-                name="budget_min"
-                value={formData.budget_min}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="250000"
-              />
+          {/* Property Preferences */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-blue-600" />
+              Property Preferences
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Area *</label>
+                <select
+                  name="area"
+                  value={formData.area}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select area...</option>
+                  {AREAS.map(area => (
+                    <option key={area} value={area}>{area}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Budget Range *</label>
+                <select
+                  name="budget"
+                  value={formData.budget}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select budget...</option>
+                  {BUDGETS.map(budget => (
+                    <option key={budget} value={budget}>{budget}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                <select
+                  name="propertyType"
+                  value={formData.propertyType}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select type...</option>
+                  {PROPERTY_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Timeline</label>
+                <select
+                  name="timeline"
+                  value={formData.timeline}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select timeline...</option>
+                  <option value="immediately">Ready now</option>
+                  <option value="1-3months">1-3 months</option>
+                  <option value="3-6months">3-6 months</option>
+                  <option value="6-12months">6-12 months</option>
+                  <option value="justlooking">Just looking</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Maximum Budget
+            <div className="mt-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="preApproved"
+                  checked={formData.preApproved}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Pre-approved for financing</span>
               </label>
-              <input
-                type="number"
-                name="budget_max"
-                value={formData.budget_max}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="500000"
-              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <MapPin className="w-4 h-4 inline mr-1" />
-              Preferred Locations (comma separated)
-            </label>
-            <input
-              type="text"
-              name="preferred_locations"
-              value={formData.preferred_locations}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Naples, Fort Myers, Bonita Springs"
-            />
+          {/* Lead Source & Notes */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Lead Details
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Lead Source *</label>
+                <select
+                  name="source"
+                  value={formData.source}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">How did they find you?</option>
+                  {SOURCES.map(source => (
+                    <option key={source} value={source}>{source}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Any additional information about this lead..."
+                />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Notes */}
-        <div className="space-y-4 pt-4 border-t">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-blue-600" />
-            Notes
-          </h2>
-
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows={4}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Additional notes about this lead..."
-          />
-        </div>
-
-        {/* Submit */}
-        <div className="pt-4 flex gap-4">
-          <Link
-            href="/dashboard/leads"
-            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition text-center"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Save Lead
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+          {/* Actions */}
+          <div className="flex gap-4">
+            <Link
+              href="/dashboard/crm"
+              className="px-6 py-3 border rounded-lg hover:bg-gray-50 font-medium"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Add Lead to Pipeline
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
