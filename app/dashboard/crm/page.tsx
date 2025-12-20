@@ -2,74 +2,52 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Users, Phone, Mail, Calendar, MoreVertical, Plus, Search, Filter, ArrowRight, Eye, Edit, Trash2 } from 'lucide-react'
+import { Users, Phone, Mail, Calendar, MoreVertical, Plus, Search, Filter, Eye, Edit, Trash2 } from 'lucide-react'
 
 const PIPELINE_STAGES = [
-  { id: 'new', title: 'New Leads', color: 'bg-gray-500' },
-  { id: 'contacted', title: 'Contacted', color: 'bg-blue-500' },
-  { id: 'qualified', title: 'Qualified', color: 'bg-yellow-500' },
-  { id: 'showing', title: 'Showing', color: 'bg-purple-500' },
-  { id: 'offer', title: 'Offer Made', color: 'bg-orange-500' },
-  { id: 'closed', title: 'Closed', color: 'bg-green-500' }
+  { id: 'new', title: 'New Leads', color: 'bg-gray-500', count: 2 },
+  { id: 'contacted', title: 'Contacted', color: 'bg-blue-500', count: 1 },
+  { id: 'qualified', title: 'Qualified', color: 'bg-yellow-500', count: 1 },
+  { id: 'showing', title: 'Showing', color: 'bg-purple-500', count: 1 },
+  { id: 'offer', title: 'Offer Made', color: 'bg-orange-500', count: 1 },
+  { id: 'closed', title: 'Closed', color: 'bg-green-500', count: 1 }
 ]
 
-interface Lead {
-  id: string
-  name: string
-  email: string
-  phone: string
-  budget: string
-  area: string
-  source: string
-  stage: string
-  notes?: string
-  createdAt: string
-}
-
-const INITIAL_LEADS: Lead[] = [
-  { id: '1', name: 'Michael Johnson', email: 'michael@email.com', phone: '(239) 555-0123', budget: '$500K-$750K', area: 'Naples', source: 'Website', stage: 'new', createdAt: '2 hours ago' },
-  { id: '2', name: 'Sarah Williams', email: 'sarah@email.com', phone: '(239) 555-0456', budget: '$400K-$600K', area: 'Cape Coral', source: 'Referral', stage: 'new', createdAt: '5 hours ago' },
-  { id: '3', name: 'David Brown', email: 'david@email.com', phone: '(239) 555-0789', budget: 'Under $400K', area: 'Fort Myers', source: 'Zillow', stage: 'contacted', createdAt: '1 day ago' },
-  { id: '4', name: 'Jennifer Davis', email: 'jennifer@email.com', phone: '(239) 555-0321', budget: '$600K-$900K', area: 'Bonita Springs', source: 'Open House', stage: 'qualified', createdAt: '2 days ago' },
-  { id: '5', name: 'Robert Martinez', email: 'robert@email.com', phone: '(239) 555-0654', budget: '$450K-$550K', area: 'Cape Coral', source: 'Website', stage: 'showing', createdAt: '3 days ago' },
-  { id: '6', name: 'Lisa Anderson', email: 'lisa@email.com', phone: '(239) 555-0987', budget: '$700K-$850K', area: 'Naples', source: 'Referral', stage: 'offer', createdAt: '5 days ago' },
-  { id: '7', name: 'James Wilson', email: 'james@email.com', phone: '(239) 555-0147', budget: '$525,000', area: 'Fort Myers', source: 'Website', stage: 'closed', createdAt: '1 week ago' },
-  { id: '8', name: 'Amanda Taylor', email: 'amanda@email.com', phone: '(239) 555-0258', budget: '$350K-$450K', area: 'Lehigh Acres', source: 'Facebook', stage: 'new', createdAt: '3 hours ago' }
+const ALL_LEADS = [
+  { id: '1', name: 'Michael Johnson', email: 'michael@email.com', phone: '(239) 555-0123', budget: '$500K-$750K', area: 'Naples', source: 'Website', stage: 'new', created: '2 hours ago' },
+  { id: '2', name: 'Sarah Williams', email: 'sarah@email.com', phone: '(239) 555-0456', budget: '$400K-$600K', area: 'Cape Coral', source: 'Referral', stage: 'new', created: '5 hours ago' },
+  { id: '3', name: 'David Brown', email: 'david@email.com', phone: '(239) 555-0789', budget: 'Under $400K', area: 'Fort Myers', source: 'Zillow', stage: 'contacted', created: '1 day ago' },
+  { id: '4', name: 'Jennifer Davis', email: 'jennifer@email.com', phone: '(239) 555-0321', budget: '$600K-$900K', area: 'Bonita Springs', source: 'Open House', stage: 'qualified', created: '2 days ago' },
+  { id: '5', name: 'Robert Martinez', email: 'robert@email.com', phone: '(239) 555-0654', budget: '$450K-$550K', area: 'Cape Coral', source: 'Website', stage: 'showing', created: '3 days ago' },
+  { id: '6', name: 'Lisa Anderson', email: 'lisa@email.com', phone: '(239) 555-0987', budget: '$700K-$850K', area: 'Naples', source: 'Referral', stage: 'offer', created: '5 days ago' },
+  { id: '7', name: 'James Wilson', email: 'james@email.com', phone: '(239) 555-0147', budget: '$525,000', area: 'Fort Myers', source: 'Website', stage: 'closed', created: '1 week ago' }
 ]
 
 export default function CRMPage() {
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [showMoveMenu, setShowMoveMenu] = useState<string | null>(null)
+  const [selectedStage, setSelectedStage] = useState<string | null>(null)
+  const [leads, setLeads] = useState(ALL_LEADS)
 
-  const moveLead = (leadId: string, newStage: string) => {
+  const filteredLeads = leads.filter(lead => {
+    if (selectedStage && lead.stage !== selectedStage) return false
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      return lead.name.toLowerCase().includes(query) || 
+             lead.email.toLowerCase().includes(query) ||
+             lead.area.toLowerCase().includes(query)
+    }
+    return true
+  })
+
+  const moveToStage = (leadId: string, newStage: string) => {
     setLeads(prev => prev.map(lead => 
       lead.id === leadId ? { ...lead, stage: newStage } : lead
     ))
-    setShowMoveMenu(null)
   }
 
-  const getLeadsByStage = (stageId: string) => {
-    return leads.filter(lead => {
-      const matchesStage = lead.stage === stageId
-      const matchesSearch = searchQuery === '' || 
-        lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.area.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesStage && matchesSearch
-    })
+  const getStageColor = (stage: string) => {
+    return PIPELINE_STAGES.find(s => s.id === stage)?.color || 'bg-gray-500'
   }
-
-  const totalLeads = leads.length
-  const totalValue = leads.reduce((sum, lead) => {
-    const match = lead.budget.match(/\$?([\d,]+)/g)
-    if (match) {
-      const value = parseInt(match[0].replace(/[$,]/g, ''))
-      return sum + value
-    }
-    return sum
-  }, 0)
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -78,7 +56,7 @@ export default function CRMPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Client Pipeline</h1>
-            <p className="text-gray-500">{totalLeads} total clients • Est. value: ${(totalValue / 1000).toFixed(0)}K+</p>
+            <p className="text-gray-500">{leads.length} total clients across all stages</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -91,7 +69,7 @@ export default function CRMPage() {
                 className="pl-10 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <Link
+            <Link 
               href="/dashboard/leads/new"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
@@ -102,127 +80,117 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* Pipeline Board */}
-      <div className="p-6 overflow-x-auto">
-        <div className="flex gap-4 min-w-max">
+      {/* Pipeline Stages Overview */}
+      <div className="p-6">
+        <div className="grid grid-cols-6 gap-4 mb-6">
           {PIPELINE_STAGES.map((stage) => {
-            const stageLeads = getLeadsByStage(stage.id)
+            const stageCount = leads.filter(l => l.stage === stage.id).length
             return (
-              <div key={stage.id} className="w-80 flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-                    <h3 className="font-semibold">{stage.title}</h3>
-                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-sm">
-                      {stageLeads.length}
-                    </span>
-                  </div>
+              <button
+                key={stage.id}
+                onClick={() => setSelectedStage(selectedStage === stage.id ? null : stage.id)}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  selectedStage === stage.id 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-transparent bg-white hover:border-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-3 h-3 rounded-full ${stage.color}`} />
+                  <span className="font-medium text-sm">{stage.title}</span>
                 </div>
-                
-                <div className="space-y-3 min-h-96 p-2 rounded-lg bg-gray-50">
-                  {stageLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium">{lead.name}</h4>
-                        <div className="relative">
-                          <button 
-                            onClick={() => setShowMoveMenu(showMoveMenu === lead.id ? null : lead.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <MoreVertical className="w-4 h-4 text-gray-400" />
-                          </button>
-                          {showMoveMenu === lead.id && (
-                            <div className="absolute right-0 top-8 bg-white border rounded-lg shadow-lg z-10 w-48">
-                              <div className="p-2 border-b">
-                                <span className="text-xs text-gray-500 font-medium">Move to:</span>
-                              </div>
-                              {PIPELINE_STAGES.filter(s => s.id !== lead.stage).map(s => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => moveLead(lead.id, s.id)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <div className={`w-2 h-2 rounded-full ${s.color}`} />
-                                  {s.title}
-                                </button>
-                              ))}
-                              <div className="border-t">
-                                <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-blue-600">
-                                  <Eye className="w-4 h-4" />
-                                  View Details
-                                </button>
-                                <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-600">
-                                  <Edit className="w-4 h-4" />
-                                  Edit
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-3 h-3" />
-                          {lead.email}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3 h-3" />
-                          {lead.phone}
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
-                          {lead.area}
-                        </span>
-                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
-                          {lead.budget}
-                        </span>
-                      </div>
-                      <div className="mt-3 pt-3 border-t flex justify-between items-center">
-                        <span className="text-xs text-gray-400">{lead.source}</span>
-                        <span className="text-xs text-gray-400">{lead.createdAt}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {stageLeads.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
-                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No clients in this stage</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                <div className="text-2xl font-bold">{stageCount}</div>
+              </button>
             )
           })}
         </div>
-      </div>
 
-      {/* Quick Stats Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex gap-8">
-            {PIPELINE_STAGES.map(stage => {
-              const count = getLeadsByStage(stage.id).length
-              return (
-                <div key={stage.id} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${stage.color}`} />
-                  <span className="text-sm text-gray-600">{stage.title}:</span>
-                  <span className="font-semibold">{count}</span>
-                </div>
-              )
-            })}
-          </div>
-          <div className="flex gap-4">
-            <Link href="/dashboard/leads" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-              View All Leads →
-            </Link>
-            <Link href="/dashboard/reports" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-              Pipeline Report →
-            </Link>
-          </div>
+        {/* Leads Table */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Client</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Contact</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Budget</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Area</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Stage</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filteredLeads.map((lead) => (
+                <tr key={lead.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold">{lead.name.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">{lead.name}</div>
+                        <div className="text-sm text-gray-500">{lead.source} • {lead.created}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Mail className="w-4 h-4" />
+                        {lead.email}
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 mt-1">
+                        <Phone className="w-4 h-4" />
+                        {lead.phone}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm">
+                      {lead.budget}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                      {lead.area}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={lead.stage}
+                      onChange={(e) => moveToStage(lead.id, e.target.value)}
+                      className={`px-3 py-1 rounded-full text-sm text-white cursor-pointer ${getStageColor(lead.stage)}`}
+                    >
+                      {PIPELINE_STAGES.map(stage => (
+                        <option key={stage.id} value={stage.id} className="text-gray-900">
+                          {stage.title}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <button className="p-2 hover:bg-gray-100 rounded-lg" title="View">
+                        <Eye className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded-lg" title="Edit">
+                        <Edit className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded-lg" title="Schedule">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {filteredLeads.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No clients found</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
