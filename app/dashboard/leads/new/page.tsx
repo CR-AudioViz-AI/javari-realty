@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Mail, Phone, DollarSign, MapPin, FileText, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Phone, MapPin, DollarSign, Home, MessageSquare } from 'lucide-react'
 
 const AREAS = ['Naples', 'Fort Myers', 'Cape Coral', 'Bonita Springs', 'Marco Island', 'Estero', 'Lehigh Acres', 'Golden Gate Estates']
-const BUDGETS = ['Under $300K', '$300K-$400K', '$400K-$500K', '$500K-$750K', '$750K-$1M', '$1M-$2M', '$2M+']
-const SOURCES = ['Website', 'Referral', 'Zillow', 'Realtor.com', 'Open House', 'Social Media', 'Cold Call', 'Other']
-const PROPERTY_TYPES = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Any']
+const BUDGET_RANGES = ['Under $300K', '$300K-$400K', '$400K-$500K', '$500K-$750K', '$750K-$1M', '$1M-$2M', '$2M+']
+const PROPERTY_TYPES = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Commercial']
+const LEAD_SOURCES = ['Website', 'Zillow', 'Realtor.com', 'Referral', 'Open House', 'Facebook', 'Instagram', 'Google Ads', 'Cold Call', 'Other']
+const TIMELINE = ['ASAP', '1-3 months', '3-6 months', '6-12 months', 'Just browsing']
 
 export default function AddLeadPage() {
   const router = useRouter()
@@ -18,14 +19,23 @@ export default function AddLeadPage() {
     lastName: '',
     email: '',
     phone: '',
-    area: '',
+    preferredAreas: [] as string[],
     budget: '',
     propertyType: '',
     source: '',
     timeline: '',
-    notes: '',
-    preApproved: false
+    preApproved: false,
+    notes: ''
   })
+
+  const handleAreaToggle = (area: string) => {
+    setFormData(prev => ({
+      ...prev,
+      preferredAreas: prev.preferredAreas.includes(area)
+        ? prev.preferredAreas.filter(a => a !== area)
+        : [...prev.preferredAreas, area]
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,97 +45,108 @@ export default function AddLeadPage() {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // In production, this would save to Supabase
-    console.log('New lead:', formData)
+    console.log('Lead data:', formData)
     
-    setSaving(false)
-    router.push('/dashboard/crm')
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }))
+    alert('Lead added successfully!')
+    router.push('/dashboard/leads')
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Link href="/dashboard/crm" className="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">Add New Lead</h1>
-            <p className="text-gray-500">Enter client information to add them to your pipeline</p>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/leads" className="p-2 hover:bg-gray-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Add New Lead</h1>
+              <p className="text-gray-500">Enter client information</p>
+            </div>
           </div>
+          <button
+            onClick={handleSubmit}
+            disabled={saving || !formData.firstName || !formData.lastName}
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Save className="w-5 h-5" />
+            {saving ? 'Saving...' : 'Save Lead'}
+          </button>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contact Information */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <User className="w-5 h-5 text-blue-600" />
               Contact Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Smith"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
+                    type="text"
                     required
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="john@email.com"
+                    value={formData.firstName}
+                    onChange={e => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.lastName}
+                    onChange={e => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Smith"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="(239) 555-0123"
-                  />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Mail className="w-4 h-4 inline mr-1" />
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="john@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Phone className="w-4 h-4 inline mr-1" />
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(239) 555-0123"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Lead Source</label>
+                <select
+                  value={formData.source}
+                  onChange={e => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select source...</option>
+                  {LEAD_SOURCES.map(source => (
+                    <option key={source} value={source}>{source}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -133,46 +154,53 @@ export default function AddLeadPage() {
           {/* Property Preferences */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-blue-600" />
+              <Home className="w-5 h-5 text-blue-600" />
               Property Preferences
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Area *</label>
-                <select
-                  name="area"
-                  value={formData.area}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select area...</option>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4 inline mr-1" />
+                  Preferred Areas
+                </label>
+                <div className="flex flex-wrap gap-2">
                   {AREAS.map(area => (
-                    <option key={area} value={area}>{area}</option>
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => handleAreaToggle(area)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        formData.preferredAreas.includes(area)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {area}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget Range *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <DollarSign className="w-4 h-4 inline mr-1" />
+                  Budget Range
+                </label>
                 <select
-                  name="budget"
                   value={formData.budget}
-                  onChange={handleChange}
-                  required
+                  onChange={e => setFormData(prev => ({ ...prev, budget: e.target.value }))}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select budget...</option>
-                  {BUDGETS.map(budget => (
-                    <option key={budget} value={budget}>{budget}</option>
+                  {BUDGET_RANGES.map(range => (
+                    <option key={range} value={range}>{range}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
                 <select
-                  name="propertyType"
                   value={formData.propertyType}
-                  onChange={handleChange}
+                  onChange={e => setFormData(prev => ({ ...prev, propertyType: e.target.value }))}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select type...</option>
@@ -184,98 +212,57 @@ export default function AddLeadPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Timeline</label>
                 <select
-                  name="timeline"
                   value={formData.timeline}
-                  onChange={handleChange}
+                  onChange={e => setFormData(prev => ({ ...prev, timeline: e.target.value }))}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select timeline...</option>
-                  <option value="immediately">Ready now</option>
-                  <option value="1-3months">1-3 months</option>
-                  <option value="3-6months">3-6 months</option>
-                  <option value="6-12months">6-12 months</option>
-                  <option value="justlooking">Just looking</option>
-                </select>
-              </div>
-            </div>
-            <div className="mt-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="preApproved"
-                  checked={formData.preApproved}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Pre-approved for financing</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Lead Source & Notes */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
-              Lead Details
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lead Source *</label>
-                <select
-                  name="source"
-                  value={formData.source}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">How did they find you?</option>
-                  {SOURCES.map(source => (
-                    <option key={source} value={source}>{source}</option>
+                  {TIMELINE.map(time => (
+                    <option key={time} value={time}>{time}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Any additional information about this lead..."
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="preApproved"
+                  checked={formData.preApproved}
+                  onChange={e => setFormData(prev => ({ ...prev, preApproved: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
+                <label htmlFor="preApproved" className="text-sm text-gray-700">Pre-approved for mortgage</label>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-4">
-            <Link
-              href="/dashboard/crm"
-              className="px-6 py-3 border rounded-lg hover:bg-gray-50 font-medium"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Add Lead to Pipeline
-                </>
-              )}
-            </button>
+          {/* Notes */}
+          <div className="bg-white rounded-xl p-6 shadow-sm lg:col-span-2">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-blue-600" />
+              Notes
+            </h2>
+            <textarea
+              value={formData.notes}
+              onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={4}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Additional notes about this lead..."
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Mobile Submit Button */}
+        <div className="mt-6 lg:hidden">
+          <button
+            type="submit"
+            disabled={saving || !formData.firstName || !formData.lastName}
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Save className="w-5 h-5" />
+            {saving ? 'Saving...' : 'Save Lead'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
