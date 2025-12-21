@@ -1,312 +1,416 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Home,
   Search,
   Heart,
-  Calculator,
-  FileCheck,
+  Calendar,
   MessageSquare,
-  User,
-  LogOut,
-  Building2,
+  FileText,
+  Calculator,
   TrendingUp,
   MapPin,
-  Phone,
-  Mail,
   ArrowRight,
+  Home,
+  Clock,
+  Bell,
+  Star,
+  Building2,
+  ChevronRight,
+  Eye,
   Loader2
 } from 'lucide-react'
 
-interface UserProfile {
-  id: string
-  email: string
-  full_name: string
-  phone?: string
-  role: string
+interface DashboardStats {
+  savedHomes: number
+  savedSearches: number
+  upcomingShowings: number
+  unreadMessages: number
+  documents: number
 }
 
-export default function CustomerPortalPage() {
-  const router = useRouter()
+interface RecentActivity {
+  id: string
+  type: 'saved' | 'showing' | 'message' | 'document' | 'search'
+  title: string
+  description: string
+  timestamp: string
+}
+
+export default function CustomerDashboardPage() {
   const supabase = createClient()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState('')
+  const [stats, setStats] = useState<DashboardStats>({
+    savedHomes: 0,
+    savedSearches: 0,
+    upcomingShowings: 0,
+    unreadMessages: 0,
+    documents: 0
+  })
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
 
   useEffect(() => {
-    loadProfile()
+    loadDashboardData()
   }, [])
 
-  async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
+  async function loadDashboardData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+      // Get user name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
 
-    if (profileData) {
-      setProfile(profileData)
+      setUserName(profile?.full_name?.split(' ')[0] || 'there')
+
+      // Get stats (with fallbacks for missing tables)
+      const statsData: DashboardStats = {
+        savedHomes: 0,
+        savedSearches: 0,
+        upcomingShowings: 0,
+        unreadMessages: 0,
+        documents: 0
+      }
+
+      // Saved properties count
+      try {
+        const { count } = await supabase
+          .from('saved_properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+        statsData.savedHomes = count || 0
+      } catch {}
+
+      // Saved searches count
+      try {
+        const { count } = await supabase
+          .from('saved_searches')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+        statsData.savedSearches = count || 0
+      } catch {}
+
+      // Upcoming showings
+      try {
+        const { count } = await supabase
+          .from('showing_requests')
+          .select('id', { count: 'exact', head: true })
+          .eq('customer_id', user.id)
+          .gte('requested_date', new Date().toISOString())
+        statsData.upcomingShowings = count || 0
+      } catch {}
+
+      // Unread messages
+      try {
+        const { count } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('recipient_id', user.id)
+          .eq('is_read', false)
+        statsData.unreadMessages = count || 0
+      } catch {}
+
+      // Documents
+      try {
+        const { count } = await supabase
+          .from('customer_documents')
+          .select('id', { count: 'exact', head: true })
+          .eq('customer_id', user.id)
+        statsData.documents = count || 0
+      } catch {}
+
+      setStats(statsData)
+
+      // Generate sample recent activity (will be replaced with real data)
+      setRecentActivity([
+        {
+          id: '1',
+          type: 'search',
+          title: 'Start Your Home Search',
+          description: 'Browse thousands of listings in your area',
+          timestamp: new Date().toISOString()
+        }
+      ])
+
+      setLoading(false)
+    } catch (error) {
+      console.error('Error loading dashboard:', error)
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-  }
+  const quickActions = [
+    {
+      title: 'Search Properties',
+      description: 'Find homes that match your criteria',
+      icon: Search,
+      href: '/customer/dashboard/search',
+      color: 'bg-blue-500',
+      bgLight: 'bg-blue-50'
+    },
+    {
+      title: 'Saved Homes',
+      description: `${stats.savedHomes} properties saved`,
+      icon: Heart,
+      href: '/customer/dashboard/favorites',
+      color: 'bg-red-500',
+      bgLight: 'bg-red-50'
+    },
+    {
+      title: 'Schedule Showing',
+      description: 'Book a tour of any property',
+      icon: Calendar,
+      href: '/customer/dashboard/showings',
+      color: 'bg-green-500',
+      bgLight: 'bg-green-50'
+    },
+    {
+      title: 'Messages',
+      description: stats.unreadMessages > 0 ? `${stats.unreadMessages} unread` : 'Chat with your agent',
+      icon: MessageSquare,
+      href: '/customer/dashboard/messages',
+      color: 'bg-purple-500',
+      bgLight: 'bg-purple-50',
+      badge: stats.unreadMessages
+    }
+  ]
+
+  const tools = [
+    {
+      title: 'Mortgage Calculator',
+      description: 'Estimate your monthly payments',
+      icon: Calculator,
+      href: '/customer/dashboard/tools/mortgage'
+    },
+    {
+      title: 'Investment Calculator',
+      description: 'Analyze ROI, cap rate & cash flow',
+      icon: TrendingUp,
+      href: '/customer/dashboard/tools/investment'
+    },
+    {
+      title: 'Neighborhood Intel',
+      description: 'Schools, crime, demographics & more',
+      icon: MapPin,
+      href: '/customer/dashboard/tools/neighborhoods'
+    },
+    {
+      title: 'Get Pre-Qualified',
+      description: 'Know your budget in 2 minutes',
+      icon: FileText,
+      href: '/customer/dashboard/tools/pre-qualification'
+    }
+  ]
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     )
   }
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there'
-
-  const quickActions = [
-    {
-      title: 'Search Properties',
-      description: 'Browse available homes in your area',
-      icon: Search,
-      href: '/search',
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Investment Calculator',
-      description: 'Calculate ROI, cap rate & cash flow',
-      icon: Calculator,
-      href: '/tools/investment-calculator',
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Get Pre-Qualified',
-      description: 'Find out how much home you can afford',
-      icon: FileCheck,
-      href: '/tools/pre-qualification',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Market Insights',
-      description: 'View neighborhood data & trends',
-      icon: TrendingUp,
-      href: '/market',
-      color: 'bg-orange-500'
-    }
-  ]
-
-  const resources = [
-    { title: 'First-Time Buyer Guide', icon: Home },
-    { title: 'Mortgage Calculator', icon: Calculator },
-    { title: 'Neighborhood Research', icon: MapPin },
-    { title: 'Closing Cost Estimator', icon: FileCheck }
-  ]
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-white" />
+    <div className="space-y-6">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 lg:p-8 text-white">
+        <h1 className="text-2xl lg:text-3xl font-bold mb-2">
+          Welcome back, {userName}!
+        </h1>
+        <p className="text-blue-100 text-lg">
+          Your home buying journey starts here. Let's find your perfect home.
+        </p>
+        <div className="flex flex-wrap gap-3 mt-6">
+          <Link
+            href="/customer/dashboard/search"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition"
+          >
+            <Search className="h-4 w-4" />
+            Search Properties
+          </Link>
+          <Link
+            href="/customer/dashboard/saved-searches"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-400 transition"
+          >
+            <Star className="h-4 w-4" />
+            My Saved Searches
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+              <Heart className="h-5 w-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.savedHomes}</p>
+              <p className="text-sm text-gray-500">Saved Homes</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+              <Star className="h-5 w-5 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.savedSearches}</p>
+              <p className="text-sm text-gray-500">Saved Searches</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.upcomingShowings}</p>
+              <p className="text-sm text-gray-500">Showings</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+              <FileText className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.documents}</p>
+              <p className="text-sm text-gray-500">Documents</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <section>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action) => (
+            <Link
+              key={action.title}
+              href={action.href}
+              className="bg-white rounded-xl p-5 border hover:shadow-lg transition group relative"
+            >
+              {action.badge && action.badge > 0 && (
+                <span className="absolute top-3 right-3 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {action.badge}
+                </span>
+              )}
+              <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4`}>
+                <action.icon className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <span className="font-bold text-gray-900">RealtorPro</span>
-                <span className="text-xs text-gray-500 block">Customer Portal</span>
+              <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition">
+                {action.title}
+              </h3>
+              <p className="text-sm text-gray-500">{action.description}</p>
+              <div className="mt-3 flex items-center text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+                Go <ArrowRight className="h-4 w-4 ml-1" />
               </div>
             </Link>
+          ))}
+        </div>
+      </section>
 
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/search" 
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                <Search className="h-4 w-4" />
-                Search Homes
-              </Link>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-                  title="Sign Out"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
+      {/* Two Column Layout */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Main Column - Tools */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl border shadow-sm">
+            <div className="p-5 border-b">
+              <h2 className="text-lg font-bold text-gray-900">Buyer Tools</h2>
+              <p className="text-sm text-gray-500">Powerful tools to help you make informed decisions</p>
             </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
-          <p className="text-blue-100 text-lg">Your home buying journey starts here.</p>
-        </div>
-
-        {/* Quick Actions */}
-        <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.title}
-                href={action.href}
-                className="bg-white rounded-xl p-6 border hover:shadow-lg transition group"
-              >
-                <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4`}>
-                  <action.icon className="h-6 w-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-500">{action.description}</p>
-                <div className="mt-3 flex items-center text-blue-600 text-sm font-medium">
-                  Get Started <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Two Column Layout */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Featured Properties Placeholder */}
-            <section className="bg-white rounded-xl p-6 border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Featured Properties</h2>
-                <Link href="/search" className="text-blue-600 text-sm font-medium hover:underline">
-                  View All
-                </Link>
-              </div>
-              <div className="text-center py-12 text-gray-500">
-                <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>Start searching to see recommended properties</p>
-                <Link 
-                  href="/search" 
-                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            <div className="divide-y">
+              {tools.map((tool) => (
+                <Link
+                  key={tool.title}
+                  href={tool.href}
+                  className="flex items-center gap-4 p-4 hover:bg-gray-50 transition"
                 >
-                  <Search className="h-4 w-4" />
-                  Search Properties
-                </Link>
-              </div>
-            </section>
-
-            {/* Resources */}
-            <section className="bg-white rounded-xl p-6 border">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Helpful Resources</h2>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {resources.map((resource) => (
-                  <button
-                    key={resource.title}
-                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left"
-                  >
-                    <resource.icon className="h-5 w-5 text-gray-400" />
-                    <span className="font-medium text-gray-700">{resource.title}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Your Profile Card */}
-            <div className="bg-white rounded-xl p-6 border">
-              <h3 className="font-semibold text-gray-900 mb-4">Your Profile</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">{profile?.full_name || 'Not set'}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700 text-sm">{profile?.email}</span>
-                </div>
-                {profile?.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <span className="text-gray-700">{profile.phone}</span>
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <tool.icon className="h-5 w-5 text-blue-600" />
                   </div>
-                )}
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{tool.title}</h3>
+                    <p className="text-sm text-gray-500">{tool.description}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-300" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Getting Started */}
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white">
+            <h3 className="font-bold text-lg mb-2">Getting Started</h3>
+            <ul className="space-y-2 text-green-100 text-sm">
+              <li className="flex items-center gap-2">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${stats.savedSearches > 0 ? 'bg-white text-green-600' : 'bg-green-400'}`}>
+                  {stats.savedSearches > 0 ? '✓' : '1'}
+                </div>
+                Create a saved search
+              </li>
+              <li className="flex items-center gap-2">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${stats.savedHomes > 0 ? 'bg-white text-green-600' : 'bg-green-400'}`}>
+                  {stats.savedHomes > 0 ? '✓' : '2'}
+                </div>
+                Save homes you like
+              </li>
+              <li className="flex items-center gap-2">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${stats.upcomingShowings > 0 ? 'bg-white text-green-600' : 'bg-green-400'}`}>
+                  {stats.upcomingShowings > 0 ? '✓' : '3'}
+                </div>
+                Schedule showings
+              </li>
+            </ul>
+          </div>
+
+          {/* Help Card */}
+          <div className="bg-white rounded-xl p-5 border">
+            <h3 className="font-bold text-gray-900 mb-2">Need Help?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Your agent is here to help you every step of the way.
+            </p>
+            <Link
+              href="/customer/dashboard/messages"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Message Your Agent
+            </Link>
+          </div>
+
+          {/* Market Tip */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-4 w-4 text-yellow-600" />
               </div>
-            </div>
-
-            {/* Contact Agent Card */}
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
-              <h3 className="font-semibold mb-2">Need Help?</h3>
-              <p className="text-green-100 text-sm mb-4">
-                Our team is here to help you find your perfect home.
-              </p>
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Contact Us
-              </Link>
-            </div>
-
-            {/* Tools Card */}
-            <div className="bg-white rounded-xl p-6 border">
-              <h3 className="font-semibold text-gray-900 mb-4">Buyer Tools</h3>
-              <div className="space-y-2">
-                <Link
-                  href="/tools/investment-calculator"
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <span className="text-gray-700">Investment Calculator</span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </Link>
-                <Link
-                  href="/tools/pre-qualification"
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <span className="text-gray-700">Pre-Qualification</span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </Link>
-                <Link
-                  href="/tools/mortgage-calculator"
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <span className="text-gray-700">Mortgage Calculator</span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </Link>
+              <div>
+                <h4 className="font-semibold text-yellow-800">Market Tip</h4>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Set up email alerts for your saved searches to be first to know about new listings!
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            <p>© 2025 RealtorPro by CR AudioViz AI. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   )
 }
