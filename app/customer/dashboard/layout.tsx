@@ -13,24 +13,15 @@ import {
   MessageSquare,
   FileText,
   Calculator,
-  FileCheck,
-  MapPin,
-  Briefcase,
   User,
   Settings,
   LogOut,
   Menu,
   X,
   Building2,
-  TrendingUp,
   Phone,
-  Mail,
   ChevronDown,
-  Star,
-  Clock,
-  DollarSign,
-  Shield,
-  HelpCircle,
+  Briefcase,
   Loader2
 } from 'lucide-react'
 
@@ -52,91 +43,42 @@ interface AgentInfo {
   brokerage?: string
 }
 
-// Navigation items for customer portal
+// ONLY include pages that ACTUALLY EXIST in the codebase
 const NAVIGATION = [
   { 
     name: 'Dashboard', 
     href: '/customer/dashboard', 
     icon: Home,
-    description: 'Overview & activity'
   },
   { 
-    name: 'Search Properties', 
-    href: '/customer/dashboard/search', 
+    name: 'Browse Properties', 
+    href: '/customer/dashboard/properties', 
     icon: Search,
-    description: 'Find your dream home'
   },
   { 
     name: 'Saved Homes', 
     href: '/customer/dashboard/favorites', 
     icon: Heart,
-    description: 'Your favorite properties'
-  },
-  { 
-    name: 'Saved Searches', 
-    href: '/customer/dashboard/saved-searches', 
-    icon: Star,
-    description: 'Your search alerts'
-  },
-  { 
-    name: 'Showings', 
-    href: '/customer/dashboard/showings', 
-    icon: Calendar,
-    description: 'Schedule & manage tours'
   },
   { 
     name: 'Messages', 
     href: '/customer/dashboard/messages', 
     icon: MessageSquare,
-    description: 'Chat with your agent'
   },
   { 
     name: 'Documents', 
     href: '/customer/dashboard/documents', 
     icon: FileText,
-    description: 'Contracts & disclosures'
   },
-]
-
-const TOOLS = [
   { 
     name: 'Mortgage Calculator', 
-    href: '/customer/dashboard/tools/mortgage', 
+    href: '/customer/dashboard/mortgage', 
     icon: Calculator,
-    description: 'Calculate payments'
   },
-  { 
-    name: 'Pre-Qualification', 
-    href: '/customer/dashboard/tools/pre-qualification', 
-    icon: FileCheck,
-    description: 'Get pre-qualified'
-  },
-  { 
-    name: 'Investment Calculator', 
-    href: '/customer/dashboard/tools/investment', 
-    icon: TrendingUp,
-    description: 'Analyze ROI & cash flow'
-  },
-  { 
-    name: 'Neighborhood Intel', 
-    href: '/customer/dashboard/tools/neighborhoods', 
-    icon: MapPin,
-    description: 'Area insights & data'
-  },
-]
-
-const RESOURCES = [
   { 
     name: 'Service Providers', 
     href: '/customer/dashboard/vendors', 
     icon: Briefcase,
-    description: 'Inspectors, lenders, etc.'
-  },
-  { 
-    name: 'Help & Support', 
-    href: '/customer/dashboard/help', 
-    icon: HelpCircle,
-    description: 'FAQs & guides'
   },
 ]
 
@@ -153,9 +95,6 @@ export default function CustomerPortalLayout({
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [agent, setAgent] = useState<AgentInfo | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [toolsExpanded, setToolsExpanded] = useState(true)
-  const [resourcesExpanded, setResourcesExpanded] = useState(true)
-  const [notifications, setNotifications] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
 
   useEffect(() => {
@@ -188,26 +127,30 @@ export default function CustomerPortalLayout({
         setProfile(profileData)
       }
 
-      // Try to get assigned agent
-      const { data: customerData } = await supabase
-        .from('realtor_customers')
-        .select('assigned_agent_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (customerData?.assigned_agent_id) {
-        const { data: agentData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, brokerage')
-          .eq('id', customerData.assigned_agent_id)
+      // Try to get assigned agent (graceful failure)
+      try {
+        const { data: customerData } = await supabase
+          .from('realtor_customers')
+          .select('assigned_agent_id')
+          .eq('user_id', user.id)
           .single()
-        
-        if (agentData) {
-          setAgent(agentData)
+
+        if (customerData?.assigned_agent_id) {
+          const { data: agentData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, phone, avatar_url, brokerage')
+            .eq('id', customerData.assigned_agent_id)
+            .single()
+          
+          if (agentData) {
+            setAgent(agentData)
+          }
         }
+      } catch {
+        // No assigned agent, that's fine
       }
 
-      // Get notification counts (fail gracefully if table doesn't exist)
+      // Get unread message count (graceful failure)
       try {
         const { count: msgCount } = await supabase
           .from('messages')
@@ -215,9 +158,8 @@ export default function CustomerPortalLayout({
           .eq('recipient_id', user.id)
           .eq('is_read', false)
         setUnreadMessages(msgCount || 0)
-        setNotifications(msgCount || 0)
       } catch {
-        // Messages table might not exist yet
+        // Messages table might not exist
       }
 
       setLoading(false)
@@ -243,7 +185,6 @@ export default function CustomerPortalLayout({
     )
   }
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there'
   const userInitial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
 
   return (
@@ -274,15 +215,15 @@ export default function CustomerPortalLayout({
           {/* Center: Quick Navigation (Desktop) */}
           <nav className="hidden lg:flex items-center gap-1">
             <Link 
-              href="/customer/dashboard/search"
+              href="/customer/dashboard/properties"
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                pathname?.includes('/search') 
+                pathname?.includes('/properties') 
                   ? 'bg-blue-50 text-blue-700' 
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               <Search className="h-4 w-4 inline mr-2" />
-              Search
+              Properties
             </Link>
             <Link 
               href="/customer/dashboard/favorites"
@@ -294,17 +235,6 @@ export default function CustomerPortalLayout({
             >
               <Heart className="h-4 w-4 inline mr-2" />
               Saved
-            </Link>
-            <Link 
-              href="/customer/dashboard/showings"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                pathname?.includes('/showings') 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Calendar className="h-4 w-4 inline mr-2" />
-              Showings
             </Link>
             <Link 
               href="/customer/dashboard/messages"
@@ -340,21 +270,12 @@ export default function CustomerPortalLayout({
             {/* Notifications */}
             <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
               <Bell className="h-5 w-5" />
-              {notifications > 0 && (
+              {unreadMessages > 0 && (
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               )}
             </button>
 
-            {/* Quick Tools */}
-            <Link 
-              href="/customer/dashboard/tools/mortgage"
-              className="hidden md:flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <Calculator className="h-4 w-4" />
-              Calculator
-            </Link>
-
-            {/* Profile Dropdown */}
+            {/* Profile */}
             <div className="flex items-center gap-3 pl-3 border-l">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium text-gray-900">{profile?.full_name}</p>
@@ -378,7 +299,7 @@ export default function CustomerPortalLayout({
 
       {/* ===== SIDEBAR ===== */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:shadow-none lg:border-r
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -429,12 +350,12 @@ export default function CustomerPortalLayout({
           </div>
         )}
 
-        {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: agent ? 'calc(100vh - 320px)' : 'calc(100vh - 180px)' }}>
-          {/* Main Navigation */}
+        {/* Navigation */}
+        <div className="p-4 overflow-y-auto" style={{ maxHeight: agent ? 'calc(100vh - 280px)' : 'calc(100vh - 180px)' }}>
           <nav className="space-y-1">
             {NAVIGATION.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href || 
+                (item.href !== '/customer/dashboard' && pathname?.startsWith(item.href))
               return (
                 <Link
                   key={item.name}
@@ -447,12 +368,9 @@ export default function CustomerPortalLayout({
                   }`}
                 >
                   <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                  <div className="flex-1">
-                    <span className="block">{item.name}</span>
-                    <span className="text-xs text-gray-400">{item.description}</span>
-                  </div>
+                  <span>{item.name}</span>
                   {item.name === 'Messages' && unreadMessages > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       {unreadMessages}
                     </span>
                   )}
@@ -460,92 +378,13 @@ export default function CustomerPortalLayout({
               )
             })}
           </nav>
-
-          {/* Tools Section */}
-          <div className="mt-6">
-            <button
-              onClick={() => setToolsExpanded(!toolsExpanded)}
-              className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wider"
-            >
-              <span>Tools</span>
-              <ChevronDown className={`h-4 w-4 transition ${toolsExpanded ? 'rotate-180' : ''}`} />
-            </button>
-            {toolsExpanded && (
-              <nav className="mt-1 space-y-1">
-                {TOOLS.map((item) => {
-                  const isActive = pathname === item.href
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
-                        isActive
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <div className="flex-1">
-                        <span className="block">{item.name}</span>
-                        <span className="text-xs text-gray-400">{item.description}</span>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </nav>
-            )}
-          </div>
-
-          {/* Resources Section */}
-          <div className="mt-4">
-            <button
-              onClick={() => setResourcesExpanded(!resourcesExpanded)}
-              className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wider"
-            >
-              <span>Resources</span>
-              <ChevronDown className={`h-4 w-4 transition ${resourcesExpanded ? 'rotate-180' : ''}`} />
-            </button>
-            {resourcesExpanded && (
-              <nav className="mt-1 space-y-1">
-                {RESOURCES.map((item) => {
-                  const isActive = pathname === item.href
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
-                        isActive
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                      <div className="flex-1">
-                        <span className="block">{item.name}</span>
-                        <span className="text-xs text-gray-400">{item.description}</span>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </nav>
-            )}
-          </div>
         </div>
 
         {/* Bottom Section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-gray-50">
-          <Link
-            href="/customer/dashboard/settings"
-            className="flex items-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-white rounded-lg transition"
-          >
-            <Settings className="h-5 w-5 text-gray-400" />
-            <span>Settings</span>
-          </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition mt-1"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition"
           >
             <LogOut className="h-5 w-5" />
             <span>Sign Out</span>
@@ -554,7 +393,7 @@ export default function CustomerPortalLayout({
       </aside>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="lg:pl-80 pt-16">
+      <main className="lg:pl-72 pt-16">
         <div className="p-4 lg:p-6 min-h-[calc(100vh-4rem)] pb-20 lg:pb-6">
           {children}
         </div>
@@ -573,9 +412,9 @@ export default function CustomerPortalLayout({
             <span className="text-xs">Home</span>
           </Link>
           <Link 
-            href="/customer/dashboard/search"
+            href="/customer/dashboard/properties"
             className={`flex flex-col items-center gap-1 px-3 py-2 ${
-              pathname?.includes('/search') ? 'text-blue-600' : 'text-gray-400'
+              pathname?.includes('/properties') ? 'text-blue-600' : 'text-gray-400'
             }`}
           >
             <Search className="h-5 w-5" />
