@@ -11,9 +11,11 @@ import {
   Calculator,
   MapPin,
   ArrowRight,
-  Home,
   ChevronRight,
-  Loader2
+  Loader2,
+  Star,
+  Calendar,
+  TrendingUp
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -24,18 +26,10 @@ interface DashboardStats {
   documents: number
 }
 
-interface RecentActivity {
-  id: string
-  type: 'saved' | 'showing' | 'message' | 'document' | 'search'
-  title: string
-  description: string
-  timestamp: string
-}
-
 export default function CustomerDashboardPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState('there')
   const [stats, setStats] = useState<DashboardStats>({
     savedHomes: 0,
     savedSearches: 0,
@@ -43,7 +37,6 @@ export default function CustomerDashboardPage() {
     unreadMessages: 0,
     documents: 0
   })
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
 
   useEffect(() => {
     loadDashboardData()
@@ -52,16 +45,22 @@ export default function CustomerDashboardPage() {
   async function loadDashboardData() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
-      // Get user name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-
-      setUserName(profile?.full_name?.split(' ')[0] || 'there')
+      // Get user name with graceful error handling
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single()
+        setUserName(profile?.full_name?.split(' ')[0] || 'there')
+      } catch {
+        setUserName(user.email?.split('@')[0] || 'there')
+      }
 
       // Get stats (with fallbacks for missing tables)
       const statsData: DashboardStats = {
@@ -120,26 +119,14 @@ export default function CustomerDashboardPage() {
       } catch {}
 
       setStats(statsData)
-
-      // Generate sample recent activity (will be replaced with real data)
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'search',
-          title: 'Start Your Home Search',
-          description: 'Browse thousands of listings in your area',
-          timestamp: new Date().toISOString()
-        }
-      ])
-
-      setLoading(false)
     } catch (error) {
       console.error('Error loading dashboard:', error)
+    } finally {
       setLoading(false)
     }
   }
 
-  // ONLY link to pages that ACTUALLY EXIST
+  // Quick actions - ONLY pages that exist
   const quickActions = [
     {
       title: 'Browse Properties',
@@ -147,7 +134,6 @@ export default function CustomerDashboardPage() {
       icon: Search,
       href: '/customer/dashboard/properties',
       color: 'bg-blue-500',
-      bgLight: 'bg-blue-50'
     },
     {
       title: 'Saved Homes',
@@ -155,7 +141,6 @@ export default function CustomerDashboardPage() {
       icon: Heart,
       href: '/customer/dashboard/favorites',
       color: 'bg-red-500',
-      bgLight: 'bg-red-50'
     },
     {
       title: 'Messages',
@@ -163,7 +148,6 @@ export default function CustomerDashboardPage() {
       icon: MessageSquare,
       href: '/customer/dashboard/messages',
       color: 'bg-purple-500',
-      bgLight: 'bg-purple-50',
       badge: stats.unreadMessages
     },
     {
@@ -172,11 +156,10 @@ export default function CustomerDashboardPage() {
       icon: FileText,
       href: '/customer/dashboard/documents',
       color: 'bg-green-500',
-      bgLight: 'bg-green-50'
     }
   ]
 
-  // ONLY link to pages that ACTUALLY EXIST
+  // Tools - ONLY pages that exist
   const tools = [
     {
       title: 'Mortgage Calculator',
@@ -208,7 +191,7 @@ export default function CustomerDashboardPage() {
           Welcome back, {userName}!
         </h1>
         <p className="text-blue-100 text-lg">
-          Your home buying journey starts here. Let's find your perfect home.
+          Your home buying journey starts here. Let us find your perfect home.
         </p>
         <div className="flex flex-wrap gap-3 mt-6">
           <Link
