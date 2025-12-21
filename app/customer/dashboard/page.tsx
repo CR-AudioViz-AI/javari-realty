@@ -6,20 +6,13 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Search,
   Heart,
-  Calendar,
   MessageSquare,
   FileText,
   Calculator,
-  TrendingUp,
   MapPin,
   ArrowRight,
   Home,
-  Clock,
-  Bell,
-  Star,
-  Building2,
   ChevronRight,
-  Eye,
   Loader2
 } from 'lucide-react'
 
@@ -146,12 +139,13 @@ export default function CustomerDashboardPage() {
     }
   }
 
+  // ONLY link to pages that ACTUALLY EXIST
   const quickActions = [
     {
-      title: 'Search Properties',
+      title: 'Browse Properties',
       description: 'Find homes that match your criteria',
       icon: Search,
-      href: '/customer/dashboard/search',
+      href: '/customer/dashboard/properties',
       color: 'bg-blue-500',
       bgLight: 'bg-blue-50'
     },
@@ -164,14 +158,6 @@ export default function CustomerDashboardPage() {
       bgLight: 'bg-red-50'
     },
     {
-      title: 'Schedule Showing',
-      description: 'Book a tour of any property',
-      icon: Calendar,
-      href: '/customer/dashboard/showings',
-      color: 'bg-green-500',
-      bgLight: 'bg-green-50'
-    },
-    {
       title: 'Messages',
       description: stats.unreadMessages > 0 ? `${stats.unreadMessages} unread` : 'Chat with your agent',
       icon: MessageSquare,
@@ -179,33 +165,30 @@ export default function CustomerDashboardPage() {
       color: 'bg-purple-500',
       bgLight: 'bg-purple-50',
       badge: stats.unreadMessages
+    },
+    {
+      title: 'Documents',
+      description: 'Contracts & disclosures',
+      icon: FileText,
+      href: '/customer/dashboard/documents',
+      color: 'bg-green-500',
+      bgLight: 'bg-green-50'
     }
   ]
 
+  // ONLY link to pages that ACTUALLY EXIST
   const tools = [
     {
       title: 'Mortgage Calculator',
       description: 'Estimate your monthly payments',
       icon: Calculator,
-      href: '/customer/dashboard/tools/mortgage'
+      href: '/customer/dashboard/mortgage'
     },
     {
-      title: 'Investment Calculator',
-      description: 'Analyze ROI, cap rate & cash flow',
-      icon: TrendingUp,
-      href: '/customer/dashboard/tools/investment'
-    },
-    {
-      title: 'Neighborhood Intel',
-      description: 'Schools, crime, demographics & more',
+      title: 'Service Providers',
+      description: 'Inspectors, lenders, title & more',
       icon: MapPin,
-      href: '/customer/dashboard/tools/neighborhoods'
-    },
-    {
-      title: 'Get Pre-Qualified',
-      description: 'Know your budget in 2 minutes',
-      icon: FileText,
-      href: '/customer/dashboard/tools/pre-qualification'
+      href: '/customer/dashboard/vendors'
     }
   ]
 
@@ -229,18 +212,18 @@ export default function CustomerDashboardPage() {
         </p>
         <div className="flex flex-wrap gap-3 mt-6">
           <Link
-            href="/customer/dashboard/search"
+            href="/customer/dashboard/properties"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition"
           >
             <Search className="h-4 w-4" />
-            Search Properties
+            Browse Properties
           </Link>
           <Link
-            href="/customer/dashboard/saved-searches"
+            href="/customer/dashboard/favorites"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-400 transition"
           >
-            <Star className="h-4 w-4" />
-            My Saved Searches
+            <Heart className="h-4 w-4" />
+            Saved Homes
           </Link>
         </div>
       </div>
