@@ -35,20 +35,20 @@ interface PropertyListing {
   }
 }
 
-// Convert thumbnail URL to high-resolution URL
+// Convert thumbnail URL to FULL HD original resolution
 function getHighResPhoto(url: string): string {
   if (!url) return ''
   
-  // Realtor.com photos: change size suffix for higher resolution
-  // Original: https://ap.rdcpix.com/xxx-m745489497s.jpg (small)
-  // High-res: https://ap.rdcpix.com/xxx-m745489497od-w1024_h768.jpg (large)
+  // Realtor.com photos: change 's' suffix to 'o' for ORIGINAL full resolution
+  // Thumbnail: https://ap.rdcpix.com/xxx-m745489497s.jpg (3.9 KB - blurry)
+  // Original:  https://ap.rdcpix.com/xxx-m745489497o.jpg (204 KB - FULL HD!)
   if (url.includes('rdcpix.com')) {
-    // Remove the 's' suffix and add high-res dimensions
+    // Replace 's' suffix with 'o' for original quality
     // Pattern: -m{numbers}s.jpg or -b{numbers}s.jpg or -f{numbers}s.jpg
     return url
-      .replace(/(-[mbf]\d+)s\.jpg$/i, '$1od-w1024_h768.jpg')
-      .replace(/(-[mbf]\d+)s\.webp$/i, '$1od-w1024_h768.webp')
-      .replace(/(-[mbf]\d+)s\.png$/i, '$1od-w1024_h768.png')
+      .replace(/(-[mbfe]\d+)s\.jpg$/i, '$1o.jpg')
+      .replace(/(-[mbfe]\d+)s\.webp$/i, '$1o.webp')
+      .replace(/(-[mbfe]\d+)s\.png$/i, '$1o.png')
   }
   
   return url
