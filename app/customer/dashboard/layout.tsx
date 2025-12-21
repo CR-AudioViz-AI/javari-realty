@@ -1,179 +1,143 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { User } from '@supabase/supabase-js'
 import {
   Home,
   Search,
   Heart,
   Bell,
-  Calendar,
   MessageSquare,
   FileText,
   Calculator,
-  User,
-  Settings,
   LogOut,
   Menu,
   X,
   Building2,
-  Phone,
-  ChevronDown,
   Briefcase,
   Loader2
 } from 'lucide-react'
 
-interface UserProfile {
-  id: string
-  email: string
-  full_name: string
-  phone?: string
-  role: string
-  avatar_url?: string
-}
-
-interface AgentInfo {
-  id: string
-  full_name: string
-  email: string
-  phone?: string
-  avatar_url?: string
-  brokerage?: string
-}
-
-// ONLY include pages that ACTUALLY EXIST in the codebase
+// Navigation items - ONLY pages that exist
 const NAVIGATION = [
-  { 
-    name: 'Dashboard', 
-    href: '/customer/dashboard', 
-    icon: Home,
-  },
-  { 
-    name: 'Browse Properties', 
-    href: '/customer/dashboard/properties', 
-    icon: Search,
-  },
-  { 
-    name: 'Saved Homes', 
-    href: '/customer/dashboard/favorites', 
-    icon: Heart,
-  },
-  { 
-    name: 'Messages', 
-    href: '/customer/dashboard/messages', 
-    icon: MessageSquare,
-  },
-  { 
-    name: 'Documents', 
-    href: '/customer/dashboard/documents', 
-    icon: FileText,
-  },
-  { 
-    name: 'Mortgage Calculator', 
-    href: '/customer/dashboard/mortgage', 
-    icon: Calculator,
-  },
-  { 
-    name: 'Service Providers', 
-    href: '/customer/dashboard/vendors', 
-    icon: Briefcase,
-  },
+  { name: 'Dashboard', href: '/customer/dashboard', icon: Home },
+  { name: 'Browse Properties', href: '/customer/dashboard/properties', icon: Search },
+  { name: 'Saved Homes', href: '/customer/dashboard/favorites', icon: Heart },
+  { name: 'Messages', href: '/customer/dashboard/messages', icon: MessageSquare },
+  { name: 'Documents', href: '/customer/dashboard/documents', icon: FileText },
+  { name: 'Mortgage Calculator', href: '/customer/dashboard/mortgage', icon: Calculator },
+  { name: 'Service Providers', href: '/customer/dashboard/vendors', icon: Briefcase },
 ]
 
-export default function CustomerPortalLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+// Agent roles that should NOT be in customer portal
+const AGENT_ROLES = ['realtor', 'agent', 'broker', 'admin', 'platform_admin', 'team_lead']
+
+interface Profile {
+  id: string
+  email: string | null
+  full_name: string | null
+  phone: string | null
+  role: string | null
+  avatar_url: string | null
+  brokerage: string | null
+}
+
+export default function CustomerPortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [agent, setAgent] = useState<AgentInfo | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
 
-  useEffect(() => {
-    loadUserData()
-  }, [])
+  // Create supabase client once
+  const supabase = createClient()
 
-  async function loadUserData() {
+  const loadUserData = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      if (!user) {
+      if (sessionError || !session?.user) {
+        console.log('No session, redirecting to login')
         router.push('/auth/login')
         return
       }
 
-      // Get user profile
-      const { data: profileData } = await supabase
+      setUser(session.user)
+
+      // Get profile with graceful error handling
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .select('id, email, full_name, phone, role, avatar_url, brokerage')
+        .eq('id', session.user.id)
         .single()
 
-      if (profileData) {
-        // Check if user is an agent (should not be here)
-        const agentRoles = ['realtor', 'agent', 'broker', 'admin', 'platform_admin', 'team_lead']
-        if (agentRoles.includes(profileData.role)) {
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        // Create basic profile from auth data
+        setProfile({
+          id: session.user.id,
+          email: session.user.email || null,
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          phone: null,
+          role: 'client',
+          avatar_url: null,
+          brokerage: null
+        })
+      } else if (profileData) {
+        // Check if user is an agent (should redirect)
+        if (AGENT_ROLES.includes(profileData.role || '')) {
+          console.log('Agent detected, redirecting to agent dashboard')
           router.push('/dashboard')
           return
         }
         setProfile(profileData)
       }
 
-      // Try to get assigned agent (graceful failure)
+      // Try to get unread messages count (graceful failure)
       try {
-        const { data: customerData } = await supabase
-          .from('realtor_customers')
-          .select('assigned_agent_id')
-          .eq('user_id', user.id)
-          .single()
-
-        if (customerData?.assigned_agent_id) {
-          const { data: agentData } = await supabase
-            .from('profiles')
-            .select('id, full_name, email, phone, avatar_url, brokerage')
-            .eq('id', customerData.assigned_agent_id)
-            .single()
-          
-          if (agentData) {
-            setAgent(agentData)
-          }
-        }
-      } catch {
-        // No assigned agent, that's fine
-      }
-
-      // Get unread message count (graceful failure)
-      try {
-        const { count: msgCount } = await supabase
+        const { count } = await supabase
           .from('messages')
           .select('id', { count: 'exact', head: true })
-          .eq('recipient_id', user.id)
+          .eq('recipient_id', session.user.id)
           .eq('is_read', false)
-        setUnreadMessages(msgCount || 0)
+        setUnreadMessages(count || 0)
       } catch {
-        // Messages table might not exist
+        // Table might not exist, that's OK
       }
 
-      setLoading(false)
     } catch (error) {
-      console.error('Error loading user data:', error)
+      console.error('Error in loadUserData:', error)
+    } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, router])
 
-  async function handleLogout() {
+  useEffect(() => {
+    loadUserData()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        router.push('/auth/login')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [loadUserData, supabase.auth, router])
+
+  const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -185,14 +149,30 @@ export default function CustomerPortalLayout({
     )
   }
 
-  const userInitial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
+  // Safety check - should have user by now
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Session expired. Please log in again.</p>
+          <Link href="/auth/login" className="text-blue-600 hover:underline">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const displayName = profile?.full_name || user.email?.split('@')[0] || 'User'
+  const displayEmail = profile?.email || user.email || ''
+  const userInitial = displayName.charAt(0).toUpperCase()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ===== STATIC HEADER ===== */}
+      {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b shadow-sm">
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-          {/* Left: Logo & Mobile Menu */}
+          {/* Left: Logo & Menu */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -212,62 +192,26 @@ export default function CustomerPortalLayout({
             </Link>
           </div>
 
-          {/* Center: Quick Navigation (Desktop) */}
+          {/* Center: Quick Nav (Desktop) */}
           <nav className="hidden lg:flex items-center gap-1">
-            <Link 
-              href="/customer/dashboard/properties"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                pathname?.includes('/properties') 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Search className="h-4 w-4 inline mr-2" />
-              Properties
-            </Link>
-            <Link 
-              href="/customer/dashboard/favorites"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                pathname?.includes('/favorites') 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Heart className="h-4 w-4 inline mr-2" />
-              Saved
-            </Link>
-            <Link 
-              href="/customer/dashboard/messages"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition relative ${
-                pathname?.includes('/messages') 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <MessageSquare className="h-4 w-4 inline mr-2" />
-              Messages
-              {unreadMessages > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {unreadMessages}
-                </span>
-              )}
-            </Link>
-            <Link 
-              href="/customer/dashboard/documents"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                pathname?.includes('/documents') 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <FileText className="h-4 w-4 inline mr-2" />
-              Documents
-            </Link>
+            {NAVIGATION.slice(1, 5).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  pathname?.includes(item.href.split('/').pop() || '')
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-4 w-4 inline mr-2" />
+                {item.name.split(' ')[0]}
+              </Link>
+            ))}
           </nav>
 
-          {/* Right: Actions & Profile */}
+          {/* Right: Profile */}
           <div className="flex items-center gap-2">
-            {/* Notifications */}
             <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
               <Bell className="h-5 w-5" />
               {unreadMessages > 0 && (
@@ -275,11 +219,10 @@ export default function CustomerPortalLayout({
               )}
             </button>
 
-            {/* Profile */}
             <div className="flex items-center gap-3 pl-3 border-l">
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-gray-900">{profile?.full_name}</p>
-                <p className="text-xs text-gray-500">{profile?.email}</p>
+                <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                <p className="text-xs text-gray-500">{displayEmail}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                 {userInitial}
@@ -289,7 +232,7 @@ export default function CustomerPortalLayout({
         </div>
       </header>
 
-      {/* ===== MOBILE SIDEBAR BACKDROP ===== */}
+      {/* MOBILE SIDEBAR BACKDROP */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50 lg:hidden"
@@ -297,68 +240,29 @@ export default function CustomerPortalLayout({
         />
       )}
 
-      {/* ===== SIDEBAR ===== */}
+      {/* SIDEBAR */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-xl transform transition-transform duration-300
         lg:translate-x-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:shadow-none lg:border-r
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Mobile Header */}
         <div className="lg:hidden h-16 flex items-center justify-between px-4 border-b">
           <span className="font-bold text-gray-900">Menu</span>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 text-gray-500 hover:text-gray-700"
-          >
+          <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-500">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Agent Card (if assigned) */}
-        {agent && (
-          <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Your Agent</p>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                {agent.full_name?.charAt(0) || 'A'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">{agent.full_name}</p>
-                {agent.brokerage && (
-                  <p className="text-xs text-gray-500 truncate">{agent.brokerage}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2 mt-3">
-              {agent.phone && (
-                <a 
-                  href={`tel:${agent.phone}`}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-medium text-blue-600 bg-white rounded-lg border hover:bg-blue-50"
-                >
-                  <Phone className="h-3 w-3" />
-                  Call
-                </a>
-              )}
-              <Link 
-                href="/customer/dashboard/messages"
-                className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                <MessageSquare className="h-3 w-3" />
-                Message
-              </Link>
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
-        <div className="p-4 overflow-y-auto" style={{ maxHeight: agent ? 'calc(100vh - 280px)' : 'calc(100vh - 180px)' }}>
+        <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           <nav className="space-y-1">
             {NAVIGATION.map((item) => {
-              const isActive = pathname === item.href || 
+              const isActive = pathname === item.href ||
                 (item.href !== '/customer/dashboard' && pathname?.startsWith(item.href))
               return (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
@@ -380,7 +284,7 @@ export default function CustomerPortalLayout({
           </nav>
         </div>
 
-        {/* Bottom Section */}
+        {/* Logout Button */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-gray-50">
           <button
             onClick={handleLogout}
@@ -392,58 +296,31 @@ export default function CustomerPortalLayout({
         </div>
       </aside>
 
-      {/* ===== MAIN CONTENT ===== */}
+      {/* MAIN CONTENT */}
       <main className="lg:pl-72 pt-16">
         <div className="p-4 lg:p-6 min-h-[calc(100vh-4rem)] pb-20 lg:pb-6">
           {children}
         </div>
       </main>
 
-      {/* ===== MOBILE BOTTOM NAV ===== */}
+      {/* MOBILE BOTTOM NAV */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-40">
         <div className="flex items-center justify-around h-16">
-          <Link 
-            href="/customer/dashboard"
-            className={`flex flex-col items-center gap-1 px-3 py-2 ${
-              pathname === '/customer/dashboard' ? 'text-blue-600' : 'text-gray-400'
-            }`}
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">Home</span>
-          </Link>
-          <Link 
-            href="/customer/dashboard/properties"
-            className={`flex flex-col items-center gap-1 px-3 py-2 ${
-              pathname?.includes('/properties') ? 'text-blue-600' : 'text-gray-400'
-            }`}
-          >
-            <Search className="h-5 w-5" />
-            <span className="text-xs">Search</span>
-          </Link>
-          <Link 
-            href="/customer/dashboard/favorites"
-            className={`flex flex-col items-center gap-1 px-3 py-2 ${
-              pathname?.includes('/favorites') ? 'text-blue-600' : 'text-gray-400'
-            }`}
-          >
-            <Heart className="h-5 w-5" />
-            <span className="text-xs">Saved</span>
-          </Link>
-          <Link 
-            href="/customer/dashboard/messages"
-            className={`flex flex-col items-center gap-1 px-3 py-2 relative ${
-              pathname?.includes('/messages') ? 'text-blue-600' : 'text-gray-400'
-            }`}
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-xs">Messages</span>
-            {unreadMessages > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                {unreadMessages}
-              </span>
-            )}
-          </Link>
-          <button 
+          {NAVIGATION.slice(0, 4).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 px-3 py-2 ${
+                pathname === item.href || pathname?.includes(item.href.split('/').pop() || 'x')
+                  ? 'text-blue-600'
+                  : 'text-gray-400'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs">{item.name.split(' ')[0]}</span>
+            </Link>
+          ))}
+          <button
             onClick={() => setSidebarOpen(true)}
             className="flex flex-col items-center gap-1 px-3 py-2 text-gray-400"
           >
