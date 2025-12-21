@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Agent roles that should go to agent dashboard
+const AGENT_ROLES = ['realtor', 'agent', 'broker', 'admin', 'platform_admin', 'team_lead']
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -32,9 +35,26 @@ export async function GET(request: NextRequest) {
       } catch (e) {
         // Don't block on logging errors
       }
+
+      // Get user profile to determine redirect
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, is_admin')
+        .eq('id', data.user.id)
+        .single()
+
+      // Redirect based on role
+      if (profile?.is_admin || profile?.role === 'platform_admin') {
+        return NextResponse.redirect(`${origin}/dashboard/admin`)
+      } else if (AGENT_ROLES.includes(profile?.role || '')) {
+        return NextResponse.redirect(`${origin}/dashboard`)
+      } else {
+        // Customer/client role - redirect to customer portal
+        return NextResponse.redirect(`${origin}/customer/dashboard`)
+      }
     }
   }
 
-  // Redirect to dashboard after OAuth
-  return NextResponse.redirect(`${origin}/dashboard`)
+  // Fallback - redirect to customer dashboard
+  return NextResponse.redirect(`${origin}/customer/dashboard`)
 }
