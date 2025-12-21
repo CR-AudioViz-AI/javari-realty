@@ -33,13 +33,17 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .single<{ role: string; is_admin: boolean }>()
 
-      // Redirect based on role (matching database: admin, agent, customer)
-      if (profile?.role === 'admin' || profile?.is_admin) {
+      // Redirect based on role
+      // Agent roles go to agent dashboard, customers go to customer portal
+      const agentRoles = ['admin', 'agent', 'realtor', 'broker', 'platform_admin', 'team_lead']
+      
+      if (profile?.role === 'admin' || profile?.is_admin || profile?.role === 'platform_admin') {
         router.push('/dashboard/admin')
-      } else if (profile?.role === 'agent') {
-        router.push('/dashboard/realtor')
-      } else {
+      } else if (agentRoles.includes(profile?.role || '')) {
         router.push('/dashboard')
+      } else {
+        // Customer/client role - redirect to customer portal
+        router.push('/customer/dashboard')
       }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in')
@@ -161,3 +165,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
