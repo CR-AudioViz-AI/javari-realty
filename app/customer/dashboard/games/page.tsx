@@ -1,225 +1,157 @@
 // app/customer/dashboard/games/page.tsx
-// Games Hub - All real estate learning games
 'use client'
 
+import { Home, DollarSign, MapPin, Trophy, Star, Target, TrendingUp, Gamepad2 } from 'lucide-react'
 import Link from 'next/link'
-import { 
-  Gamepad2, 
-  DollarSign, 
-  Hammer, 
-  MapPin, 
-  Trophy,
-  Flame,
-  Star,
-  ArrowRight,
-  Lock,
-  Sparkles
-} from 'lucide-react'
 
-interface GameCard {
-  id: string
-  title: string
-  description: string
-  icon: React.ElementType
-  color: string
-  bgGradient: string
-  href: string
-  available: boolean
-  comingSoon?: boolean
-  stats?: {
-    gamesPlayed?: number
-    highScore?: number
-    bestStreak?: number
-  }
-}
-
-const GAMES: GameCard[] = [
+const GAMES = [
   {
     id: 'price-guess',
     title: 'Price Guess',
-    description: 'Guess property prices to sharpen your market intuition. Learn real estate values through play!',
+    description: 'Test your property valuation skills! Guess the listing price and earn points for accuracy.',
     icon: DollarSign,
-    color: 'text-green-600',
-    bgGradient: 'from-green-500 to-emerald-600',
-    href: '/customer/dashboard/games/price-guess',
+    color: 'from-green-500 to-emerald-600',
+    bgColor: 'bg-green-50',
+    stats: { played: 0, bestScore: 0 },
     available: true,
-    stats: {
-      gamesPlayed: 0,
-      highScore: 0,
-      bestStreak: 0
-    }
+    href: '/customer/dashboard/games/price-guess'
   },
   {
     id: 'flip-or-flop',
     title: 'Flip or Flop',
-    description: 'Analyze renovation scenarios and decide if they\'re profitable. Master investment analysis!',
-    icon: Hammer,
-    color: 'text-orange-600',
-    bgGradient: 'from-orange-500 to-red-600',
-    href: '/customer/dashboard/games/flip-or-flop',
-    available: false,
-    comingSoon: true
+    description: 'Analyze real estate deals and decide: would you flip it for profit or pass on the risk?',
+    icon: Home,
+    color: 'from-orange-500 to-amber-600',
+    bgColor: 'bg-orange-50',
+    stats: { played: 0, bestScore: 0 },
+    available: true,
+    href: '/customer/dashboard/games/flip-or-flop'
   },
   {
     id: 'neighborhood-quiz',
     title: 'Neighborhood Quiz',
-    description: 'Test your knowledge of local neighborhoods, schools, and amenities. Become a local expert!',
+    description: 'Test your knowledge of Southwest Florida neighborhoods, schools, and market data.',
     icon: MapPin,
-    color: 'text-blue-600',
-    bgGradient: 'from-blue-500 to-indigo-600',
-    href: '/customer/dashboard/games/neighborhood-quiz',
-    available: false,
-    comingSoon: true
+    color: 'from-purple-500 to-indigo-600',
+    bgColor: 'bg-purple-50',
+    stats: { played: 0, bestScore: 0 },
+    available: true,
+    href: '/customer/dashboard/games/neighborhood-quiz'
   }
 ]
 
-export default function GamesPage() {
+export default function GamesHub() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Gamepad2 className="w-8 h-8" />
-            <h1 className="text-2xl font-bold">Real Estate Games</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <Link href="/customer/dashboard" className="text-indigo-600 hover:underline text-sm mb-2 inline-block">
+              ← Back to Dashboard
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-indigo-500 rounded-xl">
+                <Gamepad2 className="w-8 h-8 text-white" />
+              </div>
+              Games & Learning
+            </h1>
+            <p className="text-gray-600 mt-1">Learn real estate while having fun!</p>
           </div>
-          <p className="text-purple-100 max-w-2xl">
-            Learn real estate through play! These games are designed to help you understand 
-            property values, investment analysis, and local market knowledge.
-          </p>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Progress</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <Trophy className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-purple-600">0</p>
-              <p className="text-sm text-gray-500">Total Score</p>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-xl">
-              <Flame className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-orange-500">0</p>
-              <p className="text-sm text-gray-500">Best Streak</p>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <Gamepad2 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-600">0</p>
-              <p className="text-sm text-gray-500">Games Played</p>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-xl">
-              <Star className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-yellow-500">0</p>
-              <p className="text-sm text-gray-500">Achievements</p>
-            </div>
+        <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+            <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-500">Total Score</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+            <Star className="w-6 h-6 text-orange-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-500">Best Streak</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+            <Target className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-500">Games Played</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+            <TrendingUp className="w-6 h-6 text-green-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-500">Achievements</div>
           </div>
         </div>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           {GAMES.map((game) => {
             const Icon = game.icon
-            
             return (
-              <div
-                key={game.id}
-                className={`bg-white rounded-2xl shadow-lg overflow-hidden transition-transform hover:scale-[1.02] ${
-                  !game.available ? 'opacity-75' : ''
-                }`}
-              >
-                {/* Game Header */}
-                <div className={`bg-gradient-to-r ${game.bgGradient} p-6 text-white relative`}>
-                  {game.comingSoon && (
-                    <div className="absolute top-4 right-4">
-                      <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        Coming Soon
-                      </span>
+              <Link key={game.id} href={game.href} className="block group">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                  {/* Game Header */}
+                  <div className={`h-32 bg-gradient-to-br ${game.color} p-6 flex items-end`}>
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                      <Icon className="w-8 h-8 text-white" />
                     </div>
-                  )}
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
-                    <Icon className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-bold">{game.title}</h3>
-                </div>
-
-                {/* Game Content */}
-                <div className="p-6">
-                  <p className="text-gray-600 mb-4">{game.description}</p>
-
-                  {/* Stats (if available) */}
-                  {game.stats && game.available && (
-                    <div className="flex gap-4 mb-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">High Score:</span>
-                        <span className="ml-1 font-semibold">{game.stats.highScore}</span>
+                  
+                  {/* Game Content */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                      {game.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">{game.description}</p>
+                    
+                    {/* Stats */}
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                      <div className="flex items-center gap-1">
+                        <Target className="w-4 h-4" />
+                        <span>{game.stats.played} played</span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Streak:</span>
-                        <span className="ml-1 font-semibold">{game.stats.bestStreak}</span>
+                      <div className="flex items-center gap-1">
+                        <Trophy className="w-4 h-4" />
+                        <span>Best: {game.stats.bestScore}</span>
                       </div>
                     </div>
-                  )}
-
-                  {/* Action Button */}
-                  {game.available ? (
-                    <Link
-                      href={game.href}
-                      className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 bg-gradient-to-r ${game.bgGradient} text-white hover:opacity-90 transition-opacity`}
-                    >
-                      Play Now
-                      <ArrowRight className="w-5 h-5" />
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed"
-                    >
-                      <Lock className="w-5 h-5" />
-                      Coming Soon
-                    </button>
-                  )}
+                    
+                    {/* Play Button */}
+                    <div className={`w-full py-3 rounded-xl font-medium text-center transition-all bg-gradient-to-r ${game.color} text-white group-hover:opacity-90`}>
+                      Play Now →
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>
 
         {/* Benefits Section */}
-        <div className="mt-12 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-2xl p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
-            Why Play Real Estate Games?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Why Play These Games?</h2>
+          <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <DollarSign className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <DollarSign className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Market Intuition</h3>
-              <p className="text-sm text-gray-600">
-                Develop a natural feel for property values and market trends through practice.
-              </p>
+              <h3 className="font-semibold text-gray-900 mb-2">Learn Property Values</h3>
+              <p className="text-sm text-gray-600">Develop an instinct for pricing by analyzing real market data.</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Trophy className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <MapPin className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Competitive Edge</h3>
-              <p className="text-sm text-gray-600">
-                Sharpen your skills and outperform others in real estate decisions.
-              </p>
+              <h3 className="font-semibold text-gray-900 mb-2">Know Your Market</h3>
+              <p className="text-sm text-gray-600">Master neighborhood demographics, schools, and amenities.</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Gamepad2 className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Home className="w-6 h-6 text-orange-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Fun Learning</h3>
-              <p className="text-sm text-gray-600">
-                Make learning about real estate enjoyable and engaging.
-              </p>
+              <h3 className="font-semibold text-gray-900 mb-2">Spot Good Deals</h3>
+              <p className="text-sm text-gray-600">Train your eye to identify profitable investment opportunities.</p>
             </div>
           </div>
         </div>
