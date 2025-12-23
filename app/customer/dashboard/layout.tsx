@@ -8,7 +8,7 @@ import { User } from '@supabase/supabase-js'
 import {
   Home, Search, Heart, Bell, MessageSquare, FileText, Calculator,
   LogOut, Menu, X, Briefcase, Loader2, Shield, Gamepad2, 
-  GraduationCap, ClipboardList
+  GraduationCap, ClipboardList, Building2, TrendingUp
 } from 'lucide-react'
 
 const NAVIGATION = [
@@ -16,12 +16,13 @@ const NAVIGATION = [
   { name: 'Property Intelligence', href: '/customer/dashboard/intelligence', icon: Shield },
   { name: 'Browse Properties', href: '/customer/dashboard/properties', icon: Search },
   { name: 'Saved Homes', href: '/customer/dashboard/favorites', icon: Heart },
+  { name: 'Mortgage Calculator', href: '/customer/dashboard/mortgage', icon: Calculator },
+  { name: 'Investment Calculator', href: '/customer/dashboard/investment-calculator', icon: Building2 },
   { name: 'Checklists', href: '/customer/dashboard/checklists', icon: ClipboardList },
   { name: 'Education', href: '/customer/dashboard/education', icon: GraduationCap },
   { name: 'Games', href: '/customer/dashboard/games', icon: Gamepad2 },
   { name: 'Messages', href: '/customer/dashboard/messages', icon: MessageSquare },
   { name: 'Documents', href: '/customer/dashboard/documents', icon: FileText },
-  { name: 'Mortgage Calculator', href: '/customer/dashboard/mortgage', icon: Calculator },
   { name: 'Service Providers', href: '/customer/dashboard/vendors', icon: Briefcase },
 ]
 
