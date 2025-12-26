@@ -1,7 +1,7 @@
 // app/api/property-intelligence/route.ts
 // Main API endpoint for Property Intelligence Card data
-// Aggregates data from FEMA, EPA, USGS, NWS, Walk Score, Google Places, Yelp APIs
-// Updated: December 25, 2025 - Fixed imports to match actual exports
+// Aggregates data from FEMA, EPA, USGS, NWS, Walk Score, Google Places APIs
+// Updated: December 25, 2025 - Removed Yelp (paid), using Google Places for amenities
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getFloodZone } from '@/lib/apis/fema-flood'
@@ -10,8 +10,7 @@ import { getEnvironmentalData } from '@/lib/apis/epa-environment'
 import { getEarthquakeHistory } from '@/lib/apis/usgs-earthquakes'
 import { getWeatherData } from '@/lib/apis/nws-weather'
 import { getWalkScore, WalkScoreData } from '@/lib/apis/walk-score'
-import { getNearbyAmenities, YelpBusiness } from '@/lib/apis/yelp-fusion'
-import { getNearbyPlacesSummary, GooglePlace } from '@/lib/apis/google-places'
+import { searchNearbyPlaces, GooglePlace } from '@/lib/apis/google-places'
 
 export interface PropertyIntelligenceRequest {
   lat: number
@@ -23,6 +22,11 @@ export interface PropertyIntelligenceRequest {
   radius?: number
 }
 
+interface NearbyCategory {
+  count: number
+  places: GooglePlace[]
+}
+
 export interface PropertyIntelligenceResponse {
   success: boolean
   data: {
@@ -32,8 +36,7 @@ export interface PropertyIntelligenceResponse {
     earthquakes?: any
     weather?: any
     walkScore?: WalkScoreData
-    nearbyAmenities?: Record<string, { count: number; topPicks: YelpBusiness[] }>
-    nearbyPlaces?: Record<string, { count: number; nearest: GooglePlace | null }>
+    nearbyAmenities?: Record<string, NearbyCategory>
   }
   propertyScore: {
     score: number
@@ -45,10 +48,65 @@ export interface PropertyIntelligenceResponse {
   queriedAt: string
 }
 
-function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): PropertyIntelligenceResponse['propertyScore'] {
+// Fetch nearby places by category using Google Places
+async function fetchNearbyAmenities(
+  lat: number,
+  lng: number,
+  radius: number
+): Promise<Record<string, NearbyCategory>> {
+  const categories = [
+    { key: 'restaurants', type: 'restaurant' },
+    { key: 'grocery', type: 'supermarket' },
+    { key: 'gyms', type: 'gym' },
+    { key: 'coffee', type: 'cafe' },
+    { key: 'banks', type: 'bank' },
+    { key: 'pharmacy', type: 'pharmacy' },
+    { key: 'schools', type: 'school' },
+    { key: 'parks', type: 'park' },
+    { key: 'gas_stations', type: 'gas_station' },
+    { key: 'transit', type: 'transit_station' },
+  ]
+
+  const results: Record<string, NearbyCategory> = {}
+
+  // Fetch all categories in parallel
+  const promises = categories.map(async ({ key, type }) => {
+    try {
+      const response = await searchNearbyPlaces(lat, lng, {
+        type,
+        radius,
+      })
+      return {
+        key,
+        data: {
+          count: response.results.length,
+          places: response.results.slice(0, 5), // Top 5 for each category
+        },
+      }
+    } catch (error) {
+      return {
+        key,
+        data: { count: 0, places: [] },
+      }
+    }
+  })
+
+  const responses = await Promise.all(promises)
+
+  for (const { key, data } of responses) {
+    results[key] = data
+  }
+
+  return results
+}
+
+function calculatePropertyScore(
+  data: PropertyIntelligenceResponse['data']
+): PropertyIntelligenceResponse['propertyScore'] {
   const factors: { name: string; impact: number; reason: string }[] = []
   let totalScore = 70
 
+  // Walk Score impact
   if (data.walkScore) {
     const walkImpact = Math.round((data.walkScore.walkscore || 0) * 0.3)
     totalScore += walkImpact - 15
@@ -67,8 +125,19 @@ function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): Pro
         reason: `Transit Score: ${data.walkScore.transitScore}`,
       })
     }
+
+    if (data.walkScore.bikeScore) {
+      const bikeImpact = Math.round(data.walkScore.bikeScore * 0.05)
+      totalScore += bikeImpact - 2
+      factors.push({
+        name: 'Bikeability',
+        impact: bikeImpact - 2,
+        reason: `Bike Score: ${data.walkScore.bikeScore}`,
+      })
+    }
   }
 
+  // Flood risk impact
   if (data.flood) {
     let floodImpact = 0
     const zone = data.flood.floodZone || ''
@@ -87,26 +156,53 @@ function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): Pro
     })
   }
 
+  // Nearby amenities impact (Google Places)
   if (data.nearbyAmenities) {
     let amenityScore = 0
     const categories = Object.keys(data.nearbyAmenities)
+    
     for (const cat of categories) {
       const count = data.nearbyAmenities[cat].count
-      if (count > 10) amenityScore += 2
-      else if (count > 5) amenityScore += 1.5
-      else if (count > 0) amenityScore += 1
+      if (count >= 10) amenityScore += 1.5
+      else if (count >= 5) amenityScore += 1
+      else if (count > 0) amenityScore += 0.5
     }
-    amenityScore = Math.min(amenityScore, 15)
+    
+    amenityScore = Math.min(Math.round(amenityScore), 15)
     totalScore += amenityScore
+    
+    const totalPlaces = Object.values(data.nearbyAmenities).reduce(
+      (sum, cat) => sum + cat.count,
+      0
+    )
+    
     factors.push({
       name: 'Nearby Amenities',
       impact: amenityScore,
-      reason: `${categories.length} categories of amenities nearby`,
+      reason: `${totalPlaces} places across ${categories.length} categories within 1 mile`,
     })
   }
 
+  // Environment impact
+  if (data.environment?.airQuality) {
+    const aqi = data.environment.airQuality.aqi || 50
+    let envImpact = 5
+    if (aqi > 150) envImpact = -10
+    else if (aqi > 100) envImpact = -5
+    else if (aqi > 50) envImpact = 0
+    
+    totalScore += envImpact
+    factors.push({
+      name: 'Air Quality',
+      impact: envImpact,
+      reason: `AQI: ${aqi} - ${data.environment.airQuality.category || 'Moderate'}`,
+    })
+  }
+
+  // Normalize score
   totalScore = Math.max(0, Math.min(100, totalScore))
 
+  // Determine grade
   let grade = 'C'
   if (totalScore >= 90) grade = 'A+'
   else if (totalScore >= 85) grade = 'A'
@@ -121,10 +217,11 @@ function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): Pro
   else if (totalScore >= 40) grade = 'D'
   else grade = 'F'
 
+  // Generate summary
   const positiveFactors = factors.filter((f) => f.impact > 0)
   const negativeFactors = factors.filter((f) => f.impact < 0)
 
-  let summary = `This property scores ${totalScore}/100 (${grade}). `
+  let summary = `This property scores ${Math.round(totalScore)}/100 (${grade}). `
   if (positiveFactors.length > 0) {
     summary += `Strengths: ${positiveFactors.map((f) => f.name.toLowerCase()).join(', ')}. `
   }
@@ -169,82 +266,87 @@ export async function POST(request: NextRequest) {
               errors.walkScore = response.error || 'Failed to fetch Walk Score'
             }
           })
-          .catch((err) => { errors.walkScore = err.message })
-      )
-    }
-
-    // Nearby Amenities (Yelp)
-    if (toggles.includes('amenities') || toggles.includes('yelp') || toggles.includes('all')) {
-      fetchPromises.push(
-        getNearbyAmenities(lat, lng, radius)
-          .then((response) => {
-            if (response.success) {
-              results.nearbyAmenities = response.amenities
-            } else {
-              errors.nearbyAmenities = response.error || 'Failed to fetch amenities'
-            }
+          .catch((err) => {
+            errors.walkScore = err.message
           })
-          .catch((err) => { errors.nearbyAmenities = err.message })
       )
     }
 
-    // Nearby Places (Google)
-    if (toggles.includes('places') || toggles.includes('google') || toggles.includes('all')) {
+    // Nearby Amenities (Google Places - FREE)
+    if (toggles.includes('amenities') || toggles.includes('places') || toggles.includes('all')) {
       fetchPromises.push(
-        getNearbyPlacesSummary(lat, lng, radius)
-          .then((response) => {
-            if (response.success) {
-              results.nearbyPlaces = response.summary
-            } else {
-              errors.nearbyPlaces = response.error || 'Failed to fetch places'
-            }
+        fetchNearbyAmenities(lat, lng, radius)
+          .then((amenities) => {
+            results.nearbyAmenities = amenities
           })
-          .catch((err) => { errors.nearbyPlaces = err.message })
+          .catch((err) => {
+            errors.nearbyAmenities = err.message
+          })
       )
     }
 
-    // Flood Risk (FEMA)
+    // Flood Risk (FEMA - FREE)
     if (toggles.includes('flood') || toggles.includes('risk') || toggles.includes('all')) {
       fetchPromises.push(
         getFloodZone(lat, lng)
-          .then((data) => { results.flood = data })
-          .catch((err) => { errors.flood = err.message })
+          .then((data) => {
+            results.flood = data
+          })
+          .catch((err) => {
+            errors.flood = err.message
+          })
       )
     }
 
-    // Disaster History
+    // Disaster History (OpenFEMA - FREE)
     if ((toggles.includes('disasters') || toggles.includes('risk') || toggles.includes('all')) && fipsCode) {
       fetchPromises.push(
         getDisasterHistory(fipsCode)
-          .then((data) => { results.disasters = data })
-          .catch((err) => { errors.disasters = err.message })
+          .then((data) => {
+            results.disasters = data
+          })
+          .catch((err) => {
+            errors.disasters = err.message
+          })
       )
     }
 
-    // Environmental (EPA)
+    // Environmental (EPA - FREE)
     if (toggles.includes('environment') || toggles.includes('all')) {
       fetchPromises.push(
         getEnvironmentalData(lat, lng)
-          .then((data) => { results.environment = data })
-          .catch((err) => { errors.environment = err.message })
+          .then((data) => {
+            results.environment = data
+          })
+          .catch((err) => {
+            errors.environment = err.message
+          })
       )
     }
 
-    // Earthquakes (USGS)
+    // Earthquakes (USGS - FREE)
     if (toggles.includes('earthquakes') || toggles.includes('risk') || toggles.includes('all')) {
       fetchPromises.push(
         getEarthquakeHistory(lat, lng)
-          .then((data) => { results.earthquakes = data })
-          .catch((err) => { errors.earthquakes = err.message })
+          .then((data) => {
+            results.earthquakes = data
+          })
+          .catch((err) => {
+            errors.earthquakes = err.message
+          })
       )
     }
 
-    // Weather (NWS)
+    // Weather (NWS - FREE)
     if (toggles.includes('weather') || toggles.includes('all')) {
       fetchPromises.push(
         getWeatherData(lat, lng)
-          .then((data) => { results.weather = data })
-          .catch((err) => { errors.weather = err.message })
+          .then((data) => {
+            results.weather = data
+          })
+          .catch((err) => {
+            errors.weather = err.message
+          })
       )
     }
 
