@@ -1,6 +1,7 @@
 // app/api/property-intelligence/route.ts
 // Main API endpoint for Property Intelligence Card data
-// Aggregates data from FEMA, EPA, USGS, NWS APIs
+// Aggregates data from FEMA, EPA, USGS, NWS, Walk Score, Google Places, Yelp APIs
+// Updated: December 25, 2025 - Added Walk Score, Google Places, Yelp
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getFloodRisk, FloodRiskData } from '@/lib/apis/fema-flood'
@@ -8,6 +9,9 @@ import { getDisasterHistory, DisasterHistory } from '@/lib/apis/fema-disasters'
 import { getEnvironmentalData, EnvironmentalData } from '@/lib/apis/epa-environment'
 import { getEarthquakeHistory, EarthquakeData } from '@/lib/apis/usgs-earthquakes'
 import { getWeatherData, WeatherData } from '@/lib/apis/nws-weather'
+import { getWalkScore, WalkScoreData } from '@/lib/apis/walk-score'
+import { getNearbyAmenities, YelpBusiness } from '@/lib/apis/yelp-fusion'
+import { getNearbyPlacesSummary, GooglePlace } from '@/lib/apis/google-places'
 
 export interface PropertyIntelligenceRequest {
   lat: number
@@ -16,6 +20,7 @@ export interface PropertyIntelligenceRequest {
   toggles: string[] // Which data layers to fetch
   fipsCode?: string // For disaster history
   censusTract?: string // For demographics
+  radius?: number // Radius in meters for nearby search
 }
 
 export interface PropertyIntelligenceResponse {
@@ -26,6 +31,9 @@ export interface PropertyIntelligenceResponse {
     environment?: EnvironmentalData
     earthquakes?: EarthquakeData
     weather?: WeatherData
+    walkScore?: WalkScoreData
+    nearbyAmenities?: Record<string, { count: number; topPicks: YelpBusiness[] }>
+    nearbyPlaces?: Record<string, { count: number; nearest: GooglePlace | null }>
   }
   propertyScore: {
     score: number
@@ -37,10 +45,144 @@ export interface PropertyIntelligenceResponse {
   queriedAt: string
 }
 
+// Calculate overall property score based on all data
+function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): PropertyIntelligenceResponse['propertyScore'] {
+  const factors: { name: string; impact: number; reason: string }[] = []
+  let totalScore = 70 // Base score
+
+  // Walk Score impact (0-30 points)
+  if (data.walkScore) {
+    const walkImpact = Math.round((data.walkScore.walkscore || 0) * 0.3)
+    totalScore += walkImpact - 15 // Normalize around 0
+    factors.push({
+      name: 'Walkability',
+      impact: walkImpact - 15,
+      reason: `Walk Score: ${data.walkScore.walkscore || 'N/A'} - ${data.walkScore.walkDescription}`,
+    })
+
+    if (data.walkScore.transitScore) {
+      const transitImpact = Math.round(data.walkScore.transitScore * 0.1)
+      totalScore += transitImpact - 5
+      factors.push({
+        name: 'Transit Access',
+        impact: transitImpact - 5,
+        reason: `Transit Score: ${data.walkScore.transitScore} - ${data.walkScore.transitDescription}`,
+      })
+    }
+  }
+
+  // Flood risk impact (-20 to +10 points)
+  if (data.flood) {
+    let floodImpact = 0
+    if (data.flood.floodZone?.startsWith('A') || data.flood.floodZone?.startsWith('V')) {
+      floodImpact = -20
+    } else if (data.flood.floodZone?.startsWith('B') || data.flood.floodZone?.startsWith('X500')) {
+      floodImpact = -5
+    } else if (data.flood.floodZone === 'X' || data.flood.floodZone === 'C') {
+      floodImpact = 10
+    }
+    totalScore += floodImpact
+    factors.push({
+      name: 'Flood Risk',
+      impact: floodImpact,
+      reason: `Zone ${data.flood.floodZone || 'Unknown'} - ${data.flood.riskLevel || 'Unknown risk'}`,
+    })
+  }
+
+  // Environmental impact (-15 to +5 points)
+  if (data.environment) {
+    let envImpact = 5 // Default positive
+    if (data.environment.airQuality) {
+      const aqi = data.environment.airQuality.aqi || 50
+      if (aqi > 150) envImpact = -15
+      else if (aqi > 100) envImpact = -10
+      else if (aqi > 50) envImpact = 0
+    }
+    totalScore += envImpact
+    factors.push({
+      name: 'Air Quality',
+      impact: envImpact,
+      reason: `AQI: ${data.environment.airQuality?.aqi || 'N/A'} - ${data.environment.airQuality?.category || 'Unknown'}`,
+    })
+  }
+
+  // Nearby amenities impact (0-15 points)
+  if (data.nearbyAmenities) {
+    let amenityScore = 0
+    const categories = Object.keys(data.nearbyAmenities)
+    for (const cat of categories) {
+      const count = data.nearbyAmenities[cat].count
+      if (count > 10) amenityScore += 2
+      else if (count > 5) amenityScore += 1.5
+      else if (count > 0) amenityScore += 1
+    }
+    amenityScore = Math.min(amenityScore, 15)
+    totalScore += amenityScore
+    factors.push({
+      name: 'Nearby Amenities',
+      impact: amenityScore,
+      reason: `${categories.length} categories of amenities nearby`,
+    })
+  }
+
+  // Earthquake risk impact (-10 to 0 points)
+  if (data.earthquakes && data.earthquakes.recentEvents && data.earthquakes.recentEvents.length > 0) {
+    const significantQuakes = data.earthquakes.recentEvents.filter(
+      (e: any) => e.magnitude >= 4.0
+    ).length
+    const quakeImpact = significantQuakes > 5 ? -10 : significantQuakes > 2 ? -5 : 0
+    totalScore += quakeImpact
+    if (quakeImpact !== 0) {
+      factors.push({
+        name: 'Seismic Activity',
+        impact: quakeImpact,
+        reason: `${significantQuakes} significant earthquakes (4.0+) in area`,
+      })
+    }
+  }
+
+  // Normalize score to 0-100
+  totalScore = Math.max(0, Math.min(100, totalScore))
+
+  // Determine grade
+  let grade = 'C'
+  if (totalScore >= 90) grade = 'A+'
+  else if (totalScore >= 85) grade = 'A'
+  else if (totalScore >= 80) grade = 'A-'
+  else if (totalScore >= 75) grade = 'B+'
+  else if (totalScore >= 70) grade = 'B'
+  else if (totalScore >= 65) grade = 'B-'
+  else if (totalScore >= 60) grade = 'C+'
+  else if (totalScore >= 55) grade = 'C'
+  else if (totalScore >= 50) grade = 'C-'
+  else if (totalScore >= 45) grade = 'D+'
+  else if (totalScore >= 40) grade = 'D'
+  else grade = 'F'
+
+  // Generate summary
+  const positiveFactors = factors.filter((f) => f.impact > 0)
+  const negativeFactors = factors.filter((f) => f.impact < 0)
+
+  let summary = `This property scores ${totalScore}/100 (${grade}). `
+  if (positiveFactors.length > 0) {
+    summary += `Strengths: ${positiveFactors.map((f) => f.name.toLowerCase()).join(', ')}. `
+  }
+  if (negativeFactors.length > 0) {
+    summary += `Concerns: ${negativeFactors.map((f) => f.name.toLowerCase()).join(', ')}.`
+  }
+
+  return {
+    score: Math.round(totalScore),
+    grade,
+    summary,
+    factors,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: PropertyIntelligenceRequest = await request.json()
-    const { lat, lng, toggles = ['flood'], fipsCode } = body
+    const { lat, lng, address, toggles = ['flood'], fipsCode, radius = 1609 } = body
 
     // Validate required fields
     if (!lat || !lng) {
@@ -63,12 +205,67 @@ export async function POST(request: NextRequest) {
     // Build array of promises based on requested toggles
     const fetchPromises: Promise<void>[] = []
 
+    // Walk Score (always fetch if walkability toggle is on)
+    if (toggles.includes('walkability') || toggles.includes('walkscore') || toggles.includes('all')) {
+      fetchPromises.push(
+        getWalkScore(lat, lng, address)
+          .then((response) => {
+            if (response.success && response.data) {
+              results.walkScore = response.data
+            } else {
+              errors.walkScore = response.error || 'Failed to fetch Walk Score'
+            }
+          })
+          .catch((err) => {
+            errors.walkScore = err.message
+          })
+      )
+    }
+
+    // Nearby Amenities (Yelp)
+    if (toggles.includes('amenities') || toggles.includes('yelp') || toggles.includes('all')) {
+      fetchPromises.push(
+        getNearbyAmenities(lat, lng, radius)
+          .then((response) => {
+            if (response.success) {
+              results.nearbyAmenities = response.amenities
+            } else {
+              errors.nearbyAmenities = response.error || 'Failed to fetch amenities'
+            }
+          })
+          .catch((err) => {
+            errors.nearbyAmenities = err.message
+          })
+      )
+    }
+
+    // Nearby Places (Google)
+    if (toggles.includes('places') || toggles.includes('google') || toggles.includes('all')) {
+      fetchPromises.push(
+        getNearbyPlacesSummary(lat, lng, radius)
+          .then((response) => {
+            if (response.success) {
+              results.nearbyPlaces = response.summary
+            } else {
+              errors.nearbyPlaces = response.error || 'Failed to fetch places'
+            }
+          })
+          .catch((err) => {
+            errors.nearbyPlaces = err.message
+          })
+      )
+    }
+
     // Flood Risk (FEMA)
     if (toggles.includes('flood') || toggles.includes('risk') || toggles.includes('all')) {
       fetchPromises.push(
         getFloodRisk(lat, lng)
-          .then(data => { results.flood = data })
-          .catch(err => { errors.flood = err.message })
+          .then((data) => {
+            results.flood = data
+          })
+          .catch((err) => {
+            errors.flood = err.message
+          })
       )
     }
 
@@ -76,8 +273,12 @@ export async function POST(request: NextRequest) {
     if ((toggles.includes('disasters') || toggles.includes('risk') || toggles.includes('all')) && fipsCode) {
       fetchPromises.push(
         getDisasterHistory(fipsCode)
-          .then(data => { results.disasters = data })
-          .catch(err => { errors.disasters = err.message })
+          .then((data) => {
+            results.disasters = data
+          })
+          .catch((err) => {
+            errors.disasters = err.message
+          })
       )
     }
 
@@ -85,31 +286,43 @@ export async function POST(request: NextRequest) {
     if (toggles.includes('environment') || toggles.includes('all')) {
       fetchPromises.push(
         getEnvironmentalData(lat, lng)
-          .then(data => { results.environment = data })
-          .catch(err => { errors.environment = err.message })
+          .then((data) => {
+            results.environment = data
+          })
+          .catch((err) => {
+            errors.environment = err.message
+          })
       )
     }
 
-    // Earthquake History (USGS)
+    // Earthquake Risk (USGS)
     if (toggles.includes('earthquakes') || toggles.includes('risk') || toggles.includes('all')) {
       fetchPromises.push(
         getEarthquakeHistory(lat, lng)
-          .then(data => { results.earthquakes = data })
-          .catch(err => { errors.earthquakes = err.message })
+          .then((data) => {
+            results.earthquakes = data
+          })
+          .catch((err) => {
+            errors.earthquakes = err.message
+          })
       )
     }
 
-    // Weather & Alerts (NWS)
+    // Weather (NWS)
     if (toggles.includes('weather') || toggles.includes('all')) {
       fetchPromises.push(
         getWeatherData(lat, lng)
-          .then(data => { results.weather = data })
-          .catch(err => { errors.weather = err.message })
+          .then((data) => {
+            results.weather = data
+          })
+          .catch((err) => {
+            errors.weather = err.message
+          })
       )
     }
 
-    // Execute all requests in parallel
-    await Promise.all(fetchPromises)
+    // Execute all fetches in parallel
+    await Promise.allSettled(fetchPromises)
 
     // Calculate property score
     const propertyScore = calculatePropertyScore(results)
@@ -119,202 +332,44 @@ export async function POST(request: NextRequest) {
       data: results,
       propertyScore,
       errors: Object.keys(errors).length > 0 ? errors : undefined,
-      queriedAt: new Date().toISOString()
+      queriedAt: new Date().toISOString(),
     }
 
     return NextResponse.json(response)
-  } catch (error: any) {
+  } catch (error) {
     console.error('Property Intelligence API error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch property intelligence',
-        details: error.message 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        queriedAt: new Date().toISOString(),
       },
       { status: 500 }
     )
   }
 }
 
-// GET endpoint for simpler requests
+// GET endpoint for simple queries
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
+  const { searchParams } = new URL(request.url)
+
   const lat = parseFloat(searchParams.get('lat') || '')
   const lng = parseFloat(searchParams.get('lng') || '')
-  const toggles = searchParams.get('toggles')?.split(',') || ['flood']
+  const address = searchParams.get('address') || undefined
+  const toggles = searchParams.get('toggles')?.split(',') || ['all']
   const fipsCode = searchParams.get('fips') || undefined
 
-  if (!lat || !lng) {
+  if (isNaN(lat) || isNaN(lng)) {
     return NextResponse.json(
-      { success: false, error: 'lat and lng query parameters required' },
+      { success: false, error: 'Valid lat and lng query params required' },
       { status: 400 }
     )
   }
 
-  // Forward to POST handler
-  const mockRequest = new NextRequest(request.url, {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng, toggles, fipsCode })
-  })
+  // Convert to POST request format
+  const fakeRequest = {
+    json: async () => ({ lat, lng, address, toggles, fipsCode }),
+  } as NextRequest
 
-  return POST(mockRequest)
-}
-
-function calculatePropertyScore(data: PropertyIntelligenceResponse['data']): PropertyIntelligenceResponse['propertyScore'] {
-  let score = 100
-  const factors: { name: string; impact: number; reason: string }[] = []
-
-  // === FLOOD RISK ===
-  if (data.flood) {
-    if (data.flood.sfha) {
-      // Special Flood Hazard Area - significant deduction
-      score -= 20
-      factors.push({
-        name: 'Flood Zone',
-        impact: -20,
-        reason: `Property in ${data.flood.floodZone} - Special Flood Hazard Area (flood insurance required)`
-      })
-    } else if (data.flood.riskLevel === 'moderate') {
-      score -= 5
-      factors.push({
-        name: 'Flood Zone',
-        impact: -5,
-        reason: 'Moderate flood risk zone (500-year floodplain)'
-      })
-    } else if (data.flood.riskLevel === 'minimal') {
-      // Positive factor for minimal flood risk
-      factors.push({
-        name: 'Flood Zone',
-        impact: 0,
-        reason: `Zone ${data.flood.floodZone} - Minimal flood risk`
-      })
-    }
-  }
-
-  // === DISASTER HISTORY ===
-  if (data.disasters) {
-    const avg = data.disasters.averageDisastersPerYear
-    if (avg >= 2) {
-      score -= 15
-      factors.push({
-        name: 'Disaster History',
-        impact: -15,
-        reason: `High disaster frequency (${avg.toFixed(1)} events/year avg)`
-      })
-    } else if (avg >= 1) {
-      score -= 10
-      factors.push({
-        name: 'Disaster History',
-        impact: -10,
-        reason: `Moderate disaster history (${avg.toFixed(1)} events/year)`
-      })
-    } else if (avg >= 0.5) {
-      score -= 5
-      factors.push({
-        name: 'Disaster History',
-        impact: -5,
-        reason: `Some disaster history (${data.disasters.totalDisasters} events in ${data.disasters.yearsAnalyzed} years)`
-      })
-    }
-  }
-
-  // === ENVIRONMENTAL ===
-  if (data.environment) {
-    switch (data.environment.overallRisk) {
-      case 'high':
-        score -= 20
-        factors.push({
-          name: 'Environmental',
-          impact: -20,
-          reason: 'Superfund site within 0.5 miles - significant environmental concern'
-        })
-        break
-      case 'elevated':
-        score -= 10
-        factors.push({
-          name: 'Environmental',
-          impact: -10,
-          reason: 'Environmental facilities nearby warrant review'
-        })
-        break
-      case 'moderate':
-        score -= 3
-        factors.push({
-          name: 'Environmental',
-          impact: -3,
-          reason: 'Some environmental facilities in area (at safe distances)'
-        })
-        break
-    }
-  }
-
-  // === EARTHQUAKES ===
-  if (data.earthquakes) {
-    switch (data.earthquakes.riskLevel) {
-      case 'high':
-        score -= 15
-        factors.push({
-          name: 'Seismic Activity',
-          impact: -15,
-          reason: `History of M5.0+ earthquakes - ${data.earthquakes.majorEvents} major events recorded`
-        })
-        break
-      case 'moderate':
-        score -= 8
-        factors.push({
-          name: 'Seismic Activity',
-          impact: -8,
-          reason: 'Moderate seismic activity history'
-        })
-        break
-      case 'low':
-        score -= 2
-        factors.push({
-          name: 'Seismic Activity',
-          impact: -2,
-          reason: 'Low seismic activity - minor risk'
-        })
-        break
-      case 'minimal':
-        // Florida typically falls here - no deduction
-        break
-    }
-  }
-
-  // === WEATHER ALERTS ===
-  if (data.weather?.hasSevereAlerts) {
-    // Don't affect score permanently, but note active alerts
-    factors.push({
-      name: 'Active Alerts',
-      impact: 0,
-      reason: `${data.weather.alerts.length} active weather alert(s) - review before visiting`
-    })
-  }
-
-  // Ensure score is within bounds
-  score = Math.max(0, Math.min(100, score))
-
-  // Determine grade
-  let grade: string
-  if (score >= 90) grade = 'A'
-  else if (score >= 80) grade = 'B'
-  else if (score >= 70) grade = 'C'
-  else if (score >= 60) grade = 'D'
-  else grade = 'F'
-
-  // Generate summary
-  let summary: string
-  if (score >= 90) {
-    summary = 'Excellent location profile with minimal identified risks. Standard due diligence recommended.'
-  } else if (score >= 80) {
-    summary = 'Good location with minor considerations. Review the identified factors before proceeding.'
-  } else if (score >= 70) {
-    summary = 'Acceptable location with notable factors requiring attention. Careful evaluation recommended.'
-  } else if (score >= 60) {
-    summary = 'Location has significant risk factors. Thorough investigation and professional consultation advised.'
-  } else {
-    summary = 'Multiple serious risk factors identified. Proceed with extreme caution and professional guidance.'
-  }
-
-  return { score, grade, summary, factors }
+  return POST(fakeRequest)
 }
