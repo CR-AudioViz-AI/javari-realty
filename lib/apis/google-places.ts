@@ -105,13 +105,16 @@ export async function searchNearbyPlaces(
     pageToken?: string
   } = {}
 ): Promise<NearbySearchResponse> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  // Try multiple possible API key environment variables
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY || 
+                 process.env.GOOGLE_MAPS_API_KEY ||
+                 process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
   if (!apiKey) {
     return {
       success: false,
       results: [],
-      error: 'Google Maps API key not configured',
+      error: 'Google Maps/Places API key not configured',
       queriedAt: new Date().toISOString(),
     }
   }
