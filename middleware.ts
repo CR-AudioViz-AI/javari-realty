@@ -1,102 +1,89 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-// Central Supabase Configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kteobfyferrukqeolofj.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZW9iZnlmZXJydWtxZW9sb2ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTcyNjYsImV4cCI6MjA3NzU1NzI2Nn0.d0mC8VEJ3_qBTYWxPiNpT9KBEYy1MJLsXGaCNYzXBu4'
+// Domain-based branding configuration
+const BRAND_CONFIG = {
+  'zoyzy.com': {
+    brand: 'zoyzy',
+    name: 'Zoyzy',
+    tagline: 'Find Your Perfect Home',
+    primaryColor: '#06B6D4', // cyan
+    logoText: 'Zoyzy',
+    showCravKeyBranding: false,
+    isConsumerFacing: true,
+  },
+  'www.zoyzy.com': {
+    brand: 'zoyzy',
+    name: 'Zoyzy',
+    tagline: 'Find Your Perfect Home',
+    primaryColor: '#06B6D4',
+    logoText: 'Zoyzy',
+    showCravKeyBranding: false,
+    isConsumerFacing: true,
+  },
+  'cravkey.com': {
+    brand: 'cravkey',
+    name: 'CravKey',
+    tagline: 'AI-Powered Realtor Platform',
+    primaryColor: '#10B981', // emerald
+    logoText: 'CravKey',
+    showCravKeyBranding: true,
+    isConsumerFacing: false,
+  },
+  'www.cravkey.com': {
+    brand: 'cravkey',
+    name: 'CravKey',
+    tagline: 'AI-Powered Realtor Platform',
+    primaryColor: '#10B981',
+    logoText: 'CravKey',
+    showCravKeyBranding: true,
+    isConsumerFacing: false,
+  },
+  'realtor.craudiovizai.com': {
+    brand: 'cravkey',
+    name: 'CravKey',
+    tagline: 'AI-Powered Realtor Platform',
+    primaryColor: '#10B981',
+    logoText: 'CravKey',
+    showCravKeyBranding: true,
+    isConsumerFacing: false,
+  },
+}
 
-// Routes that require authentication
-const PROTECTED_ROUTES = ['/dashboard']
+// Default config for preview/dev deployments
+const DEFAULT_CONFIG = {
+  brand: 'cravkey',
+  name: 'CravKey',
+  tagline: 'AI-Powered Realtor Platform',
+  primaryColor: '#10B981',
+  logoText: 'CravKey',
+  showCravKeyBranding: true,
+  isConsumerFacing: false,
+}
 
-// Routes that should redirect to dashboard if logged in
-const AUTH_ROUTES = ['/login', '/signup']
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || ''
+  const cleanHostname = hostname.split(':')[0] // Remove port if present
   
-  // Skip middleware for static files and API routes
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/static') ||
-    pathname.includes('.') ||
-    pathname.startsWith('/api/')
-  ) {
-    return NextResponse.next()
-  }
-
-  // Create response to modify
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  // Create Supabase client with cookie handling
-  const supabase = createServerClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
-
-  // Get current session
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Check if route is protected and user is not logged in
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
-  const isAuthRoute = AUTH_ROUTES.includes(pathname)
-
-  // Redirect unauthenticated users to login
-  if (isProtectedRoute && !user) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
+  // Get brand config based on hostname
+  const brandConfig = BRAND_CONFIG[cleanHostname as keyof typeof BRAND_CONFIG] || DEFAULT_CONFIG
+  
+  // Clone the response
+  const response = NextResponse.next()
+  
+  // Set brand info in headers for use by components
+  response.headers.set('x-brand', brandConfig.brand)
+  response.headers.set('x-brand-name', brandConfig.name)
+  response.headers.set('x-brand-tagline', brandConfig.tagline)
+  response.headers.set('x-brand-color', brandConfig.primaryColor)
+  response.headers.set('x-brand-logo', brandConfig.logoText)
+  response.headers.set('x-is-consumer', brandConfig.isConsumerFacing ? 'true' : 'false')
+  
+  // Set cookies for client-side access
+  response.cookies.set('brand', brandConfig.brand, { path: '/' })
+  response.cookies.set('brandName', brandConfig.name, { path: '/' })
+  response.cookies.set('isConsumer', brandConfig.isConsumerFacing ? 'true' : 'false', { path: '/' })
+  
   return response
 }
 
@@ -107,7 +94,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - public files (public folder)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
