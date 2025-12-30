@@ -8,3 +8,4 @@
 export { InstallPrompt } from './InstallPrompt';
 export { OnlineStatusIndicator } from './OnlineStatusIndicator';
 export { UpdateAvailableBanner } from './UpdateAvailableBanner';
+export { PWAProvider } from './PWAProvider';
