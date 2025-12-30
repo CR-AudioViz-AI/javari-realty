@@ -5,12 +5,9 @@
 // Phase 5: PWA + Offline Support
 // =============================================================================
 
-import { WifiOff, RefreshCw, Home, Database, Clock } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Offline | CR Realtor Platform',
-  description: 'You are currently offline',
-};
+import { WifiOff, RefreshCw, Home, Database, Clock } from 'lucide-react';
 
 export default function OfflinePage() {
   return (
