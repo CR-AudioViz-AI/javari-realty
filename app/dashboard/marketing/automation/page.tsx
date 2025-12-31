@@ -1,5 +1,7 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+
 import React, { useState, useEffect } from 'react';
 import { AutomationRule, MessageTemplate, HOLIDAYS, DEFAULT_TEMPLATES } from '@/types/marketing';
 
