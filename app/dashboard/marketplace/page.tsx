@@ -1,5 +1,7 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+
 import React, { useState, useEffect } from 'react';
 import { ServiceProvider, ProviderCategory, PROVIDER_CATEGORIES } from '@/types/marketplace';
 
