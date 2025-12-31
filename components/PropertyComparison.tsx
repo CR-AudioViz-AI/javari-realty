@@ -1,217 +1,285 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import {
-  Home, Bed, Bath, Square, DollarSign, MapPin, Calendar,
-  TrendingUp, TrendingDown, Minus, X, Plus, Check
-} from 'lucide-react'
-
-interface Property {
-  id: string
-  title: string
-  address: string
-  city: string
-  price: number
-  bedrooms: number
-  bathrooms: number
-  sqft: number
-  year_built?: number
-  lot_size?: number
-  garage_spaces?: number
-  hoa_fee?: number
-  property_type?: string
-  days_on_market?: number
-  price_per_sqft?: number
-}
+import React, { useState, useMemo } from 'react';
+import { PropertyWithScore, FactorScore } from '@/types/scoring';
+import Image from 'next/image';
 
 interface PropertyComparisonProps {
-  properties: Property[]
-  onRemove?: (id: string) => void
-  className?: string
+  properties: PropertyWithScore[];
+  onRemoveProperty?: (propertyId: string) => void;
+  maxProperties?: number;
 }
 
-export default function PropertyComparison({
-  properties,
-  onRemove,
-  className = ''
+export function PropertyComparison({ 
+  properties, 
+  onRemoveProperty,
+  maxProperties = 6 
 }: PropertyComparisonProps) {
+  const [sortBy, setSortBy] = useState<'score' | 'price' | 'sqft'>('score');
+  const [highlightFactor, setHighlightFactor] = useState<string | null>(null);
+
+  // Get all unique factors across properties
+  const allFactors = useMemo(() => {
+    const factorMap = new Map<string, { id: string; name: string; category: string }>();
+    properties.forEach(p => {
+      p.score.factor_scores.forEach(f => {
+        if (!factorMap.has(f.factor_id)) {
+          factorMap.set(f.factor_id, {
+            id: f.factor_id,
+            name: f.factor_name,
+            category: getCategoryFromFactorId(f.factor_id),
+          });
+        }
+      });
+    });
+    return Array.from(factorMap.values());
+  }, [properties]);
+
+  // Sort properties
+  const sortedProperties = useMemo(() => {
+    const sorted = [...properties];
+    switch (sortBy) {
+      case 'score':
+        return sorted.sort((a, b) => b.score.total_score - a.score.total_score);
+      case 'price':
+        return sorted.sort((a, b) => a.property.price - b.property.price);
+      case 'sqft':
+        return sorted.sort((a, b) => (b.property.sqft || 0) - (a.property.sqft || 0));
+      default:
+        return sorted;
+    }
+  }, [properties, sortBy]);
+
   if (properties.length === 0) {
     return (
-      <div className={`bg-white rounded-xl border p-8 text-center ${className}`}>
-        <Home className="mx-auto mb-3 text-gray-300" size={48} />
-        <p className="text-gray-500">Add properties to compare</p>
-        <p className="text-sm text-gray-400 mt-1">Select up to 4 properties for side-by-side comparison</p>
+      <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+        <div className="text-6xl mb-4">🏠</div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Properties to Compare</h3>
+        <p className="text-gray-600">
+          Save some properties to your favorites to start comparing them side-by-side.
+        </p>
       </div>
-    )
+    );
   }
-
-  const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
-
-  const getBestValue = (values: (number | undefined)[], higherIsBetter: boolean = true) => {
-    const validValues = values.filter((v): v is number => v !== undefined)
-    if (validValues.length === 0) return undefined
-    return higherIsBetter ? Math.max(...validValues) : Math.min(...validValues)
-  }
-
-  const getComparisonIcon = (value: number | undefined, best: number | undefined, higherIsBetter: boolean = true) => {
-    if (value === undefined || best === undefined) return <Minus className="text-gray-400" size={16} />
-    if (value === best) return <TrendingUp className="text-green-500" size={16} />
-    if (higherIsBetter) {
-      return value < best ? <TrendingDown className="text-red-400" size={16} /> : <Check className="text-green-500" size={16} />
-    } else {
-      return value > best ? <TrendingDown className="text-red-400" size={16} /> : <Check className="text-green-500" size={16} />
-    }
-  }
-
-  // Calculate best values for highlighting
-  const bestPrice = getBestValue(properties.map(p => p.price), false) // Lower is better
-  const bestSqft = getBestValue(properties.map(p => p.sqft), true)
-  const bestPricePerSqft = getBestValue(properties.map(p => p.price_per_sqft || p.price / p.sqft), false)
-  const bestBeds = getBestValue(properties.map(p => p.bedrooms), true)
-  const bestBaths = getBestValue(properties.map(p => p.bathrooms), true)
-  const bestLot = getBestValue(properties.map(p => p.lot_size), true)
-
-  const comparisonRows = [
-    {
-      label: 'Price',
-      icon: DollarSign,
-      values: properties.map(p => formatCurrency(p.price)),
-      rawValues: properties.map(p => p.price),
-      best: bestPrice,
-      higherIsBetter: false
-    },
-    {
-      label: 'Price/Sq Ft',
-      icon: TrendingUp,
-      values: properties.map(p => formatCurrency(p.price_per_sqft || Math.round(p.price / p.sqft))),
-      rawValues: properties.map(p => p.price_per_sqft || p.price / p.sqft),
-      best: bestPricePerSqft,
-      higherIsBetter: false
-    },
-    {
-      label: 'Square Feet',
-      icon: Square,
-      values: properties.map(p => p.sqft?.toLocaleString() || '-'),
-      rawValues: properties.map(p => p.sqft),
-      best: bestSqft,
-      higherIsBetter: true
-    },
-    {
-      label: 'Bedrooms',
-      icon: Bed,
-      values: properties.map(p => p.bedrooms?.toString() || '-'),
-      rawValues: properties.map(p => p.bedrooms),
-      best: bestBeds,
-      higherIsBetter: true
-    },
-    {
-      label: 'Bathrooms',
-      icon: Bath,
-      values: properties.map(p => p.bathrooms?.toString() || '-'),
-      rawValues: properties.map(p => p.bathrooms),
-      best: bestBaths,
-      higherIsBetter: true
-    },
-    {
-      label: 'Year Built',
-      icon: Calendar,
-      values: properties.map(p => p.year_built?.toString() || '-'),
-      rawValues: properties.map(p => p.year_built),
-      best: getBestValue(properties.map(p => p.year_built), true),
-      higherIsBetter: true
-    },
-    {
-      label: 'Lot Size',
-      icon: Home,
-      values: properties.map(p => p.lot_size ? `${p.lot_size} acres` : '-'),
-      rawValues: properties.map(p => p.lot_size),
-      best: bestLot,
-      higherIsBetter: true
-    },
-    {
-      label: 'Garage',
-      icon: Home,
-      values: properties.map(p => p.garage_spaces ? `${p.garage_spaces} car` : '-'),
-      rawValues: properties.map(p => p.garage_spaces),
-      best: getBestValue(properties.map(p => p.garage_spaces), true),
-      higherIsBetter: true
-    },
-    {
-      label: 'HOA Fee',
-      icon: DollarSign,
-      values: properties.map(p => p.hoa_fee ? `${formatCurrency(p.hoa_fee)}/mo` : 'None'),
-      rawValues: properties.map(p => p.hoa_fee || 0),
-      best: getBestValue(properties.map(p => p.hoa_fee || 0), false),
-      higherIsBetter: false
-    },
-  ]
 
   return (
-    <div className={`bg-white rounded-xl border overflow-hidden ${className}`}>
-      {/* Header with property cards */}
-      <div className="grid" style={{ gridTemplateColumns: `150px repeat(${properties.length}, 1fr)` }}>
-        <div className="p-4 bg-gray-50 font-medium text-gray-600">Compare</div>
-        {properties.map(property => (
-          <div key={property.id} className="p-4 border-l relative">
-            {onRemove && (
-              <button
-                onClick={() => onRemove(property.id)}
-                className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded-full"
-              >
-                <X size={16} className="text-gray-400" />
-              </button>
-            )}
-            <h3 className="font-semibold text-gray-900 pr-6 line-clamp-2">{property.title || property.address}</h3>
-            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-              <MapPin size={12} /> {property.city}
-            </p>
-            <p className="text-lg font-bold text-green-600 mt-2">
-              {formatCurrency(property.price)}
-            </p>
-          </div>
-        ))}
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      {/* Header Controls */}
+      <div className="p-4 bg-gray-50 border-b flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Property Comparison</h2>
+          <p className="text-sm text-gray-600">
+            Comparing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="border rounded-lg px-3 py-1.5 text-sm"
+            >
+              <option value="score">Best Match</option>
+              <option value="price">Lowest Price</option>
+              <option value="sqft">Largest</option>
+            </select>
+          </label>
+        </div>
       </div>
 
-      {/* Comparison rows */}
-      {comparisonRows.map((row, idx) => (
-        <div 
-          key={row.label}
-          className={`grid ${idx % 2 === 0 ? 'bg-gray-50' : ''}`}
-          style={{ gridTemplateColumns: `150px repeat(${properties.length}, 1fr)` }}
-        >
-          <div className="p-3 flex items-center gap-2 text-sm font-medium text-gray-600">
-            <row.icon size={16} className="text-gray-400" />
-            {row.label}
-          </div>
-          {row.values.map((value, i) => (
-            <div key={i} className="p-3 border-l flex items-center justify-between">
-              <span className={`font-medium ${
-                row.rawValues[i] === row.best ? 'text-green-600' : 'text-gray-900'
-              }`}>
-                {value}
-              </span>
-              {getComparisonIcon(row.rawValues[i], row.best, row.higherIsBetter)}
-            </div>
-          ))}
-        </div>
-      ))}
+      {/* Comparison Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          {/* Property Headers */}
+          <thead>
+            <tr className="border-b">
+              <th className="p-4 text-left bg-gray-50 sticky left-0 z-10 min-w-[200px]">
+                <span className="text-gray-500 font-medium">Factor</span>
+              </th>
+              {sortedProperties.slice(0, maxProperties).map((p, index) => (
+                <th key={p.property.id} className="p-4 min-w-[200px]">
+                  <div className="relative">
+                    {/* Rank Badge */}
+                    <div className={`absolute -top-2 -left-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-600' : 'bg-gray-300'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    
+                    {/* Property Image */}
+                    <div className="relative h-32 rounded-lg overflow-hidden mb-3">
+                      {p.property.images?.[0] ? (
+                        <Image
+                          src={p.property.images[0]}
+                          alt={p.property.address}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-4xl">
+                          🏠
+                        </div>
+                      )}
+                      {onRemoveProperty && (
+                        <button
+                          onClick={() => onRemoveProperty(p.property.id)}
+                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
 
-      {/* Summary */}
-      <div className="p-4 bg-blue-50 border-t">
-        <h4 className="font-medium text-blue-900 mb-2">Quick Analysis</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          {bestPrice && (
-            <li>• Best price: {formatCurrency(bestPrice)} ({properties.find(p => p.price === bestPrice)?.address?.split(',')[0]})</li>
-          )}
-          {bestPricePerSqft && (
-            <li>• Best value per sq ft: {formatCurrency(bestPricePerSqft)}/sqft</li>
-          )}
-          {bestSqft && (
-            <li>• Most space: {bestSqft.toLocaleString()} sq ft</li>
-          )}
-        </ul>
+                    {/* Property Info */}
+                    <div className="text-left">
+                      <p className="font-semibold text-gray-900 truncate">{p.property.address}</p>
+                      <p className="text-sm text-gray-600">{p.property.city}, {p.property.state}</p>
+                      <p className="text-lg font-bold text-indigo-600 mt-1">
+                        ${p.property.price.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {p.property.beds} bed • {p.property.baths} bath • {p.property.sqft?.toLocaleString()} sqft
+                      </p>
+                    </div>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {/* Total Score Row */}
+            <tr className="border-b bg-indigo-50">
+              <td className="p-4 sticky left-0 bg-indigo-50 z-10">
+                <span className="font-bold text-indigo-900">🎯 TOTAL SCORE</span>
+              </td>
+              {sortedProperties.slice(0, maxProperties).map(p => (
+                <td key={p.property.id} className="p-4 text-center">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full text-2xl font-bold ${
+                    p.score.total_score >= 80 ? 'bg-green-500 text-white' :
+                    p.score.total_score >= 60 ? 'bg-yellow-500 text-white' :
+                    p.score.total_score >= 40 ? 'bg-orange-500 text-white' :
+                    'bg-red-500 text-white'
+                  }`}>
+                    {p.score.total_score}
+                  </div>
+                </td>
+              ))}
+            </tr>
+
+            {/* Factor Rows */}
+            {allFactors.map(factor => (
+              <tr 
+                key={factor.id} 
+                className={`border-b hover:bg-gray-50 transition-colors ${
+                  highlightFactor === factor.id ? 'bg-yellow-50' : ''
+                }`}
+                onMouseEnter={() => setHighlightFactor(factor.id)}
+                onMouseLeave={() => setHighlightFactor(null)}
+              >
+                <td className="p-4 sticky left-0 bg-white z-10 border-r">
+                  <div>
+                    <span className="font-medium text-gray-900">{factor.name}</span>
+                    <span className="text-xs text-gray-500 block">{factor.category}</span>
+                  </div>
+                </td>
+                {sortedProperties.slice(0, maxProperties).map(p => {
+                  const factorScore = p.score.factor_scores.find(f => f.factor_id === factor.id);
+                  return (
+                    <td key={p.property.id} className="p-4 text-center">
+                      {factorScore ? (
+                        <FactorScoreCell score={factorScore} />
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div className="p-4 bg-gray-50 border-t">
+        <div className="flex items-center justify-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-green-500"></div>
+            <span>Excellent (8-10)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-yellow-500"></div>
+            <span>Good (5-7)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-500"></div>
+            <span>Poor (0-4)</span>
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }
+
+function FactorScoreCell({ score }: { score: FactorScore }) {
+  const getScoreColor = (normalized: number) => {
+    if (normalized >= 8) return 'bg-green-100 text-green-800 border-green-200';
+    if (normalized >= 5) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
+  };
+
+  const formatValue = (value: string | number | boolean) => {
+    if (typeof value === 'boolean') return value ? '✓' : '✗';
+    if (typeof value === 'number') {
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return value.toLocaleString();
+      return value;
+    }
+    return value;
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded border ${getScoreColor(score.normalized_score)}`}>
+        <span className="font-bold">{score.normalized_score}</span>
+        <span className="text-xs opacity-70">/10</span>
+      </div>
+      <div className="text-xs text-gray-500">
+        {formatValue(score.raw_value)}
+      </div>
+    </div>
+  );
+}
+
+function getCategoryFromFactorId(factorId: string): string {
+  const categoryMap: Record<string, string> = {
+    commute_time: 'Location',
+    walk_score: 'Location',
+    transit_score: 'Location',
+    bike_score: 'Location',
+    price_vs_budget: 'Financial',
+    hoa_fee: 'Financial',
+    rental_estimate: 'Financial',
+    appreciation: 'Financial',
+    sqft: 'Property',
+    bedrooms: 'Property',
+    bathrooms: 'Property',
+    lot_size: 'Property',
+    year_built: 'Property',
+    garage: 'Property',
+    pool: 'Amenities',
+    crime_score: 'Safety',
+    flood_risk: 'Safety',
+    fire_risk: 'Safety',
+    school_rating: 'Schools',
+    school_distance: 'Schools',
+    air_quality: 'Environment',
+    noise_level: 'Environment',
+    internet_speed: 'Lifestyle',
+  };
+  return categoryMap[factorId] || 'Other';
+}
+
+export default PropertyComparison;
