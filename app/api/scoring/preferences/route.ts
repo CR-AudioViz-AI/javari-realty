@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { DEFAULT_SCORING_FACTORS, SCORING_PRESETS } from '@/types/scoring';
 
 // GET - Retrieve user's scoring preferences
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 // POST - Save/Update user's scoring preferences
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 // PUT - Apply a preset to user's preferences
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Reset to defaults
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     
