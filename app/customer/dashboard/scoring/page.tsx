@@ -1,5 +1,7 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+
 import React, { useState, useEffect } from 'react';
 import { ScoringMatrix } from '@/components/ScoringMatrix';
 import { PropertyComparison } from '@/components/PropertyComparison';
@@ -8,7 +10,7 @@ import {
   PropertyWithScore, 
   DEFAULT_SCORING_FACTORS 
 } from '@/types/scoring';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
 
 export default function ScoringDashboard() {
   const [preferences, setPreferences] = useState<ScoringPreferences | null>(null);
@@ -25,7 +27,7 @@ export default function ScoringDashboard() {
     min_sqft: 1500,
   });
 
-  const supabase = createClientComponentClient();
+  
 
   useEffect(() => {
     loadData();
