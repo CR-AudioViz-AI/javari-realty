@@ -1,8 +1,10 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
 
 interface DashboardStats {
   documents: number;
@@ -18,7 +20,7 @@ export default function HomeownerDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
-  const supabase = createClientComponentClient();
+  
 
   useEffect(() => {
     loadDashboard();
