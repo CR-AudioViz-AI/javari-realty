@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // app/api/demo/generate/route.ts
 // API endpoint to generate realtor demos from crawled data
 // POST: Creates a new demo site from website URL or manual data
