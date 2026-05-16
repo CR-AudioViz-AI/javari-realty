@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // app/api/search/ai/route.ts
 // AI-powered natural language property search
 // Uses OpenAI to extract filters from natural language queries

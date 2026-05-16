@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // app/api/property-intelligence/route.ts
 // Main API endpoint for Property Intelligence Card data
 // Aggregates data from FEMA, EPA, USGS, NWS, Walk Score, Google Places APIs
