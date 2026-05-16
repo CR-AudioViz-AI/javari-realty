@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // app/api/cron/saved-search-alerts/route.ts
 // Cron job to send saved search email alerts
 // Run daily via Vercel Cron
