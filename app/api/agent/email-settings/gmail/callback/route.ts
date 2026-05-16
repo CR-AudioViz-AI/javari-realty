@@ -15,9 +15,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // Admin client for upserting email settings
-const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+let _adminClient: ReturnType<typeof createClient> | null = null
+function getAdminClient() {
+  if (!_adminClient) {
+    createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
+  }
+  return _adminClient!
+}
 
 // Untyped client for tables not yet in generated types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
