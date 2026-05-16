@@ -9,7 +9,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Initialize Supabase with service role for cron jobs
-const supabase = createClient(
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) {
+    createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
@@ -233,4 +236,7 @@ export async function GET(request: NextRequest) {
 // Also support POST for manual triggers
 export async function POST(request: NextRequest) {
   return GET(request)
+}
+  }
+  return _supabase!
 }

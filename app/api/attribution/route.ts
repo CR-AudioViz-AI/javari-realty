@@ -12,10 +12,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { AttributionRequest, AttributionSource } from '@/types/attribution';
 
-const supabase = createClient(
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) {
+    createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+  }
+  return _supabase!
+}
 
 // POST - Record attribution event (only with consent)
 export async function POST(request: NextRequest) {
