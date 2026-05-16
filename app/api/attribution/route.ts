@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // =============================================================================
 // ATTRIBUTION TRACKING API
 // CR AudioViz AI - Realtor Platform
