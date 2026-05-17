@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     
     // Create admin client with service role
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''),
       serviceKey,
       {
         auth: { persistSession: false },
