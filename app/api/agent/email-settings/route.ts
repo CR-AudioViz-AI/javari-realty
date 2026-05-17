@@ -3,8 +3,8 @@ export const revalidate = 0
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '');
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '');
 
 // Admin client for email settings operations
 const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
