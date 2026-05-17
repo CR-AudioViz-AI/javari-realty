@@ -11,8 +11,8 @@ const GOOGLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/agent/email-settings/gmail/callback`
   : 'http://localhost:3000/api/agent/email-settings/gmail/callback';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '');
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '');
 
 // Admin client for upserting email settings
 const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
