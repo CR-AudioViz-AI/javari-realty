@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
     
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''),
       serviceKey,
       { auth: { persistSession: false, autoRefreshToken: false } }
     )
