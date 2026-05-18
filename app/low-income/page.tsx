@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Home, DollarSign, Heart, CheckCircle, Users, Shield, Key, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'Affordable Housing for Low-Income Families | CR Realtor Platform',
   description: 'Find affordable housing with Section 8 vouchers, USDA loans, income-restricted properties, and rent-to-own programs. Homeownership is possible at any income level.'
