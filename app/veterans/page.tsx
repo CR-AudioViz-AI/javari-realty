@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Shield, DollarSign, Home, CheckCircle, MapPin, Users, Award, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'Veterans Home Program | CR Realtor Platform',
   description: 'Thank you for your service. Find your dream home with exclusive VA benefits, $0 down loans, and dedicated veteran realtors.'
