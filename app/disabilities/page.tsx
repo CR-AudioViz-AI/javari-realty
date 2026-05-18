@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Accessibility, Home, DollarSign, Heart, CheckCircle, Users, Award, Wrench, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'Accessible Housing for People with Disabilities | CR Realtor Platform',
   description: 'Find fully accessible homes with universal design features. ADA compliance, modification grants up to $50K, and housing for people with physical, sensory, and cognitive disabilities.'

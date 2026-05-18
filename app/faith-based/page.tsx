@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Church, Heart, Users, Home, DollarSign, CheckCircle, MapPin, BookOpen, Award, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'Faith-Based Communities Housing | CR Realtor Platform',
   description: 'Housing solutions for churches, ministries, missionaries, and faith communities. Congregation relocations, parsonages, ministry housing, and faith-friendly neighborhoods.'

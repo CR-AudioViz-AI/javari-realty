@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Heart, Home, DollarSign, CheckCircle, Users, Award, Sun, ArrowRight, Accessibility } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'Seniors Home Program (55+) | CR Realtor Platform',
   description: 'Find your perfect retirement or downsizing home. Age-friendly communities, accessibility features, and senior-specific financial programs.'
