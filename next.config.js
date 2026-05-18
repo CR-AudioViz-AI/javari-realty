@@ -1,3 +1,4 @@
+// Build trigger: 1779135720
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
