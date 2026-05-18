@@ -3,6 +3,14 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Wrench, Plus, AlertTriangle, Clock, CheckCircle } from 'lucide-react'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export default async function MaintenanceListPage() {
   const supabase = await createClient()
 
