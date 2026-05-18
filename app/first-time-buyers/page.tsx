@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { Home, DollarSign, GraduationCap, Heart, CheckCircle, TrendingUp, Shield, Calculator, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 export const metadata = {
   title: 'First-Time Home Buyers Program | CR Realtor Platform',
   description: 'Your first home is within reach. Down payment assistance, buyer education, affordability calculators, and step-by-step guidance for first-time buyers.'
