@@ -6,6 +6,14 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Building2, Save, Loader2, DollarSign, Home, Factory, Store, Plus, Minus, MapPin } from 'lucide-react'
 import Link from 'next/link'
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
 const ROOM_TYPES = [
   'Living Room', 'Family Room', 'Den', 'Office', 'Dining Room', 'Kitchen',
   'Master Bedroom', 'Bedroom 2', 'Bedroom 3', 'Bedroom 4', 'Bedroom 5',
