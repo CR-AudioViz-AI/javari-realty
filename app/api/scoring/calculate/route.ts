@@ -4,6 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { calculatePropertyScore } from '@/lib/scoring-engine';
 import { ScoringPreferences, DEFAULT_SCORING_FACTORS } from '@/types/scoring';
 
+function getSupabase() {
+  var sb = require('@supabase/supabase-js')
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return sb.createClient(url, key, { auth: { persistSession: false } })
+}
+
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -13,7 +22,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Property data is required' },
         { status: 400 }
-      );
     }
 
     // Use provided preferences or defaults
