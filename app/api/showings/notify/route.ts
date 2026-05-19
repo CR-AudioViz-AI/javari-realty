@@ -4,7 +4,11 @@ export const revalidate = 0
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: any = null;
+function getResend() {
+  if (!_resend && process.env.RESEND_API_KEY) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation to customer
     if (process.env.RESEND_API_KEY) {
-      await resend.emails.send({
+      await getResend()?.emails.send({
         from: 'CR Realtor Platform <noreply@cr-realtor.com>',
         to: customer_email,
         subject: `Showing Request Received: ${property_address}`,
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
 
       // Notify agent
       if (agent_email) {
-        await resend.emails.send({
+        await getResend()?.emails.send({
           from: 'CR Realtor Platform <noreply@cr-realtor.com>',
           to: agent_email,
           subject: `🏠 New Showing Request: ${property_address}`,
