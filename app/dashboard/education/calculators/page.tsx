@@ -2,6 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import {
+  Calculator, ExternalLink, Home, DollarSign, TrendingUp,
+  RefreshCcw, Scale, CreditCard, ArrowRight, Lock, Zap,
+  CheckCircle, BarChart3, PiggyBank
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,10 +15,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Calculator, ExternalLink, Home, DollarSign, TrendingUp,
-  RefreshCcw, Scale, CreditCard, ArrowRight, Lock, Zap,
-  CheckCircle, BarChart3, PiggyBank
-} from 'lucide-react'
 
 export const metadata = {
   title: 'Financial Calculators | CR Realtor Platform',
