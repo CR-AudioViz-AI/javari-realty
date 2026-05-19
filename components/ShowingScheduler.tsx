@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { 
+import {
+  Calendar, Clock, MapPin, User, Phone, Mail, 
+  ChevronLeft, ChevronRight, Check, X, AlertCircle,
+  Home, CalendarDays, MessageSquare
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,11 +15,7 @@ function getSupabase() {
   if (!url || !key) return null
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
-
-  Calendar, Clock, MapPin, User, Phone, Mail, 
-  ChevronLeft, ChevronRight, Check, X, AlertCircle,
-  Home, CalendarDays, MessageSquare
-} from 'lucide-react';
+;
 
 interface TimeSlot {
   time: string;
