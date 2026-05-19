@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { 
+import {
+  Mail, Lock, Eye, EyeOff, AlertCircle, Loader2,
+  Github, Home, ArrowRight, CheckCircle
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -14,9 +17,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Mail, Lock, Eye, EyeOff, AlertCircle, Loader2,
-  Github, Home, ArrowRight, CheckCircle
-} from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
