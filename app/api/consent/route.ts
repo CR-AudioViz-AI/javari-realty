@@ -9,6 +9,11 @@ export const revalidate = 0
 
 import { NextRequest, NextResponse } from 'next/server';
 import { 
+  ConsentRequest, 
+  ConsentResponse, 
+  ConsentScope, 
+  WithdrawConsentRequest 
+} from '@/types/attribution';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -18,11 +23,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  ConsentRequest, 
-  ConsentResponse, 
-  ConsentScope, 
-  WithdrawConsentRequest 
-} from '@/types/attribution';
 
 
 const CONSENT_VERSION = '1.0.0';
