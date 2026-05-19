@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { 
+import {
+  Building2, Users, FileText, Wrench, DollarSign, 
+  AlertTriangle, Plus
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,9 +14,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Building2, Users, FileText, Wrench, DollarSign, 
-  AlertTriangle, Plus
-} from 'lucide-react'
 
 export default async function PropertyManagementDashboard() {
   const supabase = await createClient()
