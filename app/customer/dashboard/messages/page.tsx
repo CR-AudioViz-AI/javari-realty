@@ -10,6 +10,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  MessageSquare,
+  Send,
+  User,
+  CheckCheck,
+  Home,
+  Phone,
+  Mail,
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -19,14 +27,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  MessageSquare,
-  Send,
-  User,
-  CheckCheck,
-  Home,
-  Phone,
-  Mail,
-} from 'lucide-react'
 
 interface AgentData {
   id: string
