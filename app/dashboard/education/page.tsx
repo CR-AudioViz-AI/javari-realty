@@ -2,6 +2,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import {
+  GraduationCap, BookOpen, Video, FileText, Calculator, DollarSign,
+  Home, Shield, Users, Award, ChevronRight, PlayCircle, Download,
+  CheckCircle, Star, Clock, Target, TrendingUp, Key, Briefcase,
+  Lock, Zap, ExternalLink
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,11 +16,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  GraduationCap, BookOpen, Video, FileText, Calculator, DollarSign,
-  Home, Shield, Users, Award, ChevronRight, PlayCircle, Download,
-  CheckCircle, Star, Clock, Target, TrendingUp, Key, Briefcase,
-  Lock, Zap, ExternalLink
-} from 'lucide-react'
 
 export const metadata = {
   title: 'Education Center | CR Realtor Platform',
