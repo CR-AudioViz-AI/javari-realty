@@ -8,9 +8,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 let _openai: any = null;
-function getOpenai() { if (!_openai) _openai = new OpenAI({; return _openai; }
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenai() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 interface ExtractedFilters {
   cities?: string[];
