@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
+  Shield,
+  Users,
+  Building2,
+  TrendingUp,
+  Settings,
+  ChevronRight,
+  Home,
+  UserPlus,
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,15 +20,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Shield,
-  Users,
-  Building2,
-  TrendingUp,
-  Settings,
-  ChevronRight,
-  Home,
-  UserPlus,
-} from 'lucide-react'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
