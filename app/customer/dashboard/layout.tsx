@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import {
+  Home, Search, Heart, Bell, MessageSquare, FileText, Calculator,
+  LogOut, Menu, X, Briefcase, Loader2, Shield, Gamepad2, 
+  GraduationCap, ClipboardList, Building2, TrendingUp
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -15,10 +19,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Home, Search, Heart, Bell, MessageSquare, FileText, Calculator,
-  LogOut, Menu, X, Briefcase, Loader2, Shield, Gamepad2, 
-  GraduationCap, ClipboardList, Building2, TrendingUp
-} from 'lucide-react'
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/customer/dashboard', icon: Home },
