@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { 
+import {
+  User, LogOut, Settings, CreditCard, ChevronDown,
+  Coins, Gift, Bell, ExternalLink, Loader2
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -14,9 +17,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  User, LogOut, Settings, CreditCard, ChevronDown,
-  Coins, Gift, Bell, ExternalLink, Loader2
-} from 'lucide-react'
 
 interface UserProfile {
   id: string
