@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Property data is required' },
         { status: 400 }
-    }
+      );
 
     // Use provided preferences or defaults
     const scoringPreferences: ScoringPreferences = preferences || {
