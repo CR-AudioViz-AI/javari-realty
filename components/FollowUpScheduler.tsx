@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  Clock, Calendar, Bell, Check, AlertCircle, Plus, Trash2,
+  Mail, Phone, MessageSquare, Home, User, Loader2
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -12,9 +15,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Clock, Calendar, Bell, Check, AlertCircle, Plus, Trash2,
-  Mail, Phone, MessageSquare, Home, User, Loader2
-} from 'lucide-react'
 
 interface FollowUp {
   id: string
