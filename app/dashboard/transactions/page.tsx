@@ -3,6 +3,10 @@
 import { useState, useEffect, DragEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  Briefcase, Plus, Search, DollarSign, User, Home, CheckCircle, FileText,
+  X, Check, Loader2, Building2, MapPin, TrendingUp, Edit, Trash2, GripVertical,
+  Calendar, Phone, Mail, Clock
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -12,10 +16,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Briefcase, Plus, Search, DollarSign, User, Home, CheckCircle, FileText,
-  X, Check, Loader2, Building2, MapPin, TrendingUp, Edit, Trash2, GripVertical,
-  Calendar, Phone, Mail, Clock
-} from 'lucide-react'
 
 interface Transaction {
   id: string
