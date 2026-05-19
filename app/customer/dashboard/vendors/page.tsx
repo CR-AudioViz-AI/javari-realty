@@ -6,7 +6,10 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
+import {
+  Building2, Search, Phone, Mail, Globe, MapPin, Star, 
+  ChevronDown, ChevronUp, ExternalLink, Filter, X
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -16,9 +19,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Building2, Search, Phone, Mail, Globe, MapPin, Star, 
-  ChevronDown, ChevronUp, ExternalLink, Filter, X
-} from 'lucide-react'
 
 const VENDOR_CATEGORIES = [
   { value: 'home_inspector', label: 'Home Inspector', icon: '🔍' },
