@@ -3,6 +3,10 @@
 import { useState, useEffect, DragEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, MapPin,
+  User, Home, Phone, Video, Users, X, Check, Trash2, Edit, Loader2, GripVertical,
+  Building2, DoorOpen
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -12,10 +16,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, MapPin,
-  User, Home, Phone, Video, Users, X, Check, Trash2, Edit, Loader2, GripVertical,
-  Building2, DoorOpen
-} from 'lucide-react'
 
 interface CalendarEvent {
   id: string
