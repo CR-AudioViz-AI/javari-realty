@@ -12,11 +12,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const resendApiKey = process.env.RESEND_API_KEY;
 
-// Admin client for email operations
+// Admin client for email operations — lazy init
+function getAdminClient() { return getSupabase(); }
 
 // Untyped client for tables not yet in generated types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db: any = adminClient;
+const db: any = new Proxy({}, { get(_: any, prop: string) { return (getAdminClient() as any)?.[prop]; } });
 
 interface EmailSettings {
   id: string;
