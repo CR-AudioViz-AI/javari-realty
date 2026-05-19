@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
+  Home, Plus, Search, Filter, Grid, List, MapPin, Bed, Bath,
+  Square, DollarSign, Eye, Edit2, Trash2, MoreVertical, Heart,
+  TrendingUp, Calendar, Clock, Share2, Image as ImageIcon, Loader2
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -13,10 +17,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Home, Plus, Search, Filter, Grid, List, MapPin, Bed, Bath,
-  Square, DollarSign, Eye, Edit2, Trash2, MoreVertical, Heart,
-  TrendingUp, Calendar, Clock, Share2, Image as ImageIcon, Loader2
-} from 'lucide-react'
 
 interface Property {
   id: string
