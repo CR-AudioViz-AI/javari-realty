@@ -1,7 +1,11 @@
 // lib/email.ts - Email service using Resend for CR Realtor Platform
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend && process.env.RESEND_API_KEY) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@cr-realtor.com';
 
 // Generic sendEmail function
