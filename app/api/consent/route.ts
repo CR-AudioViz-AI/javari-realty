@@ -43,6 +43,7 @@ function getConsentText(scopes: ConsentScope[]): string {
 
 // POST - Grant or update consent
 export async function POST(request: NextRequest) {
+  const supabase = getSupabase()!
   try {
     const body: ConsentRequest = await request.json();
     const { user_id, agent_id, scopes, ip_address, user_agent } = body;
@@ -145,6 +146,7 @@ export async function POST(request: NextRequest) {
 
 // GET - Check consent status
 export async function GET(request: NextRequest) {
+  const supabase = getSupabase()!
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');
@@ -210,6 +212,7 @@ export async function GET(request: NextRequest) {
 
 // DELETE - Withdraw consent
 export async function DELETE(request: NextRequest) {
+  const supabase = getSupabase()!
   try {
     const body: WithdrawConsentRequest = await request.json();
     const { consent_id, user_id, reason } = body;
