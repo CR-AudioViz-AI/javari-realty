@@ -7,7 +7,8 @@ export const revalidate = 0
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+let _openai: any = null;
+function getOpenai() { if (!_openai) _openai = new OpenAI({; return _openai; }
   apiKey: process.env.OPENAI_API_KEY,
 });
 
