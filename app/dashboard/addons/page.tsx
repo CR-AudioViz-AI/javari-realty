@@ -2,6 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import {
+  Package, Check, Zap, GraduationCap, Building2, Target, 
+  Share2, Bot, CreditCard, ArrowRight, Star, Shield,
+  Calculator, TrendingUp, Users, Sparkles, ExternalLink
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -11,10 +15,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  Package, Check, Zap, GraduationCap, Building2, Target, 
-  Share2, Bot, CreditCard, ArrowRight, Star, Shield,
-  Calculator, TrendingUp, Users, Sparkles, ExternalLink
-} from 'lucide-react'
 
 export const metadata = {
   title: 'Add-Ons & Integrations | CR Realtor Platform',
