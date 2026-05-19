@@ -5,6 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
+  CreditCard, Check, Shield, ArrowLeft, Zap, Lock,
+  GraduationCap, Target, Building2, Share2, Bot, Sparkles, Loader2
+} from 'lucide-react';
 
 function getSupabase() {
   var sb = require('@supabase/supabase-js')
@@ -14,9 +17,6 @@ function getSupabase() {
   return sb.createClient(url, key, { auth: { persistSession: false } })
 }
 
-  CreditCard, Check, Shield, ArrowLeft, Zap, Lock,
-  GraduationCap, Target, Building2, Share2, Bot, Sparkles, Loader2
-} from 'lucide-react'
 
 const ADDONS = {
   'education': {
