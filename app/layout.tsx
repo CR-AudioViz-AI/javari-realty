@@ -74,7 +74,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CR Realtor" />
       </head>
       <body className="font-sans">
-        {children}
+        <div style={{position:"fixed",top:0,left:0,right:0,zIndex:50,height:56,background:"#fff",borderBottom:"1px solid #e5e7eb",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px"}}><a href="https://craudiovizai.com" style={{fontWeight:700,textDecoration:"none",color:"#111",fontSize:14}}>🏠 Javari Realty</a><a href="https://craudiovizai.com/auth/signup" style={{background:"#2563eb",color:"#fff",borderRadius:8,padding:"7px 16px",textDecoration:"none",fontWeight:700,fontSize:13}}>Sign Up Free</a></div><div style={{height:56}} />{children}
         {/* 
           PWA Components (InstallPrompt, OnlineStatusIndicator, UpdateAvailableBanner)
           should be added to a client-side provider component.
