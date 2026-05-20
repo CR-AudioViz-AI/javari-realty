@@ -1,87 +1,55 @@
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// app/layout.tsx — javari-realty
+// Server-rendered shell: brand, metadata, EIN, auth CTA in HTML for SEO + production
+// CR AudioViz AI, LLC · EIN: 39-3646201 · May 2026
+import type { Metadata } from 'next'
+import './globals.css'
 
-import type { Metadata, Viewport } from "next"
-import "./globals.css"
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: "CR Realtor Platform - Your Complete Real Estate Solution",
-  description: "Unified realtor platform with property search, MLS integration, market analytics, and AI-powered tools for agents.",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    ],
-    apple: [
-      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    ],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "CR Realtor",
-  },
-  formatDetection: {
-    telephone: true,
-  },
+  title: 'Javari Realty',
+  description: 'AI-powered real estate platform — live MLS listings, mortgage rates, property intelligence.',
+  keywords: ['Javari AI', 'CR AudioViz AI', 'Javari Realty', 'artificial intelligence'],
+  authors: [{ name: 'CR AudioViz AI, LLC' }],
+  creator: 'CR AudioViz AI, LLC',
+  publisher: 'CR AudioViz AI, LLC',
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://crrealtorplatform.com",
-    siteName: "CR Realtor Platform",
-    title: "CR Realtor Platform - AI-Powered Real Estate Tools",
-    description: "The complete real estate platform with AI listing tools, lead management, and market analytics.",
-    images: [
-      {
-        url: "/icons/icon-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "CR Realtor Platform",
-      },
-    ],
+    title: 'Javari Realty',
+    description: 'AI-powered real estate platform — live MLS listings, mortgage rates, property intelligence.',
+    siteName: 'Javari Realty',
+    type: 'website',
   },
-  twitter: {
-    card: "summary",
-    title: "CR Realtor Platform",
-    description: "AI-powered real estate tools for agents and brokers",
-    images: ["/icons/icon-512x512.png"],
-  },
+  robots: { index: true, follow: true },
 }
 
-export const viewport: Viewport = {
-  themeColor: "#4F46E5",
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-}
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="CR Realtor" />
-      </head>
-      <body className="font-sans">
-        <div style={{position:"fixed",top:0,left:0,right:0,zIndex:50,height:56,background:"#fff",borderBottom:"1px solid #e5e7eb",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px"}}><a href="https://craudiovizai.com" style={{fontWeight:700,textDecoration:"none",color:"#111",fontSize:14}}>🏠 Javari Realty</a><a href="https://craudiovizai.com/auth/signup" style={{background:"#2563eb",color:"#fff",borderRadius:8,padding:"7px 16px",textDecoration:"none",fontWeight:700,fontSize:13}}>Sign Up Free</a></div><div style={{height:56}} />{children}
-        {/* 
-          PWA Components (InstallPrompt, OnlineStatusIndicator, UpdateAvailableBanner)
-          should be added to a client-side provider component.
-          
-          Javari AI is implemented as a floating button component 
-          in individual pages rather than a global embed.
-        */}
+      <body style={{ margin: 0, padding: 0, fontFamily: 'system-ui, sans-serif' }}>
+        {/* Server-rendered brand bar — visible in HTML, no JS required */}
+        <div style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', padding: '6px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 200 }}>
+          <a href="https://craudiovizai.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: '#fff', fontSize: 13, fontWeight: 600, opacity: 0.85 }}>
+            <span>🏠</span>
+            <span style={{ color: '#10b981' }}>Javari Realty</span>
+            <span style={{ color: '#6b7280', fontSize: 11, marginLeft: 4 }}>by CR AudioViz AI · EIN 39-3646201</span>
+          </a>
+          <a href="https://craudiovizai.com/auth/signup" style={{ background: '#10b981', color: '#000', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Fort Myers/SWFL →
+          </a>
+        </div>
+        {children}
+        {/* Server-rendered footer — EIN always in HTML */}
+        <footer style={{ background: '#080808', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '20px 24px', textAlign: 'center' }}>
+          <p style={{ color: '#374151', fontSize: 11, margin: '0 0 4px', fontFamily: 'system-ui' }}>
+            © 2026 CR AudioViz AI, LLC — EIN: 39-3646201 · Fort Myers, Florida
+          </p>
+          <p style={{ color: '#1f2937', fontSize: 11, margin: 0, fontFamily: 'system-ui' }}>
+            Your Story. Our Design. Everyone Connects. Everyone Wins. ·{' '}
+            <a href="https://craudiovizai.com" style={{ color: '#374151', textDecoration: 'none' }}>craudiovizai.com</a>
+            {' '}·{' '}
+            <a href="https://craudiovizai.com/auth/signup" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Sign Up Free</a>
+          </p>
+        </footer>
       </body>
     </html>
   )
