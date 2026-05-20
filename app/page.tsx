@@ -149,18 +149,6 @@ export default async function HomePage() {
   const featuredProperties = listings.length > 0 ? listings : FALLBACK_PROPERTIES
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 h-15 flex items-center justify-between px-6">
-      <a href="https://craudiovizai.com" className="flex items-center gap-2 no-underline">
-        <span className="text-2xl">🏠</span>
-        <span className="font-bold text-lg text-gray-900">Javari Realty</span>
-        <span className="text-xs text-gray-400 ml-1">by CR AudioViz AI</span>
-      </a>
-      <div className="flex gap-2">
-        <a href="https://craudiovizai.com/auth/login" className="text-gray-600 text-sm px-4 py-2 no-underline hover:text-gray-900">Sign In</a>
-        <a href="https://craudiovizai.com/auth/signup" className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg no-underline hover:bg-blue-700">List Free</a>
-      </div>
-    </nav>
-    <div className="h-16" />
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative h-[700px] flex items-center justify-center">
