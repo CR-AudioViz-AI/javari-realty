@@ -149,18 +149,18 @@ export default async function HomePage() {
   const featuredProperties = listings.length > 0 ? listings : FALLBACK_PROPERTIES
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e5e7eb', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-      <a href="https://craudiovizai.com" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-        <span style={{ fontSize: 20 }}>🏠</span>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#111827' }}>Javari Realty</span>
-        <span style={{ fontSize: 11, color: '#6b7280', marginLeft: 4 }}>by CR AudioViz AI</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 h-15 flex items-center justify-between px-6">
+      <a href="https://craudiovizai.com" className="flex items-center gap-2 no-underline">
+        <span className="text-2xl">🏠</span>
+        <span className="font-bold text-lg text-gray-900">Javari Realty</span>
+        <span className="text-xs text-gray-400 ml-1">by CR AudioViz AI</span>
       </a>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <a href="https://craudiovizai.com/auth/login" style={{ color: '#374151', fontSize: 13, textDecoration: 'none', padding: '7px 14px' }}>Sign In</a>
-        <a href="https://craudiovizai.com/auth/signup" style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: 'white', borderRadius: 8, padding: '7px 18px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>List Free</a>
+      <div className="flex gap-2">
+        <a href="https://craudiovizai.com/auth/login" className="text-gray-600 text-sm px-4 py-2 no-underline hover:text-gray-900">Sign In</a>
+        <a href="https://craudiovizai.com/auth/signup" className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg no-underline hover:bg-blue-700">List Free</a>
       </div>
-    </div>
-    <div style={{ height: 60 }} />
+    </nav>
+    <div className="h-16" />
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative h-[700px] flex items-center justify-center">
