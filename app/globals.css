@@ -1,59 +1,65 @@
+/* globals.css — CR AudioViz AI Official Design System
+   Navy #1E3A5F | Candy Apple Red #FF0800 | Cyan #00B4D8
+   VERSION 3.0 FINAL — January 2026 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-  }
+:root {
+  /* Brand Colors */
+  --cr-navy:      #1E3A5F;
+  --cr-navy-dark: #172D48;
+  --cr-navy-deep: #040912;
+  --cr-red:       #FF0800;  /* Candy Apple Red */
+  --cr-red-dark:  #CC0600;
+  --cr-cyan:      #00B4D8;
+  --cr-cyan-dark: #0090AD;
+  --cr-cyan-light:#33BFDF;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
+  /* Semantic */
+  --cr-primary:   var(--cr-navy);
+  --cr-accent:    var(--cr-red);
+  --cr-secondary: var(--cr-cyan);
+  --cr-success:   var(--cr-cyan);
+  --cr-error:     var(--cr-red);
+  --cr-info:      var(--cr-cyan);
+  --cr-warning:   #F59E0B;
+
+  /* Text */
+  --cr-text-primary:   #172D48;
+  --cr-text-secondary: #4B5563;
+  --cr-text-tertiary:  #6B7280;
+  --cr-text-disabled:  #9CA3AF;
+
+  /* Backgrounds */
+  --cr-bg-primary:   #FFFFFF;
+  --cr-bg-secondary: #F9FAFB;
+  --cr-bg-tertiary:  #F3F4F6;
+
+  /* Dark Mode Backgrounds */
+  --cr-bg-dark:          #040912;
+  --cr-bg-dark-secondary:#0F1F32;
+  --cr-bg-dark-tertiary: #172D48;
+
+  /* Borders */
+  --cr-border:       #E5E7EB;
+  --cr-border-focus: var(--cr-cyan);
+
+  /* Gradients */
+  --cr-gradient-primary: linear-gradient(135deg, #1E3A5F 0%, #00B4D8 100%);
+  --cr-gradient-accent:  linear-gradient(135deg, #1E3A5F 0%, #FF0800 100%);
+  --cr-gradient-hero:    linear-gradient(135deg, #1E3A5F 0%, #00B4D8 50%, #FF0800 100%);
+
+  /* Logo shadow */
+  --cr-logo-shadow: 0 4px 14px 0 rgba(0,180,216,0.39);
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+.dark {
+  --cr-text-primary:   #F9FAFB;
+  --cr-text-secondary: #D1D5DB;
+  --cr-text-tertiary:  #9CA3AF;
+  --cr-bg-primary:     #040912;
+  --cr-bg-secondary:   #0F1F32;
+  --cr-bg-tertiary:    #172D48;
+  --cr-border:         #172D48;
 }
