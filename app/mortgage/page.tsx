@@ -1,453 +1,460 @@
-// CR AudioViz AI - Realtor Platform
-// Mortgage Tools Module - Integrated Rate Monitor
-// December 16, 2025
-//
-// This embeds the Mortgage Rate Monitor functionality directly into the Realtor Platform
-// Uses central auth from craudiovizai.com
+// CR AudioViz AI - Mortgage Rate Monitor
+// AFFORDABILITY CALCULATOR - How Much Home Can You Afford?
+// December 22, 2025
 
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import {
-  TrendingUp, TrendingDown, Calculator, Bell, Users,
-  Home, DollarSign, Percent, ArrowRight, ExternalLink,
-  Building2, Clock, ChevronRight, Sparkles, Send,
-  RefreshCw, Star, AlertCircle, Info
-} from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 
-// Mortgage Rate Monitor API
-const MORTGAGE_API = 'https://mortgage-rate-monitor.vercel.app'
-
-interface MortgageRate {
-  rateType: string
-  rate: number
-  change: number
-  apr?: number
-  points?: number
-  lastUpdated: string
+interface AffordabilityResult {
+  maxHomePrice: number;
+  maxLoanAmount: number;
+  monthlyPayment: {
+    principalInterest: number;
+    propertyTax: number;
+    insurance: number;
+    pmi: number;
+    hoa: number;
+    total: number;
+  };
+  dti: {
+    housing: number;
+    total: number;
+    status: 'excellent' | 'good' | 'acceptable' | 'stretched' | 'denied';
+  };
+  affordabilityIndex: number;
+  recommendations: string[];
+  scenarios: {
+    comfortable: number;
+    maximum: number;
+    stretch: number;
+  };
 }
 
-interface QuickCalcResult {
-  monthlyPayment: number
-  totalInterest: number
-  totalPayment: number
-}
+const LOAN_TYPES = [
+  { value: 'conventional', label: 'Conventional', icon: '🏠' },
+  { value: 'fha', label: 'FHA', icon: '🏛️' },
+  { value: 'va', label: 'VA', icon: '🎖️' },
+  { value: 'usda', label: 'USDA', icon: '🌾' },
+];
 
-export default function MortgageToolsPage() {
-  const [rates, setRates] = useState<MortgageRate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+const DTI_STATUS_COLORS = {
+  excellent: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  good: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
+  acceptable: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  stretched: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
+  denied: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
+};
+
+export default function AffordabilityCalculator() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<AffordabilityResult | null>(null);
+  const [alternatives, setAlternatives] = useState<Record<string, any>>({});
   
-  // Quick Calculator State
-  const [loanAmount, setLoanAmount] = useState(400000)
-  const [downPayment, setDownPayment] = useState(80000)
-  const [interestRate, setInterestRate] = useState(6.85)
-  const [loanTerm, setLoanTerm] = useState(30)
-  const [calcResult, setCalcResult] = useState<QuickCalcResult | null>(null)
+  // Form state
+  const [formData, setFormData] = useState({
+    annualIncome: 85000,
+    monthlyDebts: 500,
+    downPayment: 50000,
+    creditScore: 720,
+    interestRate: 6.22,
+    loanType: 'conventional',
+    hoaMonthly: 0,
+    county: 'LEE',
+  });
 
-  // Fetch current rates
+  // Debounced calculation
   useEffect(() => {
-    fetchRates()
-  }, [])
+    const timer = setTimeout(() => {
+      calculateAffordability();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [formData]);
 
-  // Auto-calculate when inputs change
-  useEffect(() => {
-    calculatePayment()
-  }, [loanAmount, downPayment, interestRate, loanTerm])
-
-  async function fetchRates() {
-    setLoading(true)
+  const calculateAffordability = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${MORTGAGE_API}/api/mortgage/rates`)
-      const data = await res.json()
-      if (data.success && data.rates) {
-        setRates(data.rates)
-        setLastUpdate(new Date())
-        // Set calculator rate to current 30-year fixed
-        const rate30 = data.rates.find((r: MortgageRate) => r.rateType === '30-Year Fixed')
-        if (rate30) setInterestRate(rate30.rate)
+      const response = await fetch('/api/affordability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setResult(data.result);
+        setAlternatives(data.alternatives || {});
       }
-    } catch (err) {
-      console.error('Failed to fetch rates:', err)
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      console.error('Calculation error:', error);
     }
-  }
+    setLoading(false);
+  };
 
-  function calculatePayment() {
-    const principal = loanAmount - downPayment
-    const monthlyRate = interestRate / 100 / 12
-    const numPayments = loanTerm * 12
+  const formatCurrency = (num: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
 
-    if (principal <= 0 || monthlyRate <= 0 || numPayments <= 0) {
-      setCalcResult(null)
-      return
-    }
+  const monthlyIncome = formData.annualIncome / 12;
 
-    const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
-    const totalPayment = monthlyPayment * numPayments
-    const totalInterest = totalPayment - principal
+  // Visual meter for DTI
+  const DTIMeter = ({ value, max, label }: { value: number; max: number; label: string }) => {
+    const percentage = Math.min((value / max) * 100, 100);
+    const getColor = () => {
+      if (value <= 28) return 'bg-emerald-500';
+      if (value <= 36) return 'bg-green-500';
+      if (value <= 43) return 'bg-yellow-500';
+      if (value <= 50) return 'bg-orange-500';
+      return 'bg-red-500';
+    };
 
-    setCalcResult({
-      monthlyPayment,
-      totalInterest,
-      totalPayment,
-    })
-  }
-
-  const getRateColor = (change: number) => {
-    if (change < 0) return 'text-green-600'
-    if (change > 0) return 'text-red-600'
-    return 'text-gray-500'
-  }
-
-  const getRateBg = (change: number) => {
-    if (change < 0) return 'bg-green-50 border-green-200'
-    if (change > 0) return 'bg-red-50 border-red-200'
-    return 'bg-gray-50 border-gray-200'
-  }
-
-  // Hero rates (main ones to show)
-  const heroRates = rates.filter(r => ['30-Year Fixed', '15-Year Fixed', '5/1 ARM'].includes(r.rateType))
-  const otherRates = rates.filter(r => !['30-Year Fixed', '15-Year Fixed', '5/1 ARM'].includes(r.rateType))
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-400">{label}</span>
+          <span className={`font-bold ${value <= 36 ? 'text-emerald-400' : value <= 43 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {value.toFixed(1)}%
+          </span>
+        </div>
+        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <motion.div
+            className={`h-full ${getColor()} rounded-full`}
+            initial={{ width: 0 }}
+            animate={{ width: `${percentage}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-slate-500">
+          <span>0%</span>
+          <span className="text-emerald-400">28%</span>
+          <span className="text-yellow-400">43%</span>
+          <span>{max}%</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">Mortgage Tools</h1>
-                  <p className="text-blue-100 text-sm">Real-time rates to help close deals faster</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchRates}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh Rates
-              </button>
-              <a
-                href={MORTGAGE_API}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition"
-              >
-                Full Rate Monitor
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-          
-          {lastUpdate && (
-            <p className="text-blue-200 text-xs mt-4 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Last updated: {lastUpdate.toLocaleTimeString()} • Source: Freddie Mac PMMS via FRED
-            </p>
-          )}
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            Affordability Calculator
+          </h1>
+          <p className="text-purple-100 text-lg">
+            Find out how much home you can really afford based on your income and debts
+          </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Hero Rate Cards */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {loading ? (
-            [1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-xl border p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
-                <div className="h-10 bg-gray-200 rounded w-1/3 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Input Panel */}
+          <div className="space-y-6">
+            {/* Income */}
+            <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-6">Your Income & Debts</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Annual Income</label>
+                    <span className="text-white font-bold">{formatCurrency(formData.annualIncome)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="30000"
+                    max="500000"
+                    step="5000"
+                    value={formData.annualIncome}
+                    onChange={(e) => setFormData({ ...formData, annualIncome: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <span>$30K</span>
+                    <span>$500K</span>
+                  </div>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Monthly: {formatCurrency(monthlyIncome)}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Monthly Debts</label>
+                    <span className="text-white font-bold">{formatCurrency(formData.monthlyDebts)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5000"
+                    step="50"
+                    value={formData.monthlyDebts}
+                    onChange={(e) => setFormData({ ...formData, monthlyDebts: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                  <p className="text-slate-500 text-xs mt-1">
+                    Include: car payments, student loans, credit card minimums
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Down Payment Available</label>
+                    <span className="text-white font-bold">{formatCurrency(formData.downPayment)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200000"
+                    step="5000"
+                    value={formData.downPayment}
+                    onChange={(e) => setFormData({ ...formData, downPayment: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
               </div>
-            ))
-          ) : heroRates.length > 0 ? (
-            heroRates.map(rate => (
-              <div key={rate.rateType} className={`bg-white rounded-xl border-2 p-6 ${getRateBg(rate.change)}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">{rate.rateType}</span>
-                  {rate.rateType === '30-Year Fixed' && (
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                      Most Popular
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-end gap-2 mb-1">
-                  <span className="text-4xl font-bold text-gray-900">{rate.rate.toFixed(2)}</span>
-                  <span className="text-2xl text-gray-400 mb-1">%</span>
-                </div>
-                <div className={`flex items-center gap-1 text-sm ${getRateColor(rate.change)}`}>
-                  {rate.change < 0 ? <TrendingDown className="w-4 h-4" /> : rate.change > 0 ? <TrendingUp className="w-4 h-4" /> : null}
-                  {rate.change !== 0 ? `${rate.change > 0 ? '+' : ''}${rate.change.toFixed(3)}%` : 'No change'} this week
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-3 bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-              <AlertCircle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-              <p className="text-yellow-800">Unable to load rates. Please try refreshing.</p>
             </div>
-          )}
-        </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Quick Calculator */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-blue-600" />
-                  Quick Payment Calculator
-                </h2>
-                <span className="text-xs text-gray-500">Share with clients</span>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Inputs */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Home Price
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="number"
-                        value={loanAmount}
-                        onChange={e => setLoanAmount(Number(e.target.value))}
-                        className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Down Payment ({((downPayment / loanAmount) * 100).toFixed(0)}%)
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="number"
-                        value={downPayment}
-                        onChange={e => setDownPayment(Number(e.target.value))}
-                        className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={loanAmount * 0.5}
-                      value={downPayment}
-                      onChange={e => setDownPayment(Number(e.target.value))}
-                      className="w-full mt-2"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Interest Rate
-                      </label>
-                      <div className="relative">
-                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={interestRate}
-                          onChange={e => setInterestRate(Number(e.target.value))}
-                          className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Loan Term
-                      </label>
-                      <select
-                        value={loanTerm}
-                        onChange={e => setLoanTerm(Number(e.target.value))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            {/* Loan Details */}
+            <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-6">Loan Details</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-slate-300 font-medium mb-3 block">Loan Type</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {LOAN_TYPES.map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => setFormData({ ...formData, loanType: type.value })}
+                        className={`p-3 rounded-xl border text-center transition-all
+                          ${formData.loanType === type.value
+                            ? 'border-purple-500 bg-purple-500/20'
+                            : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'}`}
                       >
-                        <option value={30}>30 years</option>
-                        <option value={20}>20 years</option>
-                        <option value={15}>15 years</option>
-                        <option value={10}>10 years</option>
-                      </select>
+                        <div className="text-2xl mb-1">{type.icon}</div>
+                        <div className={`text-sm font-medium ${formData.loanType === type.value ? 'text-purple-400' : 'text-white'}`}>
+                          {type.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Credit Score</label>
+                    <span className={`font-bold ${
+                      formData.creditScore >= 760 ? 'text-emerald-400' :
+                      formData.creditScore >= 700 ? 'text-green-400' :
+                      formData.creditScore >= 660 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
+                      {formData.creditScore}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="580"
+                    max="850"
+                    value={formData.creditScore}
+                    onChange={(e) => setFormData({ ...formData, creditScore: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Interest Rate</label>
+                    <span className="text-white font-bold">{formData.interestRate}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="4"
+                    max="10"
+                    step="0.125"
+                    value={formData.interestRate}
+                    onChange={(e) => setFormData({ ...formData, interestRate: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-slate-300 font-medium">Monthly HOA (if any)</label>
+                    <span className="text-white font-bold">{formatCurrency(formData.hoaMonthly)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="25"
+                    value={formData.hoaMonthly}
+                    onChange={(e) => setFormData({ ...formData, hoaMonthly: Number(e.target.value) })}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Panel */}
+          <div className="space-y-6">
+            {result ? (
+              <>
+                {/* Main Result */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-8 text-white"
+                >
+                  <p className="text-purple-100 text-center mb-2">You Can Afford Up To</p>
+                  <p className="text-5xl md:text-6xl font-bold text-center mb-4">
+                    {formatCurrency(result.maxHomePrice)}
+                  </p>
+                  <p className="text-purple-100 text-center">
+                    Loan Amount: {formatCurrency(result.maxLoanAmount)}
+                  </p>
+                </motion.div>
+
+                {/* Scenarios */}
+                <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+                  <h3 className="text-lg font-bold text-white mb-4">Price Scenarios</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/30 text-center">
+                      <p className="text-emerald-400 text-xs uppercase tracking-wide mb-1">Comfortable</p>
+                      <p className="text-2xl font-bold text-white">{formatCurrency(result.scenarios.comfortable)}</p>
+                      <p className="text-slate-400 text-xs mt-1">Room to breathe</p>
+                    </div>
+                    <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/30 text-center">
+                      <p className="text-purple-400 text-xs uppercase tracking-wide mb-1">Maximum</p>
+                      <p className="text-2xl font-bold text-white">{formatCurrency(result.scenarios.maximum)}</p>
+                      <p className="text-slate-400 text-xs mt-1">Your limit</p>
+                    </div>
+                    <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/30 text-center">
+                      <p className="text-orange-400 text-xs uppercase tracking-wide mb-1">Stretch</p>
+                      <p className="text-2xl font-bold text-white">{formatCurrency(result.scenarios.stretch)}</p>
+                      <p className="text-slate-400 text-xs mt-1">If rates drop</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Results */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-4">Estimated Monthly Payment</h3>
-                  {calcResult ? (
-                    <>
-                      <div className="text-5xl font-bold text-gray-900 mb-4">
-                        ${calcResult.monthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        <span className="text-lg text-gray-500 font-normal">/mo</span>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Loan Amount:</span>
-                          <span className="font-medium">${(loanAmount - downPayment).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Interest:</span>
-                          <span className="font-medium">${calcResult.totalInterest.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                        </div>
-                        <div className="flex justify-between border-t pt-2 mt-2">
-                          <span className="text-gray-600">Total Cost:</span>
-                          <span className="font-bold">${calcResult.totalPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-4 flex items-start gap-1">
-                        <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                        Principal & interest only. Does not include taxes, insurance, or PMI.
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-gray-500">Enter valid values to calculate</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Share with Client */}
-              <div className="mt-6 pt-6 border-t">
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                  <Send className="w-4 h-4" />
-                  Send Quote to Client
-                </button>
-              </div>
-            </div>
-
-            {/* Other Rates */}
-            {otherRates.length > 0 && (
-              <div className="bg-white rounded-xl border p-6 mt-6">
-                <h2 className="text-lg font-bold mb-4">All Current Rates</h2>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {otherRates.map(rate => (
-                    <div key={rate.rateType} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-sm text-gray-600">{rate.rateType}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold">{rate.rate.toFixed(2)}%</span>
-                        <span className={`text-xs ${getRateColor(rate.change)}`}>
-                          {rate.change > 0 ? '+' : ''}{rate.change.toFixed(3)}%
-                        </span>
-                      </div>
+                {/* Monthly Payment */}
+                <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+                  <h3 className="text-lg font-bold text-white mb-4">Estimated Monthly Payment</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b border-slate-700">
+                      <span className="text-slate-300">Principal & Interest</span>
+                      <span className="text-white font-medium">{formatCurrency(result.monthlyPayment.principalInterest)}</span>
                     </div>
-                  ))}
+                    <div className="flex justify-between items-center py-2 border-b border-slate-700">
+                      <span className="text-slate-300">Property Tax</span>
+                      <span className="text-white font-medium">{formatCurrency(result.monthlyPayment.propertyTax)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-slate-700">
+                      <span className="text-slate-300">Insurance</span>
+                      <span className="text-white font-medium">{formatCurrency(result.monthlyPayment.insurance)}</span>
+                    </div>
+                    {result.monthlyPayment.pmi > 0 && (
+                      <div className="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span className="text-yellow-400">PMI</span>
+                        <span className="text-yellow-400 font-medium">{formatCurrency(result.monthlyPayment.pmi)}</span>
+                      </div>
+                    )}
+                    {result.monthlyPayment.hoa > 0 && (
+                      <div className="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span className="text-slate-300">HOA</span>
+                        <span className="text-white font-medium">{formatCurrency(result.monthlyPayment.hoa)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center py-3 bg-purple-500/10 rounded-lg px-3 -mx-3">
+                      <span className="text-purple-400 font-bold">TOTAL</span>
+                      <span className="text-purple-400 font-bold text-2xl">{formatCurrency(result.monthlyPayment.total)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DTI Analysis */}
+                <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+                  <h3 className="text-lg font-bold text-white mb-4">Debt-to-Income Analysis</h3>
+                  
+                  <div className="space-y-6">
+                    <DTIMeter value={result.dti.housing} max={50} label="Housing Ratio (Front-End)" />
+                    <DTIMeter value={result.dti.total} max={60} label="Total DTI (Back-End)" />
+                  </div>
+
+                  <div className={`mt-6 p-4 rounded-xl border ${DTI_STATUS_COLORS[result.dti.status].bg} ${DTI_STATUS_COLORS[result.dti.status].border}`}>
+                    <p className={`font-bold ${DTI_STATUS_COLORS[result.dti.status].text} capitalize`}>
+                      {result.dti.status === 'excellent' && '🌟 Excellent Position'}
+                      {result.dti.status === 'good' && '👍 Good Standing'}
+                      {result.dti.status === 'acceptable' && '✓ Acceptable'}
+                      {result.dti.status === 'stretched' && '⚠️ Stretched - Use Caution'}
+                      {result.dti.status === 'denied' && '❌ May Not Qualify'}
+                    </p>
+                    <p className="text-slate-300 text-sm mt-1">
+                      {result.dti.status === 'excellent' && 'Lenders will love you. You have plenty of room for unexpected expenses.'}
+                      {result.dti.status === 'good' && 'You\'re in a solid position. Most lenders will approve you easily.'}
+                      {result.dti.status === 'acceptable' && 'You\'ll likely qualify, but you\'re at the edge of comfort.'}
+                      {result.dti.status === 'stretched' && 'This is your maximum. Consider a lower price for financial security.'}
+                      {result.dti.status === 'denied' && 'Your debt load is too high. Pay down debts or increase income first.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                {result.recommendations.length > 0 && (
+                  <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+                    <h3 className="text-lg font-bold text-white mb-4">Recommendations</h3>
+                    <div className="space-y-3">
+                      {result.recommendations.map((rec, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg">
+                          <span className="text-lg">{rec.startsWith('⚠️') || rec.startsWith('💡') ? '' : '💡'}</span>
+                          <span className="text-slate-300">{rec}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Alternative Loan Types */}
+                {Object.keys(alternatives).length > 0 && (
+                  <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+                    <h3 className="text-lg font-bold text-white mb-4">Other Loan Options</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(alternatives).map(([type, data]: [string, any]) => (
+                        <button
+                          key={type}
+                          onClick={() => setFormData({ ...formData, loanType: type })}
+                          className="p-4 bg-slate-900/50 rounded-xl border border-slate-600 hover:border-purple-500 transition-all text-left"
+                        >
+                          <p className="text-purple-400 font-bold uppercase text-sm">{type}</p>
+                          <p className="text-2xl font-bold text-white">{formatCurrency(data.maxPrice)}</p>
+                          <p className="text-slate-400 text-sm">{formatCurrency(data.monthlyPayment)}/mo</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-12 border border-slate-700 text-center">
+                <div className="animate-pulse">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <span className="text-3xl">🏠</span>
+                  </div>
+                  <p className="text-slate-400">Calculating your affordability...</p>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-bold mb-4">Agent Tools</h3>
-              <div className="space-y-2">
-                <a
-                  href={`${MORTGAGE_API}/compare`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium">Compare 500+ Lenders</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                </a>
-                <a
-                  href={`${MORTGAGE_API}/calculators`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Calculator className="w-5 h-5 text-green-600" />
-                    <span className="font-medium">Full Calculator Suite</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
-                </a>
-                <a
-                  href={`${MORTGAGE_API}/historical`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium">Historical Trends</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
-                </a>
-                <a
-                  href={`${MORTGAGE_API}/alerts`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Bell className="w-5 h-5 text-orange-600" />
-                    <span className="font-medium">Set Rate Alerts</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-600" />
-                </a>
-              </div>
-            </div>
-
-            {/* Client Resources */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-green-600" />
-                Share with Clients
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Help your clients understand their buying power with these tools:
-              </p>
-              <div className="space-y-2">
-                <button className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition">
-                  <span className="text-sm font-medium">Affordability Calculator</span>
-                  <Send className="w-4 h-4 text-green-600" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition">
-                  <span className="text-sm font-medium">Current Rate Summary</span>
-                  <Send className="w-4 h-4 text-green-600" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition">
-                  <span className="text-sm font-medium">Payment Comparison</span>
-                  <Send className="w-4 h-4 text-green-600" />
-                </button>
-              </div>
-            </div>
-
-            {/* Pro Tip */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex gap-3">
-                <Star className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-blue-900 text-sm">Pro Tip</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Set up rate alerts to notify your clients when rates drop. 
-                    This shows you're proactive and keeps you top-of-mind!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
