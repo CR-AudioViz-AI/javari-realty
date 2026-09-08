@@ -15,7 +15,7 @@ function getSupabase() {
 // GET - Get messages for a conversation
 export async function GET(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 // POST - Send a message
 export async function POST(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Mark messages as read
 export async function PATCH(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
