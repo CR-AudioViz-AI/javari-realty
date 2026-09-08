@@ -15,7 +15,7 @@ function getSupabase() {
 // GET - Get saved properties for a customer
 export async function GET(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 // POST - Save a property
 export async function POST(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Unsave a property
 export async function DELETE(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
