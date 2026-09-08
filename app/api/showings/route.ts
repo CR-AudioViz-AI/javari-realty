@@ -15,7 +15,7 @@ function getSupabase() {
 // GET - Get showing requests (for agents or customers)
 export async function GET(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 // POST - Create showing request
 export async function POST(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Update showing status (for agents)
 export async function PATCH(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
