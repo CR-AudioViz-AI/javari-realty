@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/api/require-user';
 // CR AudioViz AI - Mortgage Rate Monitor
 // Rate Alerts API with Resend Email Integration
 // December 17, 2025
@@ -243,6 +244,9 @@ const emailTemplates = {
 
 // POST - Create new alert
 export async function POST(request: Request) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const body: AlertRequest = await request.json();
 
@@ -352,6 +356,9 @@ export async function POST(request: Request) {
 
 // GET - List alerts for email or check status
 export async function GET(request: Request) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
@@ -394,6 +401,9 @@ export async function GET(request: Request) {
 
 // DELETE - Remove an alert
 export async function DELETE(request: Request) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
