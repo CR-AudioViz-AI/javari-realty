@@ -15,7 +15,7 @@ function getSupabase() {
 // GET - Get customer profile and data
 export async function GET(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 // POST - Create/register customer
 export async function POST(request: NextRequest) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const supabase = await createClient()
