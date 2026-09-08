@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/api/require-user';
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -13,6 +14,9 @@ function getSupabase() {
 
 // GET - Get showing requests (for agents or customers)
 export async function GET(request: NextRequest) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
@@ -49,6 +53,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create showing request
 export async function POST(request: NextRequest) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -127,6 +134,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH - Update showing status (for agents)
 export async function PATCH(request: NextRequest) {
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.response;
+
   try {
     const supabase = await createClient()
     const body = await request.json()
