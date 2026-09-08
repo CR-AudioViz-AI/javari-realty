@@ -245,7 +245,7 @@ const emailTemplates = {
 // POST - Create new alert
 export async function POST(request: Request) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const body: AlertRequest = await request.json();
@@ -357,7 +357,7 @@ export async function POST(request: Request) {
 // GET - List alerts for email or check status
 export async function GET(request: Request) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -402,7 +402,7 @@ export async function GET(request: Request) {
 // DELETE - Remove an alert
 export async function DELETE(request: Request) {
   const gate = await requireUser(request);
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) return gate.res;
 
   try {
     const { searchParams } = new URL(request.url);
