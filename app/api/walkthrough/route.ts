@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/api/require-user';
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 
@@ -9,6 +10,17 @@ export const dynamic = 'force-dynamic'
 
 // GET - Get walkthrough feedback
 export async function GET(request: NextRequest) {
+  // 2026-09-07: this was open to anybody.
+  //
+  // GET selects walkthrough_feedback joined to customers (id, full_name, email)
+  // and filters ONLY on query parameters - customer_id, property_id, agent_id.
+  // Changing agent_id in the URL returned another agent's clients, by name and
+  // email. That is an IDOR without needing a body.
+  //
+  // PATCH rewrote rankings by feedback_id with no ownership check at all.
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.res;
+
   const { searchParams } = new URL(request.url)
   const customerId = searchParams.get('customer_id')
   const propertyId = searchParams.get('property_id')
@@ -41,6 +53,17 @@ export async function GET(request: NextRequest) {
 
 // POST - Submit walkthrough feedback with photos and ratings
 export async function POST(request: NextRequest) {
+  // 2026-09-07: this was open to anybody.
+  //
+  // GET selects walkthrough_feedback joined to customers (id, full_name, email)
+  // and filters ONLY on query parameters - customer_id, property_id, agent_id.
+  // Changing agent_id in the URL returned another agent's clients, by name and
+  // email. That is an IDOR without needing a body.
+  //
+  // PATCH rewrote rankings by feedback_id with no ownership check at all.
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.res;
+
   try {
     const body = await request.json()
     const {
@@ -173,6 +196,17 @@ export async function POST(request: NextRequest) {
 
 // PATCH - Update rankings
 export async function PATCH(request: NextRequest) {
+  // 2026-09-07: this was open to anybody.
+  //
+  // GET selects walkthrough_feedback joined to customers (id, full_name, email)
+  // and filters ONLY on query parameters - customer_id, property_id, agent_id.
+  // Changing agent_id in the URL returned another agent's clients, by name and
+  // email. That is an IDOR without needing a body.
+  //
+  // PATCH rewrote rankings by feedback_id with no ownership check at all.
+  const gate = await requireUser(request);
+  if (!gate.ok) return gate.res;
+
   try {
     const body = await request.json()
     const { customer_id, rankings } = body
