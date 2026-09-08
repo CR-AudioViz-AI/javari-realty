@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/api/require-user';
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 
@@ -48,6 +49,21 @@ export async function POST(request: NextRequest) {
     const { action } = body
 
     if (action === 'create') {
+    // 2026-09-07: create is gated; rsvp and signin are not, deliberately.
+    //
+    // This route switches on an action. Two of the three are public by design -
+    // a visitor RSVPs to an open house and signs in at the door, and requiring
+    // an account for that would break the product.
+    //
+    // Creating an open house is not that. It writes to open_houses and names a
+    // hosting agent, so without a gate anybody could schedule a showing at any
+    // property and attribute it to any agent.
+    //
+    // Gating the ROUTE would have broken the RSVP. Leaving it open left the
+    // create path public. The action is the boundary, so the gate belongs here.
+    const gate = await requireUser(request);
+    if (!gate.ok) return gate.res;
+
       // Create a new open house (agent only)
       const { property_id, date, start_time, end_time, host_agent_id, notes, max_attendees } = body
 
