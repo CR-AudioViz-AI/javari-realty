@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         created_at,
         notes,
         properties (
-          id, address, city, state, zip, price, bedrooms, bathrooms, sqft,
+          id, address, city, state, zip_code, price, bedrooms, bathrooms, sqft,
           property_type, status, photos, description, lot_size, year_built,
           listing_agent_id
         )
