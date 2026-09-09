@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('service_providers')
       .select('*')
-      .eq('subscription_status', 'active')
+      .eq('is_active', true)
       .order('subscription_tier', { ascending: false })
       .order('rating', { ascending: false });
 
