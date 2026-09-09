@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .from('open_houses')
       .select(`
         *,
-        properties (id, address, city, state, zip, price, bedrooms, bathrooms, sqft, photos),
+        properties (id, address, city, state, zip_code, price, bedrooms, bathrooms, sqft, photos),
         profiles:host_agent_id (id, full_name, phone, email)
       `)
       .gte('date', new Date().toISOString().split('T')[0])
