@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         id,
         created_at,
         properties (
-          id, address, city, state, zip, price, bedrooms, bathrooms, sqft, 
+          id, address, city, state, zip_code, price, bedrooms, bathrooms, sqft, 
           property_type, status, photos, description
         )
       `)
