@@ -7,11 +7,11 @@
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "lint": "next lint",
-    "prebuild": "node scripts/audit-route-auth.mjs && node scripts/audit-model-names.mjs && npm run typecheck",
+    "prebuild": "node scripts/check-sdk-install.mjs && node scripts/audit-route-auth.mjs && node scripts/audit-model-names.mjs && npm run typecheck",
     "typecheck": "NODE_OPTIONS='--max-old-space-size=7168' tsc --noEmit"
   },
   "dependencies": {
-    "@craudioviz/platform-sdk": "git+https://github.com/CR-AudioViz-AI/platform-sdk.git",
+    "@craudioviz/platform-sdk": "git+https://github.com/CR-AudioViz-AI/platform-sdk.git#31a7f6ddb0e3f79f7dbc5d16c83273221f872647",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-progress": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",

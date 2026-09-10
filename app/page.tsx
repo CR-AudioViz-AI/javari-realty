@@ -91,7 +91,7 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "system-ui, sans-serif" }}>
-      <nav style={{ background: C.navy, padding: "0 20px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
+      <nav data-app-chrome style={{ background: C.navy, padding: "0 20px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 20 }}>🏠</span>
           <span style={{ fontWeight: 800, color: C.teal, fontSize: 16 }}>{brandName}</span>
@@ -144,7 +144,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "24px 20px", textAlign: "center", color: C.muted, fontSize: 12.5 }}>
+      <footer data-app-chrome style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "24px 20px", textAlign: "center", color: C.muted, fontSize: 12.5 }}>
         <div style={{ marginBottom: 6 }}>
           <a href="https://craudiovizai.com" style={{ color: C.teal, textDecoration: "none" }}>CR AudioViz AI</a>
           {" · EIN 39-3646201"}
