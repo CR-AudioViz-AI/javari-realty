@@ -1,6 +1,10 @@
 // app/layout.tsx — javari-realty
 // Universal brand shell — EIN, auth CTA, metadata
 // CR AudioViz AI · EIN 39-3646201 · May 2026
+// globals.css MUST be imported. Next emits a stylesheet link only for CSS
+// reachable from the module graph; without this import every page on
+// javarikeys.com and zoyzy.com shipped with zero stylesheets.
+import './globals.css'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import AttributionTracker from '@/components/AttributionTracker'
