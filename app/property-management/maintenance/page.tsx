@@ -21,77 +21,10 @@ import {
 } from 'lucide-react';
 
 const mockRequests = [
-  {
-    id: '1',
-    title: 'Water leak in bathroom',
-    description: 'Faucet is dripping constantly and water pressure is low',
-    category: 'plumbing',
-    priority: 'emergency',
-    status: 'in_progress',
-    tenant: 'John Smith',
-    unit: 'Unit 204',
-    property: 'Sunset Apartments',
-    created: '2025-01-03T10:30:00',
-    scheduled: '2025-01-03T14:00:00',
-    assignedTo: 'ABC Plumbing',
-  },
-  {
-    id: '2',
-    title: 'HVAC not cooling properly',
-    description: 'AC unit making strange noise and not cooling effectively',
-    category: 'hvac',
-    priority: 'high',
-    status: 'scheduled',
-    tenant: 'Sarah Johnson',
-    unit: 'Unit 305',
-    property: 'Sunset Apartments',
-    created: '2025-01-02T15:45:00',
-    scheduled: '2025-01-04T09:00:00',
-    assignedTo: 'Cool Air Services',
-  },
-  {
-    id: '3',
-    title: 'Garage door not closing',
-    description: 'Garage door stops halfway when closing',
-    category: 'structural',
-    priority: 'medium',
-    status: 'submitted',
-    tenant: 'Michael Brown',
-    unit: 'Unit 112',
-    property: 'Oakwood Townhomes',
-    created: '2025-01-03T08:00:00',
-    scheduled: null,
-    assignedTo: null,
-  },
-  {
-    id: '4',
-    title: 'Light fixture replacement',
-    description: 'Kitchen ceiling light stopped working',
-    category: 'electrical',
-    priority: 'low',
-    status: 'completed',
-    tenant: 'Emily Davis',
-    unit: 'Unit 418',
-    property: 'Sunset Apartments',
-    created: '2024-12-28T11:00:00',
-    scheduled: '2024-12-30T10:00:00',
-    assignedTo: 'Bright Electric',
-    completedDate: '2024-12-30T12:30:00',
-  },
-  {
-    id: '5',
-    title: 'Dishwasher not draining',
-    description: 'Water pools at the bottom after cycle',
-    category: 'appliance',
-    priority: 'medium',
-    status: 'pending_parts',
-    tenant: 'Robert Wilson',
-    unit: 'Unit 201',
-    property: 'Riverside Duplexes',
-    created: '2025-01-01T09:30:00',
-    scheduled: null,
-    assignedTo: 'Appliance Pros',
-  },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 const priorityConfig: Record<string, { color: string; bgColor: string; label: string }> = {

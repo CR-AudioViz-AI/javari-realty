@@ -20,71 +20,10 @@ import {
 } from 'lucide-react';
 
 const mockLeases = [
-  {
-    id: '1',
-    tenant: 'John Smith',
-    unit: 'Unit 204',
-    property: 'Sunset Apartments',
-    type: 'fixed',
-    startDate: '2024-03-15',
-    endDate: '2025-03-14',
-    rent: 1850,
-    deposit: 1850,
-    status: 'active',
-    daysUntilExpiry: 75,
-  },
-  {
-    id: '2',
-    tenant: 'Sarah Johnson',
-    unit: 'Unit 305',
-    property: 'Sunset Apartments',
-    type: 'fixed',
-    startDate: '2024-07-01',
-    endDate: '2025-06-30',
-    rent: 1950,
-    deposit: 1950,
-    status: 'active',
-    daysUntilExpiry: 183,
-  },
-  {
-    id: '3',
-    tenant: 'Michael Brown',
-    unit: 'Unit 112',
-    property: 'Oakwood Townhomes',
-    type: 'fixed',
-    startDate: '2023-02-01',
-    endDate: '2025-01-31',
-    rent: 2200,
-    deposit: 2200,
-    status: 'expiring_soon',
-    daysUntilExpiry: 28,
-  },
-  {
-    id: '4',
-    tenant: 'Emily Davis',
-    unit: 'Unit 418',
-    property: 'Sunset Apartments',
-    type: 'fixed',
-    startDate: '2025-01-01',
-    endDate: '2025-12-31',
-    rent: 1750,
-    deposit: 1750,
-    status: 'pending_signature',
-    daysUntilExpiry: 363,
-  },
-  {
-    id: '5',
-    tenant: 'Robert Wilson',
-    unit: 'Unit 201',
-    property: 'Riverside Duplexes',
-    type: 'month_to_month',
-    startDate: '2023-03-01',
-    endDate: null,
-    rent: 1650,
-    deposit: 1650,
-    status: 'active',
-    daysUntilExpiry: null,
-  },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 const statusConfig: Record<string, { color: string; label: string; icon: React.ComponentType<{className?: string}> }> = {

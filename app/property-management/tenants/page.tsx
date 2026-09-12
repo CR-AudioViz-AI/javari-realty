@@ -17,66 +17,10 @@ import {
 } from 'lucide-react';
 
 const mockTenants = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    phone: '(239) 555-0101',
-    unit: 'Unit 204',
-    property: 'Sunset Apartments',
-    rent: 1850,
-    leaseEnd: '2025-03-14',
-    status: 'active',
-    paymentStatus: 'current',
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah.j@email.com',
-    phone: '(239) 555-0102',
-    unit: 'Unit 305',
-    property: 'Sunset Apartments',
-    rent: 1950,
-    leaseEnd: '2025-06-30',
-    status: 'active',
-    paymentStatus: 'current',
-  },
-  {
-    id: '3',
-    name: 'Michael Brown',
-    email: 'mbrown@email.com',
-    phone: '(239) 555-0103',
-    unit: 'Unit 112',
-    property: 'Oakwood Townhomes',
-    rent: 2200,
-    leaseEnd: '2025-01-31',
-    status: 'active',
-    paymentStatus: 'late',
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    email: 'emily.d@email.com',
-    phone: '(239) 555-0104',
-    unit: 'Unit 418',
-    property: 'Sunset Apartments',
-    rent: 1750,
-    leaseEnd: '2025-12-31',
-    status: 'active',
-    paymentStatus: 'current',
-  },
-  {
-    id: '5',
-    name: 'Robert Wilson',
-    email: 'rwilson@email.com',
-    phone: '(239) 555-0105',
-    unit: 'Unit 201',
-    property: 'Riverside Duplexes',
-    rent: 1650,
-    leaseEnd: '2025-02-28',
-    status: 'notice_given',
-    paymentStatus: 'current',
-  },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 const statusColors: Record<string, string> = {

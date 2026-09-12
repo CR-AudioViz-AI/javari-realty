@@ -18,24 +18,10 @@ interface AutomationSequence {
 }
 
 const DEMO_SEQUENCES: AutomationSequence[] = [
-  { id: '1', name: 'New Lead Welcome Series', description: 'Automatically nurture new leads with a 7-day email sequence', trigger: 'new_lead', status: 'active',
-    steps: [
-      { id: 's1', type: 'email', delay_days: 0, content: 'Welcome email' },
-      { id: 's2', type: 'wait', delay_days: 2, content: 'Wait 2 days' },
-      { id: 's3', type: 'email', delay_days: 0, content: 'Follow-up email' },
-      { id: 's4', type: 'task', delay_days: 5, content: 'Call lead' },
-    ], stats: { enrolled: 156, completed: 89, replied: 34 } },
-  { id: '2', name: 'Showing Follow-Up', description: 'Follow up after property showings', trigger: 'showing_request', status: 'active',
-    steps: [
-      { id: 's1', type: 'email', delay_days: 0, content: 'Thank you email' },
-      { id: 's2', type: 'sms', delay_days: 1, content: 'Quick text' },
-    ], stats: { enrolled: 78, completed: 65, replied: 42 } },
-  { id: '3', name: 'Re-Engagement Campaign', description: 'Re-engage cold leads after 30 days', trigger: 'no_activity', status: 'paused',
-    steps: [
-      { id: 's1', type: 'email', delay_days: 30, content: 'Re-engagement email' },
-      { id: 's2', type: 'wait', delay_days: 7, content: 'Wait 7 days' },
-      { id: 's3', type: 'email', delay_days: 0, content: 'New listings email' },
-    ], stats: { enrolled: 234, completed: 45, replied: 12 } },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 export default function AutomationPage() {

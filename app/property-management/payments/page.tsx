@@ -20,14 +20,10 @@ import {
 } from 'lucide-react';
 
 const mockPayments = [
-  { id: '1', tenant: 'John Smith', unit: 'Unit 204', property: 'Sunset Apartments', amount: 1850, dueDate: '2025-01-01', paidDate: '2024-12-30', status: 'paid', method: 'ach', lateFee: 0 },
-  { id: '2', tenant: 'Sarah Johnson', unit: 'Unit 305', property: 'Sunset Apartments', amount: 1950, dueDate: '2025-01-01', paidDate: '2025-01-01', status: 'paid', method: 'credit_card', lateFee: 0 },
-  { id: '3', tenant: 'Michael Brown', unit: 'Unit 112', property: 'Oakwood Townhomes', amount: 2200, dueDate: '2025-01-01', paidDate: null, status: 'late', method: null, lateFee: 110 },
-  { id: '4', tenant: 'Emily Davis', unit: 'Unit 418', property: 'Sunset Apartments', amount: 1750, dueDate: '2025-01-01', paidDate: null, status: 'pending', method: null, lateFee: 0 },
-  { id: '5', tenant: 'Robert Wilson', unit: 'Unit 201', property: 'Riverside Duplexes', amount: 1650, dueDate: '2025-01-01', paidDate: '2025-01-02', status: 'paid', method: 'check', lateFee: 0 },
-  { id: '6', tenant: 'Anna Lee', unit: 'Unit 101', property: 'Sunset Apartments', amount: 1450, dueDate: '2025-01-01', paidDate: '2024-12-28', status: 'paid', method: 'online', lateFee: 0 },
-  { id: '7', tenant: 'Mark Chen', unit: 'Unit 102', property: 'Sunset Apartments', amount: 1450, dueDate: '2025-01-01', paidDate: null, status: 'pending', method: null, lateFee: 0 },
-  { id: '8', tenant: 'Lisa Park', unit: 'Unit 202', property: 'Sunset Apartments', amount: 1750, dueDate: '2025-01-01', paidDate: '2024-12-31', status: 'paid', method: 'ach', lateFee: 0 },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 const statusConfig: Record<string, { color: string; bgColor: string; label: string; icon: React.ComponentType<{className?: string}> }> = {

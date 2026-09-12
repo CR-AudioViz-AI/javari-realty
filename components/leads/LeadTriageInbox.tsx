@@ -41,92 +41,10 @@ import {
 
 // Demo data for illustration
 const DEMO_LEADS: Lead[] = [
-  {
-    id: 'lead_1',
-    agent_id: 'agent_demo',
-    first_name: 'Sarah',
-    last_name: 'Johnson',
-    email: 'sarah.j@email.com',
-    phone: '(555) 123-4567',
-    preferred_contact: 'phone',
-    source: 'zillow',
-    source_detail: 'Viewed 5 properties',
-    intent: 'buying',
-    status: 'new',
-    buying_preferences: {
-      min_price: 400000,
-      max_price: 550000,
-      bedrooms_min: 3,
-      locations: ['Downtown', 'West Side'],
-    },
-    ai_score: 92,
-    ai_priority: 'hot',
-    ai_insights: {
-      summary: 'Highly engaged buyer, pre-approved, looking to move within 30 days.',
-      key_signals: ['Pre-approved for $525K', 'Viewed 5 properties today', 'Relocating for job'],
-      recommended_actions: [
-        { id: '1', action: 'Call within 5 minutes', reason: 'Hot lead with high intent', priority: 'high', type: 'call', best_time: 'Now' },
-        { id: '2', action: 'Send property matches', reason: 'Based on viewing history', priority: 'high', type: 'email' },
-      ],
-      conversation_starters: ['Congratulations on your pre-approval!'],
-      objection_handlers: [],
-      predicted_conversion_probability: 78,
-      predicted_timeline_days: 21,
-      sentiment: 'positive',
-    },
-    last_activity: new Date(Date.now() - 5 * 60000).toISOString(),
-    total_interactions: 8,
-    email_opens: 3,
-    website_visits: 12,
-    properties_viewed: ['prop_1', 'prop_2', 'prop_3'],
-    timeframe: 'immediate',
-    pre_approved: true,
-    notes: [],
-    activities: [],
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 60000).toISOString(),
-  },
-  {
-    id: 'lead_2',
-    agent_id: 'agent_demo',
-    first_name: 'Michael',
-    last_name: 'Chen',
-    email: 'mchen@company.com',
-    phone: '(555) 234-5678',
-    preferred_contact: 'email',
-    source: 'website',
-    intent: 'selling',
-    status: 'contacted',
-    selling_property: {
-      address: '456 Oak Avenue',
-      estimated_value: 680000,
-      timeline: 'Spring 2025',
-    },
-    ai_score: 75,
-    ai_priority: 'warm',
-    ai_insights: {
-      summary: 'Seller interested in downsizing. Timeline is flexible but motivated.',
-      key_signals: ['Owns property outright', 'Considering multiple agents'],
-      recommended_actions: [
-        { id: '1', action: 'Schedule CMA presentation', reason: 'Show market expertise', priority: 'high', type: 'schedule' },
-      ],
-      conversation_starters: ['The Oak Avenue area has seen strong appreciation'],
-      objection_handlers: [],
-      predicted_conversion_probability: 62,
-      predicted_timeline_days: 45,
-      sentiment: 'neutral',
-    },
-    last_activity: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
-    total_interactions: 4,
-    email_opens: 2,
-    website_visits: 5,
-    properties_viewed: [],
-    timeframe: '3_6_months',
-    notes: [],
-    activities: [],
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
-  },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 export function LeadTriageInbox() {

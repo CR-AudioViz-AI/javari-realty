@@ -22,16 +22,10 @@ import {
 } from 'lucide-react';
 
 const mockUnits = [
-  { id: '1', number: '101', property: 'Sunset Apartments', propertyId: '1', beds: 1, baths: 1, sqft: 650, rent: 1450, status: 'occupied', tenant: 'Anna Lee', leaseEnd: '2025-08-31' },
-  { id: '2', number: '102', property: 'Sunset Apartments', propertyId: '1', beds: 1, baths: 1, sqft: 650, rent: 1450, status: 'occupied', tenant: 'Mark Chen', leaseEnd: '2025-06-15' },
-  { id: '3', number: '201', property: 'Sunset Apartments', propertyId: '1', beds: 2, baths: 1, sqft: 850, rent: 1750, status: 'available', tenant: null, leaseEnd: null, availableDate: '2025-01-15' },
-  { id: '4', number: '202', property: 'Sunset Apartments', propertyId: '1', beds: 2, baths: 1, sqft: 850, rent: 1750, status: 'occupied', tenant: 'Lisa Park', leaseEnd: '2025-09-30' },
-  { id: '5', number: '204', property: 'Sunset Apartments', propertyId: '1', beds: 2, baths: 2, sqft: 950, rent: 1850, status: 'occupied', tenant: 'John Smith', leaseEnd: '2025-03-14' },
-  { id: '6', number: '301', property: 'Sunset Apartments', propertyId: '1', beds: 2, baths: 2, sqft: 1000, rent: 1950, status: 'occupied', tenant: 'Sarah Johnson', leaseEnd: '2025-06-30' },
-  { id: '7', number: 'A', property: 'Oakwood Townhomes', propertyId: '2', beds: 3, baths: 2.5, sqft: 1800, rent: 2200, status: 'occupied', tenant: 'Michael Brown', leaseEnd: '2025-01-31' },
-  { id: '8', number: 'B', property: 'Oakwood Townhomes', propertyId: '2', beds: 3, baths: 2.5, sqft: 1800, rent: 2200, status: 'available', tenant: null, leaseEnd: null, availableDate: '2025-02-01' },
-  { id: '9', number: '1', property: 'Riverside Duplexes', propertyId: '3', beds: 2, baths: 1, sqft: 1100, rent: 1650, status: 'occupied', tenant: 'Robert Wilson', leaseEnd: '2025-02-28' },
-  { id: '10', number: '2', property: 'Riverside Duplexes', propertyId: '3', beds: 2, baths: 1, sqft: 1100, rent: 1650, status: 'occupied', tenant: 'Emma Thompson', leaseEnd: '2025-07-31' },
+  // 2026-09-12: this list was INVENTED - made-up people with made-up emails, phone
+  // numbers and budgets, shown as though they were real leads. Zoyzy has no leads or
+  // tenants yet and the tables are empty, so an empty list is the truth. Wire this to
+  // the real table when there is something in it.
 ];
 
 export default function UnitsPage() {
